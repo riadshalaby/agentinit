@@ -1,0 +1,35 @@
+# {{.ProjectName}}
+
+## Overview
+
+TODO: Describe this project.
+
+## Getting Started
+
+TODO: Add setup instructions.
+
+## AI Workflow
+
+This project uses a 3-agent workflow (Planner, Implementer, Reviewer) with file-based coordination.
+
+### Start a new development cycle
+
+```bash
+scripts/ai-start-cycle.sh feature/<scope>
+```
+
+### Run agents
+
+```bash
+scripts/ai-plan.sh          # Start planner (default: claude)
+scripts/ai-implement.sh     # Start implementer (default: codex)
+scripts/ai-review.sh        # Start reviewer (default: claude)
+```
+
+### Create a PR
+
+```bash
+scripts/ai-pr.sh sync
+```
+
+See `CLAUDE.md` for full workflow rules.
