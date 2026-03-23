@@ -17,11 +17,7 @@ You are in `review` mode.
   - set status to `done` when verdict is `PASS` or `PASS_WITH_NOTES`
   - set status to `changes_requested` when verdict is `FAIL`
   - set owner role to `implement` if changes are requested
-- Append one entry to `.ai/HANDOFF.md` with:
-  - task id
-  - role `reviewer`
-  - chosen agent
-  - verdict
-  - blocking findings
-  - next role
+- Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
+  - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
+  - table with all applicable fields
 - Never modify code.

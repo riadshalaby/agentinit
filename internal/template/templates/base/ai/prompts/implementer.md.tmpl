@@ -13,14 +13,9 @@ You are in `implement` mode.
   - set status to `ready_for_review`
   - set owner role to `review`
   - set chosen reviewer agent if provided by the user
-- Append one entry to `.ai/HANDOFF.md` with:
-  - task id
-  - role `implementer`
-  - chosen agent
-  - changed files summary
-  - validation commands and outcomes
-  - commit hash and commit message
-  - next role `review`
+- Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
+  - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
+  - table with all applicable fields
 - Do not redesign architecture or invent requirements.
 
 ## Rework after rejection (`@rework`)
@@ -32,4 +27,6 @@ You are in `implement` mode.
 - Update `.ai/TASKS.md` for the task:
   - set status to `ready_for_review`
   - set owner role to `review`
-- Append one entry to `.ai/HANDOFF.md` with the same fields as a normal implementation handoff.
+- Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
+  - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
+  - table with all applicable fields
