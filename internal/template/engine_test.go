@@ -32,8 +32,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-check-plan.sh",
-		"scripts/ai-check-review.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",

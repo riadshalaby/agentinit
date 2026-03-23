@@ -30,8 +30,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-check-plan.sh",
-		"scripts/ai-check-review.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -64,8 +62,6 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
 		"scripts/ai-start-cycle.sh",
-		"scripts/ai-check-plan.sh",
-		"scripts/ai-check-review.sh",
 		"scripts/ai-pr.sh",
 	}
 
