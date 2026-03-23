@@ -45,6 +45,13 @@
   - updates `.ai/TASKS.md` status to `ready_for_review`
   - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
   - must not invent requirements
+- Implement Mode (rework after rejection):
+  - reads `.ai/REVIEW.md` findings as a checklist
+  - addresses every finding marked as required fix
+  - re-runs validations
+  - stages and commits with a Conventional Commit referencing the rework
+  - updates `.ai/TASKS.md` status from `changes_requested` to `ready_for_review`
+  - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
 
 ## AI Operating Mode
 - Mode is selected by the launcher prompt/context:
@@ -72,10 +79,11 @@
   - implementer -> reviewer uses commit + `.ai/TASKS.md` + `.ai/HANDOFF.md`
 - Recommended status flow in `.ai/TASKS.md`:
   - `todo` -> `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
+  - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
 
 ## Shorthand Commands
-All commands accept an optional task ID (e.g. `/next T-002`). When omitted, the first matching task top-to-bottom is used.
-- `/next [TASK_ID]` — Pick up the next task for your current role:
+All commands accept an optional task ID (e.g. `@next T-002`). When omitted, the first matching task top-to-bottom is used.
+- `@next [TASK_ID]` — Pick up the next task for your current role:
   1. Read `.ai/TASKS.md` and find the target task matching your role:
      - **plan** role: status `todo` or `in_planning`.
      - **implement** role: status `ready_for_implement` or `in_implementation`.
@@ -84,18 +92,18 @@ All commands accept an optional task ID (e.g. `/next T-002`). When omitted, the 
   3. Update the task status to the in-progress variant (`in_planning`, `in_implementation`, `in_review`) and announce which task you are picking up.
   4. Execute the task according to the role's rules in "AI Workflow Rules".
   5. If no matching task is found, print: "No tasks pending for <role>." and show current task statuses.
-- `/rework [TASK_ID]` — Resume implementation after a review rejection (implement role only):
+- `@rework [TASK_ID]` — Resume implementation after a review rejection (implement role only):
   1. Read `.ai/TASKS.md` and find the target task with status `changes_requested`.
   2. If a TASK_ID is given but its status is not `changes_requested`, print an error and abort.
   3. Read `.ai/REVIEW.md` to load the reviewer's findings as a checklist.
   4. Run as **implement** role, addressing each finding.
   5. Update the task status to `ready_for_review` when done.
   6. If no task has `changes_requested`, print: "No tasks pending rework."
-- `/finish [TASK_ID]` — Complete a task or the current cycle:
+- `@finish [TASK_ID]` — Complete a task or the current cycle:
   1. If a TASK_ID is given, verify that task has status `done`. If not, print its status and abort.
   2. If no TASK_ID is given, verify all tasks have status `done`. If any are not, print the outstanding tasks and abort.
   3. Run `scripts/ai-pr.sh sync` to create or update the PR.
-- `/status [TASK_ID]` — Show cycle progress:
+- `@status [TASK_ID]` — Show cycle progress:
   1. If a TASK_ID is given, print that task's details: ID, scope, status, and next action.
   2. If no TASK_ID is given, print a compact summary of all tasks.
 

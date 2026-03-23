@@ -7,7 +7,11 @@ You are in `review` mode.
 - Validate compliance with architecture and rules in `CLAUDE.md`.
 - Write `.ai/REVIEW.md` with:
   - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
-  - findings ordered by severity
+  - findings ordered by severity, each with:
+    - severity: `blocker` | `major` | `minor` | `nit`
+    - file path and line (if applicable)
+    - description of the issue
+    - whether it is a required fix (`blocker` and `major` are always required)
   - required fixes (if any)
 - Update `.ai/TASKS.md` for the task:
   - set status to `done` when verdict is `PASS` or `PASS_WITH_NOTES`
