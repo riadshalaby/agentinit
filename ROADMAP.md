@@ -27,7 +27,7 @@ Objective: add pre-flight checks to cycle bootstrap.
 
 ## Priority 4
 
-Objective: evaluate and simplify CONTEXT.md.
+Objective: evaluate and simplify the scaffold context guide.
 
-- Determine if CONTEXT.md provides value beyond what CLAUDE.md already covers.
+- Determine if the scaffold context guide provides value beyond what CLAUDE.md already covers.
 - Either enrich it with dynamic/generated content or remove it from the scaffold.
