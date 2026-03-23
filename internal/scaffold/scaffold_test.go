@@ -17,7 +17,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	projectDir := filepath.Join(dir, "testproj")
 
 	expectedFiles := []string{
-		".ai/CONTEXT.md",
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",

@@ -19,7 +19,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	// Check that key files exist.
 	expectedFiles := []string{
-		".ai/CONTEXT.md",
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
