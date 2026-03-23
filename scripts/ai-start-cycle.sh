@@ -66,6 +66,16 @@ main() {
   require_cmd git
   validate_branch_name "$branch_name"
 
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    die "working tree is dirty — commit or stash changes before starting a new cycle"
+  fi
+
+  if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    die "untracked files present — commit, stash, or gitignore them before starting a new cycle"
+  fi
+
+  require_cmd gh
+
   if git rev-parse --verify --quiet "refs/heads/$branch_name" >/dev/null; then
     die "branch '$branch_name' already exists locally"
   fi
