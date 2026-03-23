@@ -4,14 +4,21 @@ Append-only role handoff log. Each role adds one entry when its step is complete
 
 ## Entry Template
 
-- Timestamp (UTC):
-- Task ID:
-- Role: planner | implementer | reviewer
-- Agent: claude | codex
-- User start confirmation: yes
-- Summary:
-- Files changed:
-- Validation:
-- Commit: hash + Conventional Commit message (implementer only)
-- Verdict: PASS | PASS_WITH_NOTES | FAIL (reviewer only)
-- Next role:
+Each entry uses this exact structure. Omit fields marked as role-specific when they do not apply.
+
+---
+
+### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
+
+| Field | Value |
+|-------|-------|
+| Agent | claude \| codex |
+| Summary | One-sentence description of work done |
+| Files Changed | Comma-separated list of changed files |
+| Validation | Commands run and outcomes (implement only) |
+| Commit | `<hash> <conventional commit message>` (implement only) |
+| Verdict | PASS \| PASS_WITH_NOTES \| FAIL (review only) |
+| Blocking Findings | Numbered list or "none" (review only) |
+| Next Role | plan \| implement \| review \| none |
+
+---
