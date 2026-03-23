@@ -22,3 +22,14 @@ You are in `implement` mode.
   - commit hash and commit message
   - next role `review`
 - Do not redesign architecture or invent requirements.
+
+## Rework after rejection (`@rework`)
+- Read `.ai/REVIEW.md` and treat every required-fix finding as a checklist item.
+- Address each finding. Do not skip any.
+- Re-run the required validations from `CLAUDE.md`.
+- Stage all changes with `git add -A`.
+- Create exactly one commit with a Conventional Commit message that references the rework (e.g. `fix(<scope>): address review findings`).
+- Update `.ai/TASKS.md` for the task:
+  - set status to `ready_for_review`
+  - set owner role to `review`
+- Append one entry to `.ai/HANDOFF.md` with the same fields as a normal implementation handoff.
