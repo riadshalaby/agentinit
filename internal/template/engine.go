@@ -11,7 +11,7 @@ import (
 
 // filenameMapping translates template filenames to output filenames.
 var filenameMapping = map[string]string{
-	"gitignore.tmpl":    ".gitignore",
+	"gitignore.tmpl":     ".gitignore",
 	"gitattributes.tmpl": ".gitattributes",
 }
 
