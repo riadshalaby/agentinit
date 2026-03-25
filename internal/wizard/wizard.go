@@ -44,7 +44,7 @@ func Run(cmdr prereq.Commander) error {
 	return run(cmdr, huhUI{}, cwd, scaffold.Run)
 }
 
-func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) error) error {
+func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
 	report := scanPrereqs(cmdr)
 	if err := ui.Note("Checking your system...", formatScanReport(report)); err != nil {
 		return err
@@ -122,7 +122,7 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 	return runScaffoldStep(ui, cwd, scaffoldFn)
 }
 
-func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) error) error {
+func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
 	settings, err := ui.CollectProjectSettings(cwd)
 	if err != nil {
 		return err
@@ -131,7 +131,12 @@ func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir s
 		return err
 	}
 
-	return scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.InitGit)
+	result, err := scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.InitGit)
+	if err != nil {
+		return err
+	}
+	title, body := scaffold.FormatWizardSummary(scaffold.BuildSummary(result))
+	return ui.Note(title, body)
 }
 
 func (huhUI) Note(title, body string) error {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"regexp"
@@ -21,9 +22,10 @@ var (
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
 
 var (
-	runWizard   = wizard.Run
-	runScaffold = scaffold.Run
-	stdinStat   = func() (fs.FileInfo, error) { return os.Stdin.Stat() }
+	runWizard             = wizard.Run
+	runScaffold           = scaffold.Run
+	stdinStat             = func() (fs.FileInfo, error) { return os.Stdin.Stat() }
+	cliOutput   io.Writer = os.Stdout
 )
 
 var initCmd = &cobra.Command{
@@ -53,7 +55,13 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		return runScaffold(name, projectType, dir, !noGit)
+		result, err := runScaffold(name, projectType, dir, !noGit)
+		if err != nil {
+			return err
+		}
+
+		_, err = fmt.Fprintln(cliOutput, scaffold.FormatCLISummary(scaffold.BuildSummary(result)))
+		return err
 	},
 }
 

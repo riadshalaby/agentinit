@@ -2,7 +2,7 @@
 
 Status: **approved**
 
-Goal: Add an interactive setup wizard to `agentinit init` that detects the user's OS, checks for prerequisite tools, offers to install missing ones via the platform's preferred package manager, and collects project settings — all through a polished TUI powered by `charmbracelet/huh` (ROADMAP Priorities 1–2).
+Goal: Add an interactive setup wizard to `agentinit init` that detects the user's OS, checks for prerequisite tools, offers to install missing ones via the platform's preferred package manager, collects project settings, and finishes with a rich summary — all through a polished TUI powered by `charmbracelet/huh` (ROADMAP Priorities 1–3).
 
 ## Architecture decisions
 
@@ -15,8 +15,9 @@ Goal: Add an interactive setup wizard to `agentinit init` that detects the user'
 |------|---------|-------|
 | T-001 | P1 | Platform detection, tool checking, and installation engine |
 | T-002 | P1 + P2 | Interactive wizard flow with `huh` TUI, integrated into `init` |
+| T-003 | P3 | Shared scaffold result with dual summary renderers for wizard and CLI |
 
-T-001 must be implemented before T-002.
+T-001 → T-002 → T-003 (sequential).
 
 ---
 
@@ -258,9 +259,205 @@ Reuse existing `printSummary` output, or wrap in a `huh.NewNote()` for visual co
 
 ---
 
+## T-003 — Shared scaffold result with dual summaries
+
+### Rationale
+
+The current `printSummary` in `scaffold.go` is minimal and tightly coupled to `scaffold.Run`. ROADMAP P3 now needs richer completion output in two places:
+- interactive wizard completion
+- non-interactive `agentinit init <name> ...`
+
+Approach selected: return a structured scaffold result from `internal/scaffold`, then render it differently for CLI and wizard. This keeps one source of truth for completion data while allowing a polished final wizard screen and consistent content across both entry points.
+
+### Files to modify
+
+| Action | File | Purpose |
+|--------|------|---------|
+| Modify | `internal/scaffold/scaffold.go` | Return structured scaffold result instead of printing inline summary |
+| Create | `internal/scaffold/result.go` | Shared completion/result types and key-path metadata |
+| Create | `internal/scaffold/summary.go` | Shared summary content builder plus CLI formatter |
+| Create | `internal/scaffold/summary_test.go` | Unit tests for shared summary/result formatting |
+| Modify | `internal/wizard/wizard.go` | Render a final TUI summary from the shared scaffold result |
+| Modify | `internal/wizard/wizard_test.go` | Cover final wizard summary content and manual-link flow |
+| Modify | `cmd/init.go` | Print the CLI summary after non-interactive scaffolding completes |
+| Modify | `internal/scaffold/scaffold_test.go` | Adjust tests for the new `Run` return value |
+
+### Design
+
+**1. `result.go` — Shared scaffold result**
+
+Move completion data out of ad hoc printing and into a reusable result value:
+
+```go
+type Result struct {
+    ProjectName        string
+    ProjectType        string
+    TargetDir          string
+    GitInitDone        bool
+    DocumentationPath  string
+    KeyPaths           []KeyPath
+    ValidationCommands []template.ValidationCommand
+}
+
+type KeyPath struct {
+    Path        string
+    Description string
+}
+```
+
+`scaffold.Run(...)` should become:
+
+```go
+func Run(name, projectType, dir string, initGit bool) (Result, error)
+```
+
+The result is populated from data the scaffold already knows:
+- target directory
+- whether git init ran
+- overlay validation commands
+- stable key paths that are always generated: `README.md`, `CLAUDE.md`, `ROADMAP.md`, `.ai/`, `scripts/`
+
+**2. `summary.go` — Shared content builder and dual renderers**
+
+Keep the actual summary content centralized so wizard and CLI cannot drift semantically.
+
+```go
+type SummaryModel struct {
+    Heading           string
+    DocumentationPath string
+    Rows              []SummaryRow
+    NextSteps         []string
+}
+
+type SummaryRow struct {
+    Label string
+    Value string
+}
+
+func BuildSummary(result Result) SummaryModel
+func FormatCLISummary(model SummaryModel) string
+func FormatWizardSummary(model SummaryModel) (title string, body string)
+```
+
+`BuildSummary` owns the content. The two formatters only control presentation.
+
+**3. Summary content** (what both renderers must include)
+
+**Section A — Documentation**
+
+```
+Documentation: /path/to/project/README.md
+```
+
+Use the generated project's local `README.md` path as the primary documentation link. It is guaranteed to exist, directly relevant to the scaffolded project, and works for both wizard and non-interactive runs.
+
+**Section B — Summary table**
+
+```
+Project scaffold complete!
+
+Name          myproject
+Type          go
+Path          /Users/me/projects/myproject
+Git           initialized
+Documentation /Users/me/projects/myproject/README.md
+README.md     project overview and setup
+CLAUDE.md     project rules and agent workflow
+ROADMAP.md    project goals to edit first
+.ai/          planning, review, and handoff templates
+scripts/      launchers for plan, implement, review, and PR sync
+```
+
+The shared model should define the rows once. CLI can render them in aligned plain text; wizard can render them as a readable note body.
+
+**Section C — Next steps**
+
+Tailored to whether a project type overlay was used:
+
+```
+Next steps:
+1. cd /Users/me/projects/myproject
+2. Edit ROADMAP.md with your project goals
+3. Start a development cycle: scripts/ai-start-cycle.sh feature/<scope>
+4. Run the planner: scripts/ai-plan.sh
+```
+
+If the project type has validation commands (e.g., go overlay), append:
+
+```
+5. Validate the project:
+   go fmt ./...
+   go vet ./...
+   go test ./...
+```
+
+If no overlay-specific validation commands exist, omit step 5 entirely.
+
+**4. Wiring**
+
+**CLI path**
+
+In `cmd/init.go`, after `scaffold.Run(...)` succeeds:
+
+```go
+result, err := runScaffold(name, projectType, dir, !noGit)
+if err != nil {
+    return err
+}
+fmt.Println(scaffold.FormatCLISummary(scaffold.BuildSummary(result)))
+return nil
+```
+
+**Wizard path**
+
+In `internal/wizard/wizard.go`, change the scaffold callback to return `scaffold.Result`, then display the final summary as a closing TUI note:
+
+```go
+result, err := scaffoldFn(...)
+if err != nil {
+    return err
+}
+title, body := scaffold.FormatWizardSummary(scaffold.BuildSummary(result))
+return ui.Note(title, body)
+```
+
+This makes the wizard end inside the TUI instead of dropping straight back to plain terminal output.
+
+**5. Tests**
+
+Test the shared builder/formatters with:
+- base project: documentation path present, no validation section
+- typed project: validation commands included in next steps
+- git enabled vs disabled: status wording correct
+- key paths always include `README.md`, `CLAUDE.md`, `ROADMAP.md`, `.ai/`, and `scripts/`
+- CLI formatter renders aligned plain text without losing rows
+- wizard formatter renders the same content in note-friendly multiline text
+
+Add integration-oriented tests for flow boundaries:
+- `cmd/init.go` non-interactive path prints the CLI summary after scaffold success
+- `wizard.run(...)` shows the final completion note after scaffold success
+- Linux/manual-install flow still reaches the final summary after project collection and scaffold
+
+### Acceptance criteria
+
+- [ ] `scaffold.Run` returns structured completion data instead of printing the final summary inline
+- [ ] Summary includes a documentation link to the generated project's `README.md`
+- [ ] Summary includes a table/list of key generated paths and what each is for
+- [ ] Summary includes clear next steps: `cd`, edit `ROADMAP.md`, start a cycle, run the planner
+- [ ] Summary includes validation commands when a project type overlay is used
+- [ ] Summary omits validation commands when no overlay is used
+- [ ] Wizard shows a final in-TUI summary screen built from the shared result data
+- [ ] Non-interactive `init` prints a CLI summary built from the same shared result data
+- [ ] Shared summary builder/formatters are unit tested
+- [ ] Wizard and CLI tests cover the new completion behavior
+- [ ] `go vet ./...` passes
+- [ ] `go test ./...` passes
+
+---
+
 ## Validation
 
-After both tasks are implemented:
+After all tasks are implemented:
 
 ```
 go fmt ./...
@@ -277,4 +474,4 @@ go run . init foo --type go    # flag mode (no wizard)
 
 ## Implementation order
 
-**T-001 → T-002** (sequential). T-002 imports `internal/prereq` from T-001.
+**T-001 → T-002 → T-003** (sequential). T-003 depends on the scaffold and wizard behavior introduced by T-002.

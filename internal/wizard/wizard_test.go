@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/riadshalaby/agentinit/internal/prereq"
+	"github.com/riadshalaby/agentinit/internal/scaffold"
+	"github.com/riadshalaby/agentinit/internal/template"
 )
 
 type fakeUI struct {
@@ -75,22 +77,27 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	called := false
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) error {
-		called = true
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		if name != "demo" || projectType != "" || targetDir != dir || !initGit {
 			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
 		}
-		return nil
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
 	})
 	if err != nil {
 		t.Fatalf("run() error = %v", err)
 	}
-	if !called {
-		t.Fatal("expected scaffold step to run")
-	}
 	if len(ui.confirmCalls) != 1 || ui.confirmCalls[0].title != "Install missing tools?" {
 		t.Fatalf("confirm calls = %+v, want skip-install prompt", ui.confirmCalls)
+	}
+	last := ui.notes[len(ui.notes)-1]
+	if last.title != "Project scaffold complete!" {
+		t.Fatalf("final note title = %q", last.title)
 	}
 }
 
@@ -126,20 +133,31 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) error { return nil })
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
+	})
 	if err != nil {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if len(ui.notes) < 2 {
-		t.Fatalf("notes = %+v, want scan note and manual install note", ui.notes)
+	if len(ui.notes) < 3 {
+		t.Fatalf("notes = %+v, want scan note, manual install note, and final summary note", ui.notes)
 	}
-	last := ui.notes[len(ui.notes)-1]
-	if !strings.Contains(last.body, "GitHub CLI: https://cli.github.com") {
-		t.Fatalf("manual install note = %q, want GitHub CLI URL", last.body)
+	manual := ui.notes[len(ui.notes)-2]
+	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") {
+		t.Fatalf("manual install note = %q, want GitHub CLI URL", manual.body)
 	}
-	if !strings.Contains(last.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
-		t.Fatalf("manual install note = %q, want ripgrep URL", last.body)
+	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
+		t.Fatalf("manual install note = %q, want ripgrep URL", manual.body)
+	}
+	if ui.notes[len(ui.notes)-1].title != "Project scaffold complete!" {
+		t.Fatalf("final note title = %q", ui.notes[len(ui.notes)-1].title)
 	}
 }
 
@@ -182,7 +200,17 @@ func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) error { return nil })
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		return scaffold.Result{
+			ProjectName:        name,
+			ProjectType:        projectType,
+			TargetDir:          targetDir + "/demo",
+			GitInitDone:        initGit,
+			DocumentationPath:  targetDir + "/demo/README.md",
+			KeyPaths:           []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+			ValidationCommands: []template.ValidationCommand{{Label: "test", Command: "go test ./..."}},
+		}, nil
+	})
 	if err != nil {
 		t.Fatalf("run() error = %v", err)
 	}
@@ -196,12 +224,19 @@ func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
 	if len(installs) != 2 {
 		t.Fatalf("install calls = %v, want 2", installs)
 	}
-	last := ui.notes[len(ui.notes)-1]
-	if !strings.Contains(last.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
-		t.Fatalf("manual install note = %q, want Claude URL", last.body)
+	manual := ui.notes[len(ui.notes)-2]
+	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
+		t.Fatalf("manual install note = %q, want Claude URL", manual.body)
 	}
-	if !strings.Contains(last.body, "Codex: https://github.com/openai/codex") {
-		t.Fatalf("manual install note = %q, want Codex URL", last.body)
+	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
+		t.Fatalf("manual install note = %q, want Codex URL", manual.body)
+	}
+	final := ui.notes[len(ui.notes)-1]
+	if final.title != "Project scaffold complete!" {
+		t.Fatalf("final note title = %q", final.title)
+	}
+	if !strings.Contains(final.body, "go test ./...") {
+		t.Fatalf("final note body = %q", final.body)
 	}
 }
 

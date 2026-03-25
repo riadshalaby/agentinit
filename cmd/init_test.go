@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"io/fs"
 	"testing"
 	"time"
 
 	"github.com/riadshalaby/agentinit/internal/prereq"
+	"github.com/riadshalaby/agentinit/internal/scaffold"
 )
 
 type fakeFileInfo struct {
@@ -23,10 +25,12 @@ func TestInitCommandRunsWizardOnTTYWithoutArgs(t *testing.T) {
 	originalWizard := runWizard
 	originalScaffold := runScaffold
 	originalStdinStat := stdinStat
+	originalCLIOutput := cliOutput
 	t.Cleanup(func() {
 		runWizard = originalWizard
 		runScaffold = originalScaffold
 		stdinStat = originalStdinStat
+		cliOutput = originalCLIOutput
 	})
 
 	wizardCalled := false
@@ -34,9 +38,9 @@ func TestInitCommandRunsWizardOnTTYWithoutArgs(t *testing.T) {
 		wizardCalled = true
 		return nil
 	}
-	runScaffold = func(name, projectType, dir string, initGit bool) error {
+	runScaffold = func(name, projectType, dir string, initGit bool) (scaffold.Result, error) {
 		t.Fatal("scaffold path should not run in wizard mode")
-		return nil
+		return scaffold.Result{}, nil
 	}
 	stdinStat = func() (fs.FileInfo, error) {
 		return fakeFileInfo{mode: fs.ModeCharDevice}, nil
@@ -70,6 +74,7 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 	originalWizard := runWizard
 	originalScaffold := runScaffold
 	originalStdinStat := stdinStat
+	originalCLIOutput := cliOutput
 	originalType := projectType
 	originalDir := targetDir
 	originalNoGit := noGit
@@ -77,6 +82,7 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 		runWizard = originalWizard
 		runScaffold = originalScaffold
 		stdinStat = originalStdinStat
+		cliOutput = originalCLIOutput
 		projectType = originalType
 		targetDir = originalDir
 		noGit = originalNoGit
@@ -90,13 +96,22 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 		return nil
 	}
 
+	var output bytes.Buffer
+	cliOutput = &output
 	called := false
-	runScaffold = func(name, projectType, dir string, initGit bool) error {
+	runScaffold = func(name, projectType, dir string, initGit bool) (scaffold.Result, error) {
 		called = true
 		if name != "demo" || projectType != "go" || dir != targetDir || initGit {
 			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, dir, initGit)
 		}
-		return nil
+		return scaffold.Result{
+			ProjectName:       name,
+			ProjectType:       projectType,
+			TargetDir:         dir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: dir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
 	}
 	stdinStat = func() (fs.FileInfo, error) {
 		return fakeFileInfo{mode: fs.ModeCharDevice}, nil
@@ -107,5 +122,11 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("expected scaffold path to run")
+	}
+	if got := output.String(); got == "" {
+		t.Fatal("expected CLI summary output")
+	}
+	if got := output.String(); !bytes.Contains([]byte(got), []byte("Project scaffold complete!")) {
+		t.Fatalf("CLI output = %q", got)
 	}
 }

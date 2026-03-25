@@ -6,40 +6,76 @@ Review Round: **1**
 
 Reviewed: 2026-03-25
 
-Scope: T-001 — Platform detection and prerequisite engine (`internal/prereq`)
+Scope: T-002 — Interactive wizard with `huh` TUI (`internal/wizard` + `cmd/init.go`)
 
 Commit: `62c6042 feat(init): add interactive setup wizard`
 
 ## Findings
 
-### 1. `InstallPackageManager` Homebrew command is broken at runtime
-
-- **Severity**: major
-- **File**: `internal/prereq/prereq.go` line 62
-- **Required fix**: yes
-- **Description**: The brew install path passes `"$(curl -fsSL ...)"` (with literal double quotes) as the `-c` argument to `/bin/bash`. When invoked via Go's `exec.Command`, there is no outer shell to pre-evaluate the `$(...)` command substitution. Bash receives the string, evaluates the command substitution inside double quotes, but the double quotes cause the entire curl output (the Homebrew install script) to be treated as a single "command name" rather than a multi-line script. This will fail at runtime with a "command not found" or similar error.
-- **Fix**: Replace the `-c` argument with one of:
-  - `eval "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` — `eval` processes the fetched text as commands
-  - `curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash` — pipe approach
-
-### 2. No test coverage for Chocolatey `InstallPackageManager` path
+### 1. Duplicate `validNamePattern` regex
 
 - **Severity**: minor
-- **File**: `internal/prereq/prereq_test.go`
+- **File**: `cmd/init.go` line 21, `internal/wizard/wizard.go` line 15
 - **Required fix**: no
-- **Description**: Tests cover the brew and empty-PM paths of `InstallPackageManager`, but the `"choco"` case (line 63-64) has no corresponding test. Adding a test analogous to `TestInstallPackageManagerRunsHomebrewInstaller` for the choco path would improve confidence.
+- **Description**: The project name regex `^[a-zA-Z][a-zA-Z0-9._-]*$` is defined identically in both files. If one is updated without the other, the flag path and wizard path will validate differently. Consider extracting the pattern to a shared location (e.g., a small `internal/validate` package or exporting from `wizard`).
 
-### 3. Missing `DetectOS` tests for Windows and fallback OS
+### 2. No test for Linux + "install" → manual URLs flow
+
+- **Severity**: minor
+- **File**: `internal/wizard/wizard_test.go`
+- **Required fix**: no
+- **Description**: The code path at `wizard.go:85-88` (Linux, user says "Yes" to install → shows manual URLs instead of PM prompts) is correct but untested. The existing `TestRunSkipsInstallAndScaffoldsProject` uses Linux but the user declines install. A test confirming the "Yes" path on Linux would strengthen coverage.
+
+### 3. No explicit summary step after scaffold
 
 - **Severity**: nit
-- **File**: `internal/prereq/prereq_test.go`
+- **File**: `internal/wizard/wizard.go`
 - **Required fix**: no
-- **Description**: `detectOS` is only tested implicitly via `TestScanDetectsPackageManagerAndTools` for `"darwin"`. No test verifies that `"windows"` maps to `Windows` or that an unrecognized GOOS (e.g. `"freebsd"`) falls through to `Linux`.
+- **Description**: Plan Step 7 mentions a summary display. The implementation delegates to `scaffold.Run()` which already prints a summary (`"Project scaffold complete!"` with name, type, path, git status, and next steps). This is acceptable — just noting the plan deviation is intentional.
 
 ## Required Fixes
 
-1. Fix the Homebrew install command in `InstallPackageManager` so it correctly executes the downloaded install script when run via `exec.Command` (finding #1).
+None.
+
+## Plan Compliance
+
+| Plan Requirement | Status |
+|---|---|
+| `cmd/init.go`: `MaximumNArgs(1)` | ✅ |
+| TTY detection via `os.Stdin.Stat()` + `ModeCharDevice` | ✅ |
+| No-arg TTY → wizard; arg → flag path | ✅ |
+| Step 1: `prereq.Scan` + display results | ✅ |
+| Step 2: "Install missing tools?" skip gate | ✅ |
+| Step 3: PM gate (macOS/Windows, PM not installed, installable tools exist) | ✅ |
+| Step 3: PM declined → fallback URLs → scaffold | ✅ |
+| Step 4: Per-tool prompts, default Yes=required / No=optional | ✅ |
+| Step 4: Manual URLs for tools without PM install | ✅ |
+| Step 5: Project settings form (name, type, dir, git) | ✅ |
+| Step 5: Validation — name regex, directory exists | ✅ |
+| Step 6: `scaffold.Run` called with collected settings | ✅ |
+| Step 7: Summary | ✅ (via `scaffold.Run`) |
+| Linux → empty PM → manual URLs only | ✅ |
+| `ui` interface for testability | ✅ |
+
+## Acceptance Criteria
+
+| Criterion | Met |
+|---|---|
+| `init` no-arg TTY launches wizard | ✅ Tested: `TestInitCommandRunsWizardOnTTYWithoutArgs` |
+| Flag path unchanged | ✅ Tested: `TestInitCommandUsesFlagPathWithArgument` |
+| Skip-all works | ✅ Tested: `TestRunSkipsInstallAndScaffoldsProject` |
+| PM gate works on macOS/Windows | ✅ Tested: `TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined` |
+| Linux shows URLs | ✅ Code correct; partial test coverage |
+| Project name validated | ✅ Tested: `TestValidateProjectSettingsRejectsInvalidProjectName` |
+| Scaffold runs | ✅ Tested in all wizard flow tests |
+| `go vet` passes | ✅ Confirmed |
+| `go test` passes | ✅ 25/25 all pass |
+
+## Validation
+
+- `go vet ./...` — PASS
+- `go test ./...` — 25/25 PASS (all packages)
 
 ## Verdict
 
-`FAIL`
+`PASS_WITH_NOTES`

@@ -21,3 +21,11 @@ Objective: Keep the wizard interaction explicit and user-friendly.
 - Ask the user at each major step, with sensible defaults.
 - Allow users to skip optional installs or keep existing tools.
 - Allow the user to skip any installations and just create the project
+
+## Priority 3
+
+Objective: Inform the user what was done and how to use it.
+
+- Offer a link to the documentation.
+- Show a summary table of what was done and where to find each result.
+- Include clear next steps (for example: how to start, test, and modify the generated project).
