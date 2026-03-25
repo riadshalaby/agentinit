@@ -43,16 +43,16 @@ The wizard checks these tools:
 |------|----------|--------------|
 | GitHub CLI (`gh`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
 | ripgrep (`rg`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
-| Claude (`claude`) | no | Manual install link |
-| Codex (`codex`) | no | Manual install link |
+| Claude (`claude`) | no | Homebrew cask on macOS, official installer command on Windows, manual install link on Linux |
+| Codex (`codex`) | no | Homebrew cask on macOS, `npm install -g @openai/codex` on Windows, manual install link on Linux |
 
 Platform behavior:
 
-- macOS: prefers Homebrew and can offer to install Homebrew first if it is missing.
-- Windows: prefers Chocolatey and can offer to install Chocolatey first if it is missing.
+- macOS: prefers Homebrew and can offer to install Homebrew first if it is missing. `gh`, `rg`, Claude, and Codex all install through Homebrew when available.
+- Windows: prefers Chocolatey for `gh` and `rg`, but Claude and Codex use their own Windows install paths. Claude uses the official `install.cmd` flow, and Codex uses `npm install -g @openai/codex` only when `npm` is available.
 - Linux: does not assume a package manager; the wizard shows official install URLs instead.
 
-The wizard lets you skip all installs and scaffold the project immediately, or confirm installs one tool at a time. Required tools default to install, optional tools default to skip.
+The wizard lets you skip all installs and scaffold the project immediately, or confirm installs one tool at a time. Required tools default to install, optional tools default to skip. If you decline Homebrew on macOS, all Homebrew-backed tools fall back to manual links. If you decline Chocolatey on Windows, only `gh` and `rg` fall back; Claude and Codex still use their Windows-specific install flows when available.
 
 ### Examples
 

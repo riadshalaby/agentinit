@@ -40,6 +40,7 @@
   - waits for explicit user start signal
   - implements `.ai/PLAN.md`
   - updates tests
+  - updates affected documentation and code comments whenever behavior, interfaces, or workflows change
   - stages files with `git add -A`
   - commits with a Conventional Commit message
   - updates `.ai/TASKS.md` status to `ready_for_review`
