@@ -11,18 +11,18 @@ import (
 )
 
 // Run orchestrates the full scaffold process.
-func Run(name, projectType, dir string, initGit bool) error {
+func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	targetDir := filepath.Join(dir, name)
 
 	// Check target does not exist.
 	if _, err := os.Stat(targetDir); err == nil {
-		return fmt.Errorf("directory %s already exists", targetDir)
+		return Result{}, fmt.Errorf("directory %s already exists", targetDir)
 	}
 
 	// Resolve overlay.
 	ov, err := overlay.Get(projectType)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
 
 	// Build project data.
@@ -36,27 +36,22 @@ func Run(name, projectType, dir string, initGit bool) error {
 	// Render all templates.
 	files, err := template.RenderAll(data)
 	if err != nil {
-		return fmt.Errorf("render templates: %w", err)
+		return Result{}, fmt.Errorf("render templates: %w", err)
 	}
 
 	// Write files.
 	if err := WriteFiles(targetDir, files); err != nil {
-		return fmt.Errorf("write files: %w", err)
+		return Result{}, fmt.Errorf("write files: %w", err)
 	}
-
-	fmt.Printf("Created project %s in %s\n", name, targetDir)
 
 	// Git init.
 	if initGit {
 		if err := gitInit(targetDir); err != nil {
-			return fmt.Errorf("git init: %w", err)
+			return Result{}, fmt.Errorf("git init: %w", err)
 		}
-		fmt.Println("Initialized git repository with initial commit.")
 	}
 
-	// Print summary.
-	printSummary(name, projectType, targetDir, initGit)
-	return nil
+	return buildResult(name, projectType, targetDir, initGit, ov.ValidationCommands), nil
 }
 
 func gitInit(dir string) error {
@@ -78,22 +73,4 @@ func gitInit(dir string) error {
 		}
 	}
 	return nil
-}
-
-func printSummary(name, projectType, dir string, gitInitDone bool) {
-	fmt.Println()
-	fmt.Println("Project scaffold complete!")
-	fmt.Println()
-	fmt.Printf("  Name: %s\n", name)
-	if projectType != "" {
-		fmt.Printf("  Type: %s\n", projectType)
-	}
-	fmt.Printf("  Path: %s\n", dir)
-	fmt.Printf("  Git:  %v\n", gitInitDone)
-	fmt.Println()
-	fmt.Println("Next steps:")
-	fmt.Printf("  cd %s\n", dir)
-	fmt.Println("  # Edit ROADMAP.md with your project goals")
-	fmt.Println("  # Run: scripts/ai-start-cycle.sh feature/<scope>")
-	fmt.Println("  # Run: scripts/ai-plan.sh")
 }
