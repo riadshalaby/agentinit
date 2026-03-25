@@ -78,8 +78,14 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 func TestInstallToolRunsPackageManagerCommand(t *testing.T) {
 	cmdr := &mockCommander{}
 	tool := Registry()[0]
+	plan := InstallPlan{
+		Tool:    tool,
+		Label:   "Homebrew",
+		Command: "brew install gh",
+		Auto:    true,
+	}
 
-	if err := InstallTool(cmdr, tool, PackageManager{Name: "brew"}); err != nil {
+	if err := InstallTool(cmdr, plan); err != nil {
 		t.Fatalf("InstallTool() error = %v", err)
 	}
 
@@ -101,8 +107,9 @@ func TestInstallToolRunsPackageManagerCommand(t *testing.T) {
 func TestInstallToolReturnsFallbackErrorWithoutPackageManagerCommand(t *testing.T) {
 	cmdr := &mockCommander{}
 	tool := Registry()[2]
+	plan := InstallPlan{Tool: tool}
 
-	err := InstallTool(cmdr, tool, PackageManager{Name: "brew"})
+	err := InstallTool(cmdr, plan)
 	if err == nil {
 		t.Fatal("InstallTool() error = nil, want error")
 	}
@@ -186,9 +193,117 @@ func TestInstallPackageManagerReturnsErrorWithoutSupportedManager(t *testing.T) 
 
 func TestInstallToolPropagatesRunnerError(t *testing.T) {
 	cmdr := &mockCommander{runErr: errors.New("boom")}
+	plan := InstallPlan{
+		Tool:    Registry()[1],
+		Label:   "Chocolatey",
+		Command: "choco install ripgrep",
+		Auto:    true,
+	}
 
-	err := InstallTool(cmdr, Registry()[1], PackageManager{Name: "choco"})
+	err := InstallTool(cmdr, plan)
 	if err == nil || err.Error() != "boom" {
 		t.Fatalf("InstallTool() error = %v, want boom", err)
 	}
+}
+
+func TestResolveInstallPlanUsesHomebrewForClaudeAndCodexOnMacOS(t *testing.T) {
+	cmdr := &mockCommander{}
+	report := Report{
+		OS: Darwin,
+		PackageManager: PackageManager{
+			Name:      "brew",
+			Installed: true,
+		},
+	}
+
+	claudePlan := ResolveInstallPlan(cmdr, toolByBinary("claude"), report)
+	if !claudePlan.Auto || claudePlan.Label != "Homebrew" || claudePlan.Command != "brew install --cask claude-code" {
+		t.Fatalf("Claude plan = %+v", claudePlan)
+	}
+
+	codexPlan := ResolveInstallPlan(cmdr, toolByBinary("codex"), report)
+	if !codexPlan.Auto || codexPlan.Label != "Homebrew" || codexPlan.Command != "brew install --cask codex" {
+		t.Fatalf("Codex plan = %+v", codexPlan)
+	}
+}
+
+func TestResolveInstallPlanUsesWindowsInstallerForClaude(t *testing.T) {
+	cmdr := &mockCommander{}
+	report := Report{
+		OS: Windows,
+		PackageManager: PackageManager{
+			Name:      "choco",
+			Installed: true,
+		},
+	}
+
+	plan := ResolveInstallPlan(cmdr, toolByBinary("claude"), report)
+	if !plan.Auto || plan.Label != "installer" || !plan.UseShell {
+		t.Fatalf("plan = %+v", plan)
+	}
+}
+
+func TestResolveInstallPlanRequiresNpmForWindowsCodex(t *testing.T) {
+	cmdr := &mockCommander{
+		lookPath: map[string]error{
+			"npm": os.ErrNotExist,
+		},
+	}
+	report := Report{
+		OS: Windows,
+		PackageManager: PackageManager{
+			Name:      "choco",
+			Installed: true,
+		},
+	}
+
+	plan := ResolveInstallPlan(cmdr, toolByBinary("codex"), report)
+	if plan.Auto {
+		t.Fatalf("plan = %+v, want manual fallback", plan)
+	}
+	if plan.FallbackURL != "https://github.com/openai/codex" {
+		t.Fatalf("plan = %+v", plan)
+	}
+}
+
+func TestResolveInstallPlanKeepsLinuxCodexAsManual(t *testing.T) {
+	cmdr := &mockCommander{}
+	report := Report{OS: Linux}
+
+	plan := ResolveInstallPlan(cmdr, toolByBinary("codex"), report)
+	if plan.Auto {
+		t.Fatalf("plan = %+v, want manual fallback", plan)
+	}
+}
+
+func TestInstallToolRunsWindowsShellCommand(t *testing.T) {
+	cmdr := &mockCommander{}
+	plan := InstallPlan{
+		Tool:     toolByBinary("claude"),
+		Label:    "installer",
+		Command:  "curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd",
+		Auto:     true,
+		UseShell: true,
+	}
+
+	if err := InstallTool(cmdr, plan); err != nil {
+		t.Fatalf("InstallTool() error = %v", err)
+	}
+
+	if len(cmdr.runCalls) != 1 {
+		t.Fatalf("Run() calls = %d, want 1", len(cmdr.runCalls))
+	}
+	call := cmdr.runCalls[0]
+	if call.name != "cmd" || len(call.args) != 2 || call.args[0] != "/C" {
+		t.Fatalf("Run() = %+v, want cmd /C shell invocation", call)
+	}
+}
+
+func toolByBinary(binary string) Tool {
+	for _, tool := range Registry() {
+		if tool.Binary == binary {
+			return tool
+		}
+	}
+	panic("tool not found: " + binary)
 }

@@ -2,7 +2,7 @@
 
 Status: **approved**
 
-Goal: Add an interactive setup wizard to `agentinit init` that detects the user's OS, checks for prerequisite tools, offers to install missing ones via the platform's preferred package manager, collects project settings, and finishes with a rich summary — all through a polished TUI powered by `charmbracelet/huh` (ROADMAP Priorities 1–3).
+Goal: Add an interactive setup wizard to `agentinit init` that detects the user's OS, checks for prerequisite tools, offers to install missing ones via the platform's preferred package manager or the tool's official installer, collects project settings, and finishes with a rich summary — all through a polished TUI powered by `charmbracelet/huh` (ROADMAP Priorities 1–3 plus follow-up prerequisite policy refinement).
 
 ## Architecture decisions
 
@@ -16,8 +16,9 @@ Goal: Add an interactive setup wizard to `agentinit init` that detects the user'
 | T-001 | P1 | Platform detection, tool checking, and installation engine |
 | T-002 | P1 + P2 | Interactive wizard flow with `huh` TUI, integrated into `init` |
 | T-003 | P3 | Shared scaffold result with dual summary renderers for wizard and CLI |
+| T-004 | P1 refinement | Platform-specific Claude/Codex installs: Homebrew on macOS, custom Windows installers, links-only on Linux |
 
-T-001 → T-002 → T-003 (sequential).
+T-001 → T-002 → T-003 → T-004 (sequential).
 
 ---
 
@@ -474,4 +475,188 @@ go run . init foo --type go    # flag mode (no wizard)
 
 ## Implementation order
 
-**T-001 → T-002 → T-003** (sequential). T-003 depends on the scaffold and wizard behavior introduced by T-002.
+**T-001 → T-002 → T-003 → T-004** (sequential). T-003 depends on the scaffold and wizard behavior introduced by T-002. T-004 refines the prerequisite install policy introduced by T-001/T-002.
+
+---
+
+## T-004 — Platform-specific Claude and Codex install policy
+
+### Rationale
+
+Current behavior treats Claude and Codex as manual-link-only tools on every platform because they have no `InstallCmds` entries in the prerequisite registry. That is too limited for macOS and Windows.
+
+Revised user-selected policy:
+- macOS:
+  - Claude via Homebrew cask: `brew install --cask claude-code`
+  - Codex via Homebrew cask: `brew install --cask codex`
+- Windows:
+  - Claude via user-specified command: `curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd`
+  - Codex via `npm install -g @openai/codex`, but only after explicitly checking that `npm` is available
+- Linux:
+  - Claude and Codex remain links-only/manual-install resources
+
+`gh` and `rg` remain unchanged:
+- macOS: Homebrew
+- Windows: Chocolatey
+- Linux: links/manual resources
+
+### Files to modify
+
+| Action | File | Purpose |
+|--------|------|---------|
+| Modify | `internal/prereq/tool.go` | Extend tool metadata to support platform-specific install commands by OS and install label |
+| Modify | `internal/prereq/prereq.go` | Add installer resolution logic that can choose package-manager or official installer commands |
+| Modify | `internal/wizard/wizard.go` | Update prompt/copy so Claude and Codex can be offered with brew/custom labels on macOS/Windows |
+| Modify | `internal/prereq/prereq_test.go` | Add unit tests for Claude/Codex install resolution across macOS, Windows, and Linux |
+| Modify | `internal/wizard/wizard_test.go` | Add flow tests for macOS/Windows installer prompts and Linux links-only behavior |
+
+### Design
+
+**1. Add installer metadata by OS**
+
+The current `Tool` model only supports `InstallCmds` keyed by package-manager name. That is sufficient for `gh` and `rg`, but not for Claude and Codex. Replace or extend it with a more explicit installer model:
+
+```go
+type InstallMethod struct {
+    Label   string // e.g. "Homebrew", "Chocolatey", "installer", "npm"
+    Command string
+    Requires []string // binaries that must exist before running the command, e.g. {"npm"}
+}
+
+type Tool struct {
+    Name             string
+    Binary           string
+    Required         bool
+    PackageInstalls  map[string]string   // existing brew/choco style installs
+    OSInstalls       map[OS]InstallMethod
+    FallbackURL      string
+}
+```
+
+Population rules:
+- `gh`, `rg`: keep `brew` and `choco` commands; no Linux command
+- `Claude`:
+  - macOS: `Homebrew` / `brew install --cask claude-code`
+  - Windows: `installer` / `curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd`
+  - Linux: no auto-install command, keep fallback URL
+- `Codex`:
+  - macOS: `Homebrew` / `brew install --cask codex`
+  - Windows: `npm` / `npm install -g @openai/codex`, with `Requires: []string{"npm"}`
+  - Linux: no auto-install command, keep fallback URL
+
+If implementation prefers smaller change scope, this can be modeled as an added `InstallStrategy` helper instead of changing the public `Tool` shape broadly. The important requirement is that installer selection can distinguish:
+- package-manager install
+- direct per-OS install
+- per-OS install with prerequisite binary checks
+- links-only fallback
+
+**2. Resolve install strategy from `Report.OS` plus package manager**
+
+Add a resolver in `internal/prereq`:
+
+```go
+type InstallPlan struct {
+    Tool       Tool
+    Label      string
+    Command    string
+    Auto       bool
+    FallbackURL string
+}
+
+func ResolveInstallPlan(tool Tool, report Report) InstallPlan
+```
+
+Resolution rules:
+- If tool has package-manager install for the detected PM and that PM is installed or installable, prefer that.
+- Otherwise, if tool has a direct per-OS install command for the detected OS, use that.
+- Before returning an auto-install plan, verify any `Requires` binaries with `LookPath`.
+- If a required binary is missing, return a non-auto plan with a clear fallback/manual message.
+- Otherwise, return links-only fallback.
+
+This preserves current `gh`/`rg` behavior while making Claude/Codex installable according to the user-selected macOS and Windows policy.
+
+**3. Update command execution for platform-specific installers**
+
+`InstallTool` currently accepts `(tool, pm)` and only knows how to execute package-manager commands. Refactor it to execute a resolved install plan:
+
+```go
+func InstallTool(cmdr Commander, plan InstallPlan) error
+```
+
+Command execution requirements:
+- support simple space-split commands like `npm install -g @openai/codex`
+- support shell-executed commands like `curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd`
+- retain current fallback error shape when `Auto == false`
+- keep stdout/stderr attached through `ExecCommander`
+
+Implementation note:
+- add a shell-execution flag or command mode to `InstallPlan` so multi-step Windows commands are executed via the appropriate shell instead of `strings.Fields`
+- perform the `npm` existence check during plan resolution or immediately before execution so the wizard can show a useful manual-install fallback instead of a raw execution failure
+
+**4. Update wizard wording**
+
+Current prompt format assumes package-manager installs:
+- `Install <tool> via <pm>?`
+
+That is wrong for Claude/Codex once they use official npm installers. Update the copy to use the resolved install label:
+
+Examples:
+- `Install GitHub CLI via Homebrew?`
+- `Install Claude via Homebrew?`
+- `Install Codex via Homebrew?`
+- `Install Claude via installer?`
+- `Install Codex via npm?`
+
+Behavior by platform:
+- macOS:
+  - `gh`, `rg`, Claude, and Codex are all Homebrew-backed installs
+- Windows:
+  - `gh`/`rg` still gated by Chocolatey when needed
+  - Claude uses the custom `install.cmd` flow
+  - Codex uses `npm`, but only if `npm` is present
+- Linux:
+  - Claude/Codex remain links-only
+
+Implementation details:
+- On macOS, declining Homebrew should suppress all Homebrew-backed tool installs, including Claude and Codex, and then fall back to manual links.
+- On Windows, declining Chocolatey should only affect `gh` and `rg`; Claude and Codex should still be handled via their non-Chocolatey Windows strategies.
+- If `npm` is missing on Windows, Codex should not be auto-installed and the wizard should show its fallback resource instead.
+
+**5. Tests**
+
+Add or update tests for these scenarios:
+- macOS with Homebrew installed:
+  - `gh`, `rg`, Claude, and Codex all prompt via Homebrew
+- macOS without Homebrew, user declines Homebrew install:
+  - `gh`, `rg`, Claude, and Codex all fall back to links
+- Windows with Chocolatey installed:
+  - `gh` and `rg` prompt via Chocolatey
+  - Claude prompts via installer command
+  - Codex prompts via npm when `npm` is present
+- Windows without `npm`:
+  - Codex does not prompt for auto-install
+  - Codex appears in the manual-install resources
+- Linux:
+  - Claude and Codex show links only
+  - `gh`/`rg` remain links-only under current Linux policy
+- `InstallTool` executes `brew install --cask claude-code` and `brew install --cask codex` on macOS
+- `InstallTool` executes `curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd` for Windows Claude
+- `InstallTool` executes `npm install -g @openai/codex` for Windows Codex when `npm` is available
+
+### Acceptance criteria
+
+- [ ] Claude uses `brew install --cask claude-code` on macOS
+- [ ] Codex uses `brew install --cask codex` on macOS
+- [ ] Claude uses `curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd` on Windows
+- [ ] Codex uses `npm install -g @openai/codex` on Windows
+- [ ] Windows Codex installation checks for `npm` before offering or running the install
+- [ ] Linux continues to show Claude and Codex as links-only/manual-install resources
+- [ ] `gh` and `rg` continue to use Homebrew on macOS and Chocolatey on Windows
+- [ ] Declining Homebrew on macOS falls back all Homebrew-backed tools, including Claude/Codex, to manual links
+- [ ] Declining Chocolatey on Windows does not suppress Claude/Codex handling
+- [ ] Wizard prompt text distinguishes Homebrew, Chocolatey, installer, and npm installs
+- [ ] `InstallTool` supports both simple commands and shell-based commands
+- [ ] `internal/prereq` tests cover install-plan resolution across OSes
+- [ ] `internal/wizard` tests cover macOS/Windows prompts and Linux links-only flow
+- [ ] `go vet ./...` passes
+- [ ] `go test ./...` passes
