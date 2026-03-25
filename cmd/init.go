@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"regexp"
 
+	"github.com/riadshalaby/agentinit/internal/prereq"
 	"github.com/riadshalaby/agentinit/internal/scaffold"
+	"github.com/riadshalaby/agentinit/internal/wizard"
 	"github.com/spf13/cobra"
 )
 
@@ -17,11 +20,24 @@ var (
 
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
 
+var (
+	runWizard   = wizard.Run
+	runScaffold = scaffold.Run
+	stdinStat   = func() (fs.FileInfo, error) { return os.Stdin.Stat() }
+)
+
 var initCmd = &cobra.Command{
-	Use:   "init <project-name>",
+	Use:   "init [project-name]",
 	Short: "Scaffold a new project with 3-agent AI workflow",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 && isTerminal() {
+			return runWizard(prereq.NewExecCommander())
+		}
+		if len(args) == 0 {
+			return fmt.Errorf("project name argument is required when stdin is not a terminal")
+		}
+
 		name := args[0]
 
 		if !validNamePattern.MatchString(name) {
@@ -37,7 +53,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		return scaffold.Run(name, projectType, dir, !noGit)
+		return runScaffold(name, projectType, dir, !noGit)
 	},
 }
 
@@ -46,4 +62,12 @@ func init() {
 	initCmd.Flags().StringVar(&targetDir, "dir", "", "Target directory (default: current directory)")
 	initCmd.Flags().BoolVar(&noGit, "no-git", false, "Skip git init and initial commit")
 	rootCmd.AddCommand(initCmd)
+}
+
+func isTerminal() bool {
+	info, err := stdinStat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&fs.ModeCharDevice != 0
 }
