@@ -67,19 +67,70 @@ func InstallPackageManager(cmdr Commander, pm PackageManager) error {
 	}
 }
 
-func InstallTool(cmdr Commander, t Tool, pm PackageManager) error {
-	cmd, ok := t.InstallCmds[pm.Name]
-	if !ok || cmd == "" {
-		if t.FallbackURL == "" {
-			return fmt.Errorf("no install command available for %s", t.Name)
+func ResolveInstallPlan(cmdr Commander, tool Tool, report Report) InstallPlan {
+	if cmd, ok := tool.PackageInstalls[report.PackageManager.Name]; ok && cmd != "" && report.PackageManager.Installed {
+		return InstallPlan{
+			Tool:        tool,
+			Label:       installLabelForPackageManager(report.PackageManager.Name),
+			Command:     cmd,
+			Auto:        true,
+			FallbackURL: tool.FallbackURL,
 		}
-		return fmt.Errorf("no install command available for %s; install manually: %s", t.Name, t.FallbackURL)
 	}
 
-	parts := strings.Fields(cmd)
+	if method, ok := tool.OSInstalls[report.OS]; ok && method.Command != "" {
+		for _, requirement := range method.Requires {
+			if _, err := cmdr.LookPath(requirement); err != nil {
+				return InstallPlan{
+					Tool:        tool,
+					Label:       method.Label,
+					FallbackURL: tool.FallbackURL,
+				}
+			}
+		}
+		return InstallPlan{
+			Tool:        tool,
+			Label:       method.Label,
+			Command:     method.Command,
+			Auto:        true,
+			FallbackURL: tool.FallbackURL,
+			UseShell:    method.UseShell,
+		}
+	}
+
+	return InstallPlan{
+		Tool:        tool,
+		FallbackURL: tool.FallbackURL,
+	}
+}
+
+func InstallTool(cmdr Commander, plan InstallPlan) error {
+	if !plan.Auto || plan.Command == "" {
+		if plan.Tool.FallbackURL == "" {
+			return fmt.Errorf("no install command available for %s", plan.Tool.Name)
+		}
+		return fmt.Errorf("no install command available for %s; install manually: %s", plan.Tool.Name, plan.Tool.FallbackURL)
+	}
+
+	if plan.UseShell {
+		return cmdr.Run("cmd", "/C", plan.Command)
+	}
+
+	parts := strings.Fields(plan.Command)
 	if len(parts) == 0 {
-		return fmt.Errorf("invalid install command for %s", t.Name)
+		return fmt.Errorf("invalid install command for %s", plan.Tool.Name)
 	}
 
 	return cmdr.Run(parts[0], parts[1:]...)
+}
+
+func installLabelForPackageManager(name string) string {
+	switch name {
+	case "brew":
+		return "Homebrew"
+	case "choco":
+		return "Chocolatey"
+	default:
+		return name
+	}
 }

@@ -59,9 +59,9 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 
 		if installMissing {
 			pm := report.PackageManager
-			installable := installableTools(missing, pm)
+			packageManaged := packageManagedTools(missing, pm)
 
-			if pm.Name != "" && !pm.Installed && len(installable) > 0 {
+			if pm.Name != "" && !pm.Installed && len(packageManaged) > 0 {
 				confirmed, err := ui.Confirm(
 					fmt.Sprintf("%s is required to install tools. Install it now?", packageManagerDisplayName(pm.Name)),
 					pm.SelfInstallCmd,
@@ -70,51 +70,41 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 				if err != nil {
 					return err
 				}
-				if !confirmed {
-					if err := showManualInstallURLs(ui, missing); err != nil {
-						return err
+				if confirmed {
+					if err := installPackageManager(cmdr, pm); err != nil {
+						return fmt.Errorf("install %s: %w", packageManagerDisplayName(pm.Name), err)
 					}
-					return runScaffoldStep(ui, cwd, scaffoldFn)
+					pm.Installed = true
 				}
-				if err := installPackageManager(cmdr, pm); err != nil {
-					return fmt.Errorf("install %s: %w", packageManagerDisplayName(pm.Name), err)
-				}
-				pm.Installed = true
 			}
 
-			if pm.Name == "" {
-				if err := showManualInstallURLs(ui, missing); err != nil {
+			report.PackageManager = pm
+			plans := resolveInstallPlans(cmdr, missing, report)
+
+			for _, plan := range plans {
+				if !plan.Auto {
+					continue
+				}
+
+				confirmed, err := ui.Confirm(
+					fmt.Sprintf("Install %s via %s?", plan.Tool.Name, plan.Label),
+					plan.Command,
+					defaultInstallChoice(plan.Tool),
+				)
+				if err != nil {
 					return err
 				}
-			} else {
-				for _, result := range missing {
-					tool := result.Tool
-					if _, ok := tool.InstallCmds[pm.Name]; !ok || !pm.Installed {
-						continue
-					}
-
-					confirmed, err := ui.Confirm(
-						fmt.Sprintf("Install %s via %s?", tool.Name, packageManagerDisplayName(pm.Name)),
-						tool.InstallCmds[pm.Name],
-						defaultInstallChoice(tool),
-					)
-					if err != nil {
-						return err
-					}
-					if !confirmed {
-						continue
-					}
-					if err := installTool(cmdr, tool, pm); err != nil {
-						return fmt.Errorf("install %s: %w", tool.Name, err)
-					}
+				if !confirmed {
+					continue
 				}
-
-				manual := manualInstallTools(missing, pm)
-				if len(manual) > 0 {
-					if err := showManualInstallURLs(ui, manual); err != nil {
-						return err
-					}
+				if err := installTool(cmdr, plan); err != nil {
+					return fmt.Errorf("install %s: %w", plan.Tool.Name, err)
 				}
+			}
+
+			manual := manualInstallPlans(plans)
+			if err := showManualInstallURLs(ui, manual); err != nil {
+				return err
 			}
 		}
 	}
@@ -218,17 +208,17 @@ func formatScanReport(report prereq.Report) string {
 	return strings.Join(lines, "\n")
 }
 
-func showManualInstallURLs(ui ui, results []prereq.CheckResult) error {
-	if len(results) == 0 {
+func showManualInstallURLs(ui ui, plans []prereq.InstallPlan) error {
+	if len(plans) == 0 {
 		return nil
 	}
 
 	lines := []string{"Manual install resources:"}
-	for _, result := range results {
-		if result.Tool.FallbackURL == "" {
+	for _, plan := range plans {
+		if plan.FallbackURL == "" {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf("- %s: %s", result.Tool.Name, result.Tool.FallbackURL))
+		lines = append(lines, fmt.Sprintf("- %s: %s", plan.Tool.Name, plan.FallbackURL))
 	}
 
 	return ui.Note("Some tools need manual installation", strings.Join(lines, "\n"))
@@ -244,23 +234,31 @@ func missingResults(results []prereq.CheckResult) []prereq.CheckResult {
 	return missing
 }
 
-func installableTools(results []prereq.CheckResult, pm prereq.PackageManager) []prereq.CheckResult {
+func packageManagedTools(results []prereq.CheckResult, pm prereq.PackageManager) []prereq.CheckResult {
 	installable := make([]prereq.CheckResult, 0, len(results))
 	for _, result := range results {
-		if _, ok := result.Tool.InstallCmds[pm.Name]; ok {
+		if _, ok := result.Tool.PackageInstalls[pm.Name]; ok {
 			installable = append(installable, result)
 		}
 	}
 	return installable
 }
 
-func manualInstallTools(results []prereq.CheckResult, pm prereq.PackageManager) []prereq.CheckResult {
-	manual := make([]prereq.CheckResult, 0, len(results))
+func resolveInstallPlans(cmdr prereq.Commander, results []prereq.CheckResult, report prereq.Report) []prereq.InstallPlan {
+	plans := make([]prereq.InstallPlan, 0, len(results))
 	for _, result := range results {
-		if _, ok := result.Tool.InstallCmds[pm.Name]; ok {
+		plans = append(plans, prereq.ResolveInstallPlan(cmdr, result.Tool, report))
+	}
+	return plans
+}
+
+func manualInstallPlans(plans []prereq.InstallPlan) []prereq.InstallPlan {
+	manual := make([]prereq.InstallPlan, 0, len(plans))
+	for _, plan := range plans {
+		if plan.Auto {
 			continue
 		}
-		manual = append(manual, result)
+		manual = append(manual, plan)
 	}
 	return manual
 }

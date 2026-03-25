@@ -1,6 +1,7 @@
 package wizard
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -117,6 +118,8 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 			Results: []prereq.CheckResult{
 				{Tool: prereq.Registry()[0], Installed: false},
 				{Tool: prereq.Registry()[1], Installed: false},
+				{Tool: prereq.Registry()[2], Installed: false},
+				{Tool: prereq.Registry()[3], Installed: false},
 			},
 		}
 	}
@@ -156,12 +159,18 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
 		t.Fatalf("manual install note = %q, want ripgrep URL", manual.body)
 	}
+	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
+		t.Fatalf("manual install note = %q, want Claude URL", manual.body)
+	}
+	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
+		t.Fatalf("manual install note = %q, want Codex URL", manual.body)
+	}
 	if ui.notes[len(ui.notes)-1].title != "Project scaffold complete!" {
 		t.Fatalf("final note title = %q", ui.notes[len(ui.notes)-1].title)
 	}
 }
 
-func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
+func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 	originalScan := scanPrereqs
 	t.Cleanup(func() {
 		scanPrereqs = originalScan
@@ -184,7 +193,7 @@ func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
 
 	dir := t.TempDir()
 	ui := &fakeUI{
-		confirmValues: []bool{true, true, true},
+		confirmValues: []bool{true, true, true, false, false},
 		settings: projectSettings{
 			Name:        "demo",
 			ProjectType: "go",
@@ -215,21 +224,23 @@ func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if len(ui.confirmCalls) != 3 {
-		t.Fatalf("confirm calls = %+v, want install gate plus two tool prompts", ui.confirmCalls)
+	if len(ui.confirmCalls) != 5 {
+		t.Fatalf("confirm calls = %+v, want install gate plus four tool prompts", ui.confirmCalls)
 	}
-	if !ui.confirmCalls[1].affirmative || !ui.confirmCalls[2].affirmative {
-		t.Fatalf("tool prompts should default to yes for required tools: %+v", ui.confirmCalls)
+	if ui.confirmCalls[1].title != "Install GitHub CLI via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[1])
 	}
 	if len(installs) != 2 {
 		t.Fatalf("install calls = %v, want 2", installs)
 	}
-	manual := ui.notes[len(ui.notes)-2]
-	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
-		t.Fatalf("manual install note = %q, want Claude URL", manual.body)
+	if installs[0] != "brew install gh" || installs[1] != "brew install ripgrep" {
+		t.Fatalf("installs = %v", installs)
 	}
-	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
-		t.Fatalf("manual install note = %q, want Codex URL", manual.body)
+	if ui.confirmCalls[3].title != "Install Claude via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[3])
+	}
+	if ui.confirmCalls[4].title != "Install Codex via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[4])
 	}
 	final := ui.notes[len(ui.notes)-1]
 	if final.title != "Project scaffold complete!" {
@@ -237,6 +248,192 @@ func TestRunPromptsInstallableToolsAndShowsManualLinks(t *testing.T) {
 	}
 	if !strings.Contains(final.body, "go test ./...") {
 		t.Fatalf("final note body = %q", final.body)
+	}
+}
+
+func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS: prereq.Windows,
+			PackageManager: prereq.PackageManager{
+				Name:      "choco",
+				Installed: false,
+			},
+			Results: []prereq.CheckResult{
+				{Tool: prereq.Registry()[0], Installed: false},
+				{Tool: prereq.Registry()[1], Installed: false},
+				{Tool: prereq.Registry()[2], Installed: false},
+				{Tool: prereq.Registry()[3], Installed: false},
+			},
+		}
+	}
+
+	dir := t.TempDir()
+	ui := &fakeUI{
+		confirmValues: []bool{true, false, true},
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   false,
+		},
+	}
+
+	cmdr := &prereqTestCommander{
+		lookPath: map[string]error{
+			"npm": os.ErrNotExist,
+		},
+	}
+
+	var installs []string
+	cmdr.runHook = func(name string, args ...string) {
+		installs = append(installs, name+" "+strings.Join(args, " "))
+	}
+
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("run() error = %v", err)
+	}
+
+	if len(ui.confirmCalls) != 3 {
+		t.Fatalf("confirm calls = %+v", ui.confirmCalls)
+	}
+	if ui.confirmCalls[2].title != "Install Claude via installer?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[2])
+	}
+	if len(installs) != 1 || !strings.Contains(installs[0], "curl -fsSL https://claude.ai/install.cmd") {
+		t.Fatalf("installs = %v", installs)
+	}
+	manual := ui.notes[len(ui.notes)-2]
+	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
+	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
+	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
+}
+
+func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS: prereq.Windows,
+			PackageManager: prereq.PackageManager{
+				Name:      "choco",
+				Installed: true,
+			},
+			Results: []prereq.CheckResult{
+				{Tool: prereq.Registry()[0], Installed: false},
+				{Tool: prereq.Registry()[1], Installed: false},
+				{Tool: prereq.Registry()[2], Installed: false},
+				{Tool: prereq.Registry()[3], Installed: false},
+			},
+		}
+	}
+
+	dir := t.TempDir()
+	ui := &fakeUI{
+		confirmValues: []bool{true, false, false, false, true},
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   false,
+		},
+	}
+
+	cmdr := &prereqTestCommander{}
+
+	var installs []string
+	cmdr.runHook = func(name string, args ...string) {
+		installs = append(installs, name+" "+strings.Join(args, " "))
+	}
+
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("run() error = %v", err)
+	}
+
+	if ui.confirmCalls[4].title != "Install Codex via npm?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[4])
+	}
+	if len(installs) != 1 || installs[0] != "npm install -g @openai/codex" {
+		t.Fatalf("installs = %v", installs)
+	}
+}
+
+func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS: prereq.Linux,
+			Results: []prereq.CheckResult{
+				{Tool: prereq.Registry()[0], Installed: false},
+				{Tool: prereq.Registry()[1], Installed: false},
+				{Tool: prereq.Registry()[2], Installed: false},
+				{Tool: prereq.Registry()[3], Installed: false},
+			},
+		}
+	}
+
+	dir := t.TempDir()
+	ui := &fakeUI{
+		confirmValues: []bool{true},
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   false,
+		},
+	}
+
+	cmdr := &prereqTestCommander{}
+
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+			KeyPaths:          []scaffold.KeyPath{{Path: "README.md", Description: "project overview and setup"}},
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("run() error = %v", err)
+	}
+
+	manual := ui.notes[len(ui.notes)-2]
+	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") ||
+		!strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") ||
+		!strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") ||
+		!strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
+		t.Fatalf("manual install note = %q", manual.body)
 	}
 }
 
@@ -263,10 +460,14 @@ func TestDefaultInstallChoiceFollowsToolRequiredFlag(t *testing.T) {
 }
 
 type prereqTestCommander struct {
-	runHook func(name string, args ...string)
+	lookPath map[string]error
+	runHook  func(name string, args ...string)
 }
 
 func (p *prereqTestCommander) LookPath(file string) (string, error) {
+	if err, ok := p.lookPath[file]; ok {
+		return "", err
+	}
 	return "/mock/bin/" + file, nil
 }
 
