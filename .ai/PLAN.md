@@ -2,238 +2,265 @@
 
 Status: **approved**
 
-Goal: harden the agent workflow so handoffs are reliable and the scaffold produces a complete, correct project (ROADMAP priorities 1–4).
+Goal: Add an interactive setup wizard to `agentinit init` that detects the user's OS, checks for prerequisite tools, offers to install missing ones via the platform's preferred package manager, and collects project settings — all through a polished TUI powered by `charmbracelet/huh` (ROADMAP Priorities 1–2).
+
+## Architecture decisions
+
+1. **Wizard lives in `init`** — `agentinit init` detects whether stdin is a TTY. If yes and no positional arg is provided, it runs the interactive wizard. Otherwise it uses the existing flag-based path. Single entry point, no confusion.
+2. **TUI library: `charmbracelet/huh`** — provides `Confirm`, `Input`, `Select`, and `Note` form components for a polished linear flow.
 
 ## Scope
 
-Four tasks that improve the scaffolded AI workflow:
-
 | Task | ROADMAP | Scope |
 |------|---------|-------|
-| T-001 | P1 | Document the rework flow after review rejection |
-| T-002 | P2 | Standardize HANDOFF.md entry format |
-| T-003 | P3 | Add pre-flight checks to cycle bootstrap |
-| T-004 | P4 | Remove redundant CONTEXT.md from scaffold |
+| T-001 | P1 | Platform detection, tool checking, and installation engine |
+| T-002 | P1 + P2 | Interactive wizard flow with `huh` TUI, integrated into `init` |
 
-Every change must be applied to **both** the live project files and the embedded scaffold templates (`internal/template/templates/base/`). Tests must stay green.
+T-001 must be implemented before T-002.
 
 ---
 
-## T-001 — Rework flow after review rejection
+## T-001 — Platform detection and prerequisite engine
 
 ### Rationale
-The `@rework` shorthand command is defined in CLAUDE.md, but the role prompts and the "AI Workflow Rules" section don't explain the rework re-entry path. An implementer agent has no instruction on how to consume REVIEW.md findings or re-commit after a rejection.
 
-### Files to modify
-| File (live) | File (template) |
-|-------------|-----------------|
-| `CLAUDE.md` | `internal/template/templates/base/CLAUDE.md.tmpl` |
-| `.ai/prompts/implementer.md` | `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
-| `.ai/prompts/reviewer.md` | `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+The wizard needs a non-interactive layer that can detect the OS, find (or not find) package managers and tools, and run install commands. Separating this from the UI makes it testable and reusable.
 
-### Changes
+### New package: `internal/prereq`
 
-**1. CLAUDE.md / CLAUDE.md.tmpl — "AI Workflow Rules" → Implement Mode**
+#### Files to create
 
-Add a rework bullet block after the existing implement-mode bullets:
+| File | Purpose |
+|------|---------|
+| `internal/prereq/platform.go` | OS and package-manager detection |
+| `internal/prereq/tool.go` | Tool registry with per-platform install commands |
+| `internal/prereq/prereq.go` | Public API: `Scan()` → `Report`, install functions |
+| `internal/prereq/prereq_test.go` | Unit tests with mock commander |
 
-```
-- Implement Mode (rework after rejection):
-  - reads `.ai/REVIEW.md` findings as a checklist
-  - addresses every finding marked as required fix
-  - re-runs validations
-  - stages and commits with a Conventional Commit referencing the rework
-  - updates `.ai/TASKS.md` status from `changes_requested` to `ready_for_review`
-  - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
-```
+#### Design
 
-**2. CLAUDE.md / CLAUDE.md.tmpl — "Recommended status flow"**
+**1. `platform.go` — OS and package manager detection**
 
-Extend the status flow to show the rework loop:
+```go
+type OS string
 
-```
-- `todo` -> `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
-- Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
-```
+const (
+    Darwin  OS = "darwin"
+    Linux   OS = "linux"
+    Windows OS = "windows"
+)
 
-**3. implementer.md / implementer.md.tmpl**
+type PackageManager struct {
+    Name           string // "brew", "choco", or "" (Linux has none)
+    Installed      bool
+    SelfInstallCmd string // command to install the PM itself; empty if N/A
+}
 
-Add a "Rework after rejection" section after the existing instructions:
-
-```
-## Rework after rejection (`@rework`)
-- Read `.ai/REVIEW.md` and treat every required-fix finding as a checklist item.
-- Address each finding. Do not skip any.
-- Re-run the required validations from `CLAUDE.md`.
-- Stage all changes with `git add -A`.
-- Create exactly one commit with a Conventional Commit message that references the rework (e.g. `fix(<scope>): address review findings`).
-- Update `.ai/TASKS.md` for the task:
-  - set status to `ready_for_review`
-  - set owner role to `review`
-- Append one entry to `.ai/HANDOFF.md` with the same fields as a normal implementation handoff.
+func DetectOS() OS                          // wraps runtime.GOOS
+func DetectPackageManager(o OS) PackageManager
 ```
 
-**4. reviewer.md / reviewer.md.tmpl**
+Detection rules per ROADMAP:
+- **macOS** → look for `brew` on PATH → `PackageManager{Name: "brew", Installed: <bool>, SelfInstallCmd: "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""}`
+- **Windows** → look for `choco` on PATH → `PackageManager{Name: "choco", Installed: <bool>, SelfInstallCmd: "..."}`
+- **Linux** → `PackageManager{Name: "", Installed: false, SelfInstallCmd: ""}` — no package manager; tools use official download URLs/scripts
 
-Add a structured findings requirement to the existing "Write `.ai/REVIEW.md`" bullet:
+**2. `tool.go` — Tool registry**
 
+```go
+type Tool struct {
+    Name        string            // human-readable, e.g. "GitHub CLI"
+    Binary      string            // executable name, e.g. "gh"
+    Required    bool              // true = needed for workflow; false = optional
+    InstallCmds map[string]string // keyed by PM name: {"brew": "brew install gh", "choco": "choco install gh"}
+    FallbackURL string            // install docs URL (used for Linux always, others when PM unavailable)
+}
+
+type CheckResult struct {
+    Tool      Tool
+    Installed bool
+}
+
+func Registry() []Tool // returns all known prerequisite tools
 ```
-- Write `.ai/REVIEW.md` with:
-  - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
-  - findings ordered by severity, each with:
-    - severity: `blocker` | `major` | `minor` | `nit`
-    - file path and line (if applicable)
-    - description of the issue
-    - whether it is a required fix (`blocker` and `major` are always required)
-  - required fixes (if any)
+
+Tool definitions:
+
+| Tool | Binary | Required | brew | choco | Fallback URL |
+|------|--------|----------|------|-------|-------------|
+| GitHub CLI | `gh` | yes | `brew install gh` | `choco install gh` | https://cli.github.com |
+| ripgrep | `rg` | yes | `brew install ripgrep` | `choco install ripgrep` | https://github.com/BurntSushi/ripgrep#installation |
+| Claude | `claude` | no | — | — | https://docs.anthropic.com/en/docs/claude-code |
+| Codex | `codex` | no | — | — | https://github.com/openai/codex |
+
+Claude and Codex have no package-manager install paths — the wizard will show fallback URLs only.
+
+**3. `prereq.go` — Public API**
+
+```go
+type Report struct {
+    OS             OS
+    PackageManager PackageManager
+    Results        []CheckResult
+}
+
+func Scan(cmdr Commander) Report
+
+func InstallPackageManager(cmdr Commander, pm PackageManager) error
+func InstallTool(cmdr Commander, t Tool, pm PackageManager) error
 ```
+
+**4. Testability — `Commander` interface**
+
+```go
+type Commander interface {
+    LookPath(file string) (string, error)
+    Run(name string, args ...string) error
+}
+```
+
+A default `ExecCommander` wraps `exec.LookPath` and `exec.Command` (stdout/stderr wired to os.Stdout/os.Stderr so the user sees install progress). Tests inject a mock.
 
 ### Acceptance criteria
-- [ ] `@rework` flow is documented in CLAUDE.md "AI Workflow Rules" section
-- [ ] Status flow diagram includes the rework loop
-- [ ] Implementer prompt has explicit rework instructions
-- [ ] Reviewer prompt requires structured findings with severity
-- [ ] Live files and templates are in sync
+
+- [ ] `Scan()` returns correct OS, package manager status, and tool check results
+- [ ] `InstallTool()` runs the correct command for the detected package manager
+- [ ] `InstallTool()` returns an error with fallback URL when no PM install path exists
+- [ ] `InstallPackageManager()` handles Homebrew and Chocolatey self-installation
+- [ ] Linux platform returns empty package manager (no self-install)
+- [ ] `Commander` interface enables full unit testing without real exec calls
+- [ ] `go vet ./...` passes
 - [ ] `go test ./...` passes
 
 ---
 
-## T-002 — Standardize HANDOFF.md entry format
+## T-002 — Interactive wizard with `huh` TUI
 
 ### Rationale
-The current HANDOFF.template.md defines a loose bullet-list format. It is not machine-parseable and entries vary between roles. A strict format makes automated tooling possible and ensures consistency.
 
-### Files to modify
-| File (live) | File (template) |
-|-------------|-----------------|
-| `.ai/HANDOFF.template.md` | `internal/template/templates/base/ai/HANDOFF.template.md.tmpl` |
-| `.ai/prompts/planner.md` | `internal/template/templates/base/ai/prompts/planner.md.tmpl` |
-| `.ai/prompts/implementer.md` | `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
-| `.ai/prompts/reviewer.md` | `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+The ROADMAP requires a user-friendly, step-by-step wizard. `charmbracelet/huh` provides polished form components that work well for a linear flow. The `init` command detects TTY — if interactive and no positional arg, run the wizard; otherwise use flags.
 
-### Changes
-
-**1. HANDOFF.template.md / HANDOFF.template.md.tmpl**
-
-Replace the existing "Entry Template" section with a strict format using a fixed H3 heading per entry and a key-value table:
-
-```markdown
-# HANDOFF
-
-Append-only role handoff log. Each role adds one entry when its step is complete.
-
-## Entry Format
-
-Each entry uses this exact structure. Omit fields marked as role-specific when they do not apply.
-
----
-
-### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
-
-| Field | Value |
-|-------|-------|
-| Agent | claude \| codex |
-| Summary | One-sentence description of work done |
-| Files Changed | Comma-separated list of changed files |
-| Validation | Commands run and outcomes (implement only) |
-| Commit | `<hash> <conventional commit message>` (implement only) |
-| Verdict | PASS \| PASS_WITH_NOTES \| FAIL (review only) |
-| Blocking Findings | Numbered list or "none" (review only) |
-| Next Role | plan \| implement \| review \| none |
-
----
-```
-
-**2. Role prompts — update the "Append one entry to `.ai/HANDOFF.md`" bullet in each prompt**
-
-Replace the free-form list with:
+### New dependency
 
 ```
-- Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
-  - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
-  - table with all applicable fields
+go get github.com/charmbracelet/huh
 ```
+
+### Files to create/modify
+
+| Action | File | Purpose |
+|--------|------|---------|
+| Create | `internal/wizard/wizard.go` | Wizard orchestration and TUI forms |
+| Create | `internal/wizard/wizard_test.go` | Unit tests for wizard logic |
+| Modify | `cmd/init.go` | TTY detection; route to wizard or flags |
+
+### Design
+
+**1. `cmd/init.go` — TTY gate**
+
+Change `Args` from `cobra.ExactArgs(1)` to `cobra.MaximumNArgs(1)` so the command accepts zero args in wizard mode.
+
+```go
+RunE: func(cmd *cobra.Command, args []string) error {
+    // Interactive wizard: TTY + no positional arg
+    if len(args) == 0 && isTerminal(os.Stdin) {
+        return wizard.Run(prereq.NewExecCommander())
+    }
+    // Flag-based path (unchanged)
+    name := args[0]
+    // ... existing validation and scaffold.Run() ...
+}
+```
+
+TTY detection: check `os.Stdin.Stat()` for `fs.ModeCharDevice`.
+
+**2. `internal/wizard/wizard.go` — Wizard flow**
+
+```go
+func Run(cmdr prereq.Commander) error
+```
+
+The wizard executes these steps sequentially:
+
+**Step 1 — Prerequisite scan**
+
+Call `prereq.Scan(cmdr)`. Display results with `huh.NewNote()`:
+```
+🔍 Checking your system...
+
+  ✓ gh (GitHub CLI)        installed
+  ✗ rg (ripgrep)           not found
+  ✓ claude                 installed
+  ✗ codex                  not found
+```
+
+**Step 2 — Skip-all gate**
+
+```
+? Install missing tools? (Y/n)
+```
+If the user says No → skip to Step 5 (project settings). This satisfies ROADMAP P2: "Allow the user to skip any installations and just create the project."
+
+**Step 3 — Package manager gate** (macOS/Windows only, only if PM not installed and missing tools have PM install commands)
+
+```
+? Homebrew is required to install tools. Install it now? (Y/n)
+```
+If declined → show fallback URLs for all missing tools and skip to Step 5.
+
+**Step 4 — Per-tool install prompts**
+
+For each missing tool that has an install command for the detected PM:
+```
+? Install ripgrep via Homebrew? (Y/n)
+```
+Default: **Yes** for required tools, **No** for optional tools.
+
+For tools without PM install (Claude, Codex on any OS; all tools on Linux):
+```
+ℹ  Claude CLI → https://docs.anthropic.com/en/docs/claude-code
+```
+
+Run `prereq.InstallTool()` for confirmed installs. Show progress inline.
+
+**Step 5 — Project settings form**
+
+A `huh.Form` with one group:
+
+| Field | Type | Default | Validation |
+|-------|------|---------|------------|
+| Project name | `huh.NewInput()` | — | required; must match `^[a-zA-Z][a-zA-Z0-9._-]*$` |
+| Project type | `huh.NewSelect()` | none | options: none, go, java, node |
+| Target directory | `huh.NewInput()` | cwd | must be a valid directory |
+| Initialize git? | `huh.NewConfirm()` | true | — |
+
+**Step 6 — Scaffold**
+
+Call `scaffold.Run(name, projectType, dir, initGit)` — existing function, unchanged.
+
+**Step 7 — Summary**
+
+Reuse existing `printSummary` output, or wrap in a `huh.NewNote()` for visual consistency.
 
 ### Acceptance criteria
-- [ ] HANDOFF.template.md defines a table-based entry format with fixed heading
-- [ ] All three role prompts reference the template format explicitly
-- [ ] Live files and templates are in sync
+
+- [ ] `agentinit init` (no args, TTY) launches interactive wizard
+- [ ] `agentinit init myproject --type go` (flags) still works identically
+- [ ] Wizard scans and displays prerequisite status
+- [ ] "Skip all installs" proceeds directly to project settings
+- [ ] Wizard offers Homebrew/Chocolatey install when missing and needed (macOS/Windows)
+- [ ] Per-tool prompts default to Yes for required, No for optional
+- [ ] Linux shows fallback URLs instead of PM install prompts
+- [ ] Project name validated with existing regex
+- [ ] Scaffold runs after wizard completes and prints summary
+- [ ] `go vet ./...` passes
 - [ ] `go test ./...` passes
-
----
-
-## T-003 — Pre-flight checks for cycle bootstrap
-
-### Rationale
-`ai-start-cycle.sh` can silently produce a broken cycle if the working tree is dirty or `gh` is missing (needed later for `ai-pr.sh sync`). Early failure with actionable messages saves time.
-
-### Files to modify
-| File (live) | File (template) |
-|-------------|-----------------|
-| `scripts/ai-start-cycle.sh` | `internal/template/templates/base/scripts/ai-start-cycle.sh.tmpl` |
-
-### Changes
-
-Add pre-flight checks in `main()` before the branch-creation logic (after `validate_branch_name`):
-
-```bash
-# Pre-flight: clean working tree
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  die "working tree is dirty — commit or stash changes before starting a new cycle"
-fi
-
-# Pre-flight: no untracked files in tracked directories
-if [ -n "$(git ls-files --others --exclude-standard)" ]; then
-  die "untracked files present — commit, stash, or gitignore them before starting a new cycle"
-fi
-
-# Pre-flight: gh CLI available (needed for ai-pr.sh sync)
-require_cmd gh
-```
-
-The existing `require_cmd git` stays. The existing `git pull --ff-only` already ensures main is up-to-date with origin (it fails if local main has diverged).
-
-### Acceptance criteria
-- [ ] Script fails with actionable message if working tree has uncommitted changes
-- [ ] Script fails with actionable message if untracked files are present
-- [ ] Script fails with actionable message if `gh` CLI is not installed
-- [ ] Existing checks (branch format, local/remote existence) remain unchanged
-- [ ] Live script and template are in sync
-- [ ] `go test ./...` passes
-
----
-
-## T-004 — Remove redundant CONTEXT.md from scaffold
-
-### Rationale
-`CONTEXT.md` is a static file-pointer list. Every path it references is already documented in `CLAUDE.md` (which agents always read). It provides no dynamic or generated content and is pure duplication.
-
-### Files to modify/remove
-| Action | File (live) | File (template) |
-|--------|-------------|-----------------|
-| Delete | `.ai/CONTEXT.md` | `internal/template/templates/base/ai/CONTEXT.md.tmpl` |
-| Edit | — | `internal/template/engine_test.go` |
-| Edit | — | `internal/scaffold/scaffold_test.go` |
-
-### Changes
-
-1. **Delete** `internal/template/templates/base/ai/CONTEXT.md.tmpl`
-2. **Delete** `.ai/CONTEXT.md` from the live project
-3. **Update** `internal/template/engine_test.go` — remove `".ai/CONTEXT.md"` from `expectedFiles` in `TestRenderAllBaseOnly`
-4. **Update** `internal/scaffold/scaffold_test.go` — remove `".ai/CONTEXT.md"` from `expectedFiles` in `TestRunCreatesProjectStructure`
-
-### Acceptance criteria
-- [ ] `CONTEXT.md.tmpl` no longer exists in templates
-- [ ] `.ai/CONTEXT.md` no longer exists in live project
-- [ ] Tests updated: no assertion for `.ai/CONTEXT.md`
-- [ ] `go test ./...` passes
-- [ ] No other file references `CONTEXT.md` (grep verification)
 
 ---
 
 ## Validation
 
-After all tasks are implemented:
+After both tasks are implemented:
 
 ```
 go fmt ./...
@@ -241,6 +268,13 @@ go vet ./...
 go test ./...
 ```
 
+Manual smoke test:
+
+```
+go run . init                  # wizard mode (TTY)
+go run . init foo --type go    # flag mode (no wizard)
+```
+
 ## Implementation order
 
-Tasks can be implemented in any order. They are independent. Recommended order: T-001 → T-002 → T-003 → T-004 (follows ROADMAP priority).
+**T-001 → T-002** (sequential). T-002 imports `internal/prereq` from T-001.
