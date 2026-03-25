@@ -59,7 +59,7 @@ func InstallPackageManager(cmdr Commander, pm PackageManager) error {
 	case "":
 		return fmt.Errorf("no package manager available for this platform")
 	case "brew":
-		return cmdr.Run("/bin/bash", "-c", `"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
+		return cmdr.Run("/bin/bash", "-c", `eval "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
 	case "choco":
 		return cmdr.Run("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))")
 	default:

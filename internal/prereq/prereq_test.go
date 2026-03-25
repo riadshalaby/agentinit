@@ -131,6 +131,37 @@ func TestInstallPackageManagerRunsHomebrewInstaller(t *testing.T) {
 	if len(call.args) != 2 || call.args[0] != "-c" {
 		t.Fatalf("Run() args = %v, want shell invocation", call.args)
 	}
+	if got, want := call.args[1], `eval "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`; got != want {
+		t.Fatalf("Run() script = %q, want %q", got, want)
+	}
+}
+
+func TestInstallPackageManagerRunsChocolateyInstaller(t *testing.T) {
+	cmdr := &mockCommander{}
+
+	if err := InstallPackageManager(cmdr, PackageManager{Name: "choco"}); err != nil {
+		t.Fatalf("InstallPackageManager() error = %v", err)
+	}
+
+	if len(cmdr.runCalls) != 1 {
+		t.Fatalf("Run() calls = %d, want 1", len(cmdr.runCalls))
+	}
+	call := cmdr.runCalls[0]
+	if call.name != "powershell" {
+		t.Fatalf("Run() name = %q, want %q", call.name, "powershell")
+	}
+	if len(call.args) < 5 {
+		t.Fatalf("Run() args = %v, want powershell invocation", call.args)
+	}
+}
+
+func TestDetectOSMapsWindowsAndFallback(t *testing.T) {
+	if got := detectOS("windows"); got != Windows {
+		t.Fatalf("detectOS(windows) = %q, want %q", got, Windows)
+	}
+	if got := detectOS("freebsd"); got != Linux {
+		t.Fatalf("detectOS(freebsd) = %q, want %q", got, Linux)
+	}
 }
 
 func TestDetectPackageManagerReturnsEmptyOnLinux(t *testing.T) {
