@@ -3,6 +3,7 @@ package scaffold
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +50,30 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	if len(result.KeyPaths) != 5 {
 		t.Fatalf("KeyPaths len = %d, want 5", len(result.KeyPaths))
+	}
+
+	readmeBytes, err := os.ReadFile(filepath.Join(projectDir, "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	readme := string(readmeBytes)
+	if !strings.Contains(readme, "planner> start_plan") {
+		t.Error("generated README.md should contain persistent-session examples")
+	}
+	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
+		t.Error("generated README.md should not contain legacy @ command aliases")
+	}
+
+	claudeBytes, err := os.ReadFile(filepath.Join(projectDir, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	claude := string(claudeBytes)
+	if !strings.Contains(claude, "`finish_cycle [TASK_ID]`") {
+		t.Error("generated CLAUDE.md should describe finish_cycle")
+	}
+	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
+		t.Error("generated CLAUDE.md should describe interrupted-session recovery")
 	}
 }
 

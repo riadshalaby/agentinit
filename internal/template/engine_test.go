@@ -51,6 +51,32 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "# myproject") {
 		t.Errorf("README.md should contain project name, got: %s", readme[:100])
 	}
+
+	if !strings.Contains(readme, "planner> start_plan") {
+		t.Error("README.md should contain persistent-session planner example")
+	}
+	if !strings.Contains(readme, "reviewer> finish_cycle") {
+		t.Error("README.md should contain finish_cycle example")
+	}
+	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
+		t.Error("README.md should not contain legacy @ command aliases")
+	}
+
+	claude := files["CLAUDE.md"]
+	if !strings.Contains(claude, "`status_cycle [TASK_ID]`") {
+		t.Error("CLAUDE.md should describe status_cycle")
+	}
+	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
+		t.Error("CLAUDE.md should document interrupted-session recovery")
+	}
+
+	implementerPrompt := files[".ai/prompts/implementer.md"]
+	if strings.Contains(implementerPrompt, "@rework") {
+		t.Error("implementer prompt should not contain legacy @rework syntax")
+	}
+	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
+		t.Error("implementer prompt should describe status_cycle")
+	}
 }
 
 func TestRenderAllGoOverlay(t *testing.T) {
