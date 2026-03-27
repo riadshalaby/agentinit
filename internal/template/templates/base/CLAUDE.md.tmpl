@@ -66,13 +66,16 @@
     - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent: `claude`)
     - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent: `codex`)
     - `scripts/ai-review.sh [agent] [agent-options...]` (default agent: `claude`)
+- Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.
 
-## Mixed Team Manual Workflow
+## Persistent Session Workflow
 - No role autostarts another role.
-- Start a new development cycle with `scripts/ai-start-cycle.sh <branch-name>` before running `ai-plan.sh`.
+- Start a new development cycle with `scripts/ai-start-cycle.sh <branch-name>`.
+- Start the planner, implementer, and reviewer once, then keep those three sessions open for the rest of the cycle.
 - Every role waits in `WAIT_FOR_USER_START` state until you explicitly tell it to begin.
-- Agent choice is manual per run (`claude` or `codex`) and can vary by role and task.
+- After launch, steer the existing sessions with text commands instead of relaunching scripts for each step.
+- Agent choice is manual when you launch each role (`claude` or `codex`) and can vary by session.
 - Handoff log policy:
   - runtime log: `.ai/HANDOFF.md` (gitignored)
   - tracked template: `.ai/HANDOFF.template.md`
@@ -83,31 +86,19 @@
   - `todo` -> `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
 
-## Shorthand Commands
-All commands accept an optional task ID (e.g. `@next T-002`). When omitted, the first matching task top-to-bottom is used.
-- `@next [TASK_ID]` — Pick up the next task for your current role:
-  1. Read `.ai/TASKS.md` and find the target task matching your role:
-     - **plan** role: status `todo` or `in_planning`.
-     - **implement** role: status `ready_for_implement` or `in_implementation`.
-     - **review** role: status `ready_for_review` or `in_review`.
-  2. If a TASK_ID is given but its status does not match your role, print an error and abort.
-  3. Update the task status to the in-progress variant (`in_planning`, `in_implementation`, `in_review`) and announce which task you are picking up.
-  4. Execute the task according to the role's rules in "AI Workflow Rules".
-  5. If no matching task is found, print: "No tasks pending for <role>." and show current task statuses.
-- `@rework [TASK_ID]` — Resume implementation after a review rejection (implement role only):
-  1. Read `.ai/TASKS.md` and find the target task with status `changes_requested`.
-  2. If a TASK_ID is given but its status is not `changes_requested`, print an error and abort.
-  3. Read `.ai/REVIEW.md` to load the reviewer's findings as a checklist.
-  4. Run as **implement** role, addressing each finding.
-  5. Update the task status to `ready_for_review` when done.
-  6. If no task has `changes_requested`, print: "No tasks pending rework."
-- `@finish [TASK_ID]` — Complete a task or the current cycle:
-  1. If a TASK_ID is given, verify that task has status `done`. If not, print its status and abort.
-  2. If no TASK_ID is given, verify all tasks have status `done`. If any are not, print the outstanding tasks and abort.
-  3. Run `scripts/ai-pr.sh sync` to create or update the PR.
-- `@status [TASK_ID]` — Show cycle progress:
-  1. If a TASK_ID is given, print that task's details: ID, scope, status, and next action.
-  2. If no TASK_ID is given, print a compact summary of all tasks.
+## Session Commands
+Use these text commands inside the already-running role sessions.
+- Planner session:
+  - `start_plan`
+  - `rework_plan [TASK_ID]`
+- Implementer session:
+  - `next_task [TASK_ID]`
+  - `rework_task [TASK_ID]`
+  - `status_cycle [TASK_ID]`
+- Reviewer session:
+  - `next_task [TASK_ID]`
+  - `status_cycle [TASK_ID]`
+  - `finish_cycle [TASK_ID]`
 
 ## PR Policy
 - Feature PRs use `scripts/ai-pr.sh sync`.

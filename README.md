@@ -79,6 +79,38 @@ Both the wizard and the non-interactive path finish with the same scaffold summa
 - next steps for starting a development cycle
 - overlay validation commands when a typed project scaffold is used
 
+## Persistent AI Workflow
+
+Generated projects use a persistent 3-agent workflow with file-based coordination:
+
+1. Start a cycle once with `scripts/ai-start-cycle.sh <branch-name>`.
+2. Launch the planner, implementer, and reviewer once.
+3. Keep those sessions open for the full cycle.
+4. Drive work by sending text commands inside the existing sessions instead of relaunching the agents.
+
+Typical session startup:
+
+```bash
+scripts/ai-plan.sh
+scripts/ai-implement.sh
+scripts/ai-review.sh
+```
+
+Typical in-session commands:
+
+```text
+planner: start_plan
+planner: rework_plan T-002
+implementer: next_task T-001
+implementer: rework_task T-002
+implementer: status_cycle
+reviewer: next_task T-001
+reviewer: status_cycle
+reviewer: finish_cycle
+```
+
+Launcher scripts remain useful for the initial startup of each role, but the generated workflow guidance treats the persistent sessions and text commands as the primary operating model.
+
 ### What it generates
 
 - `.ai/` directory with plan, tasks, review, and handoff templates

@@ -2,7 +2,12 @@
 
 You are in `implement` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Do not implement anything until the user explicitly says to start implementation for a specific task.
+- Enter `WAIT_FOR_USER_START` immediately. Wait for an implementer command before taking action.
+- Supported implementer commands in this persistent session:
+  - `next_task [TASK_ID]`
+  - `rework_task [TASK_ID]`
+  - `status_cycle [TASK_ID]`
+- Do not implement anything until the user explicitly invokes the relevant command for a specific task or status check.
 - Implement `.ai/PLAN.md` exactly.
 - Follow all constraints in `CLAUDE.md`.
 - Update tests as needed.
@@ -18,7 +23,7 @@ You are in `implement` mode.
   - table with all applicable fields
 - Do not redesign architecture or invent requirements.
 
-## Rework after rejection (`@rework`)
+## Rework after rejection (`rework_task`)
 - Read `.ai/REVIEW.md` and treat every required-fix finding as a checklist item.
 - Address each finding. Do not skip any.
 - Re-run the required validations from `CLAUDE.md`.

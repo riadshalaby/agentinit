@@ -18,12 +18,27 @@ This project uses a 3-agent workflow (Planner, Implementer, Reviewer) with file-
 scripts/ai-start-cycle.sh feature/<scope>
 ```
 
-### Run agents
+### Start persistent role sessions
 
 ```bash
-scripts/ai-plan.sh          # Start planner (default: claude)
-scripts/ai-implement.sh     # Start implementer (default: codex)
-scripts/ai-review.sh        # Start reviewer (default: claude)
+scripts/ai-plan.sh
+scripts/ai-implement.sh
+scripts/ai-review.sh
+```
+
+Launch each role once, then keep those sessions open for the rest of the cycle.
+
+### Drive work inside the existing sessions
+
+```text
+planner: start_plan
+planner: rework_plan T-002
+implementer: next_task T-001
+implementer: rework_task T-002
+implementer: status_cycle
+reviewer: next_task T-001
+reviewer: status_cycle
+reviewer: finish_cycle
 ```
 
 ### Create a PR
@@ -32,4 +47,4 @@ scripts/ai-review.sh        # Start reviewer (default: claude)
 scripts/ai-pr.sh sync
 ```
 
-See `CLAUDE.md` for full workflow rules.
+Launcher scripts are for the initial session startup. The primary workflow is the persistent-session model described in `CLAUDE.md`.
