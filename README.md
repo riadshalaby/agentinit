@@ -96,20 +96,26 @@ scripts/ai-implement.sh
 scripts/ai-review.sh
 ```
 
-Typical in-session commands:
+Typical in-session commands across one cycle:
 
 ```text
-planner: start_plan
-planner: rework_plan T-002
-implementer: next_task T-001
-implementer: rework_task T-002
-implementer: status_cycle
-reviewer: next_task T-001
-reviewer: status_cycle
-reviewer: finish_cycle
+planner> start_plan
+implementer> status_cycle
+implementer> next_task T-001
+reviewer> next_task T-001
+implementer> rework_task T-001
+reviewer> finish_cycle
 ```
 
 Launcher scripts remain useful for the initial startup of each role, but the generated workflow guidance treats the persistent sessions and text commands as the primary operating model.
+
+The expected flow is:
+
+1. Planner creates or refreshes the plan with `start_plan`.
+2. Implementer checks board state with `status_cycle`, then picks up work with `next_task`.
+3. Reviewer picks up completed work with `next_task`.
+4. If review requests changes, implementer resumes with `rework_task`.
+5. Reviewer uses `finish_cycle` only after the requested task, or the whole board, is in a `done` state.
 
 ### What it generates
 
