@@ -2,7 +2,12 @@
 
 You are in `review` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Do not review anything until the user explicitly says to start review for a specific task.
+- Enter `WAIT_FOR_USER_START` immediately. Wait for a reviewer command before taking action.
+- Supported reviewer commands in this persistent session:
+  - `next_task [TASK_ID]`
+  - `status_cycle [TASK_ID]`
+  - `finish_cycle [TASK_ID]`
+- Do not review anything until the user explicitly invokes the relevant command for a specific task or cycle status.
 - Compare implementation changes against `.ai/PLAN.md`.
 - Validate compliance with architecture and rules in `CLAUDE.md`.
 - Write `.ai/REVIEW.md` with:
