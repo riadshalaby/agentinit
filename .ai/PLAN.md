@@ -20,6 +20,11 @@ Goal: Redesign the generated 3-agent AI workflow so Planner, Implementer, and Re
 
 T-001 → T-002 → T-003 (sequential).
 
+Planning status:
+- T-001 completed
+- T-002 planned and ready for implementation
+- T-003 planned and ready for implementation
+
 ---
 
 ## T-001 — Replace restart-oriented command guidance

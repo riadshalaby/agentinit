@@ -85,20 +85,53 @@
 - Recommended status flow in `.ai/TASKS.md`:
   - `todo` -> `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
+- If a persistent session is interrupted or reopened, the role must reload `CLAUDE.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
+  - planner: `ROADMAP.md`, `.ai/PLAN.md`
+  - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking
+  - reviewer: `.ai/PLAN.md`, `.ai/REVIEW.md`
+- Files are the source of truth. No role should rely on hidden session memory when file state disagrees.
 
 ## Session Commands
 Use these text commands inside the already-running role sessions.
 - Planner session:
   - `start_plan`
+    - read `ROADMAP.md` and current planning artifacts
+    - create or restructure tasks in `.ai/TASKS.md` as needed
+    - write or rewrite `.ai/PLAN.md`
+    - when planning is complete, move the selected first task to `ready_for_implement`
   - `rework_plan [TASK_ID]`
+    - revisit an existing plan when scope, constraints, or approach change
+    - update `.ai/PLAN.md`, `.ai/TASKS.md`, and `.ai/HANDOFF.md` as needed without modifying code
+    - when no task ID is supplied, replan the overall roadmap/task breakdown
+    - when a task ID is supplied and it does not exist or is not appropriate for replanning, report the current status and abort
 - Implementer session:
   - `next_task [TASK_ID]`
+    - select the first task in `ready_for_implement` or `in_implementation` when no task ID is supplied
+    - if the supplied task is not valid for implementer work, report its current status and abort
+    - when work begins, update the task to `in_implementation`
   - `rework_task [TASK_ID]`
+    - implementer only
+    - target a task in `changes_requested`
+    - load `.ai/REVIEW.md` as the required-fix checklist before editing
+    - if no task matches, report that no tasks are pending rework
   - `status_cycle [TASK_ID]`
+    - return deterministic task status, current owner role, and next recommended action
+    - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
+    - if no task matches the caller's role, say so explicitly and summarize the board
 - Reviewer session:
   - `next_task [TASK_ID]`
+    - select the first task in `ready_for_review` or `in_review` when no task ID is supplied
+    - if the supplied task is not valid for reviewer work, report its current status and abort
+    - when review begins, update the task to `in_review`
   - `status_cycle [TASK_ID]`
+    - return deterministic task status, current owner role, and next recommended action
+    - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
+    - if no task matches the caller's role, say so explicitly and summarize the board
   - `finish_cycle [TASK_ID]`
+    - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
+    - if the completion condition is not met, report the blocking task states and abort
+    - if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, stage and commit those changes before closing the cycle
+    - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
 
 ## PR Policy
 - Feature PRs use `scripts/ai-pr.sh sync`.
