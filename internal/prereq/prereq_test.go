@@ -40,6 +40,7 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 	cmdr := &mockCommander{
 		lookPath: map[string]error{
 			"rg":     os.ErrNotExist,
+			"bat":    os.ErrNotExist,
 			"claude": os.ErrNotExist,
 		},
 	}
@@ -66,6 +67,15 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 	}
 	if results["rg"] {
 		t.Error("expected rg to be detected as missing")
+	}
+	if !results["fd"] {
+		t.Error("expected fd to be detected as installed")
+	}
+	if results["bat"] {
+		t.Error("expected bat to be detected as missing")
+	}
+	if !results["jq"] {
+		t.Error("expected jq to be detected as installed")
 	}
 	if results["claude"] {
 		t.Error("expected claude to be detected as missing")
@@ -106,7 +116,7 @@ func TestInstallToolRunsPackageManagerCommand(t *testing.T) {
 
 func TestInstallToolReturnsFallbackErrorWithoutPackageManagerCommand(t *testing.T) {
 	cmdr := &mockCommander{}
-	tool := Registry()[2]
+	tool := toolByBinary("claude")
 	plan := InstallPlan{Tool: tool}
 
 	err := InstallTool(cmdr, plan)
@@ -224,6 +234,35 @@ func TestResolveInstallPlanUsesHomebrewForClaudeAndCodexOnMacOS(t *testing.T) {
 	codexPlan := ResolveInstallPlan(cmdr, toolByBinary("codex"), report)
 	if !codexPlan.Auto || codexPlan.Label != "Homebrew" || codexPlan.Command != "brew install --cask codex" {
 		t.Fatalf("Codex plan = %+v", codexPlan)
+	}
+}
+
+func TestResolveInstallPlanUsesHomebrewForDevTools(t *testing.T) {
+	cmdr := &mockCommander{}
+	report := Report{
+		OS: Darwin,
+		PackageManager: PackageManager{
+			Name:      "brew",
+			Installed: true,
+		},
+	}
+
+	testCases := []struct {
+		binary  string
+		command string
+	}{
+		{binary: "fd", command: "brew install fd"},
+		{binary: "bat", command: "brew install bat"},
+		{binary: "jq", command: "brew install jq"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.binary, func(t *testing.T) {
+			plan := ResolveInstallPlan(cmdr, toolByBinary(tc.binary), report)
+			if !plan.Auto || plan.Label != "Homebrew" || plan.Command != tc.command {
+				t.Fatalf("%s plan = %+v", tc.binary, plan)
+			}
+		})
 	}
 }
 

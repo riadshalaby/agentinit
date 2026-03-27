@@ -53,6 +53,36 @@ func Registry() []Tool {
 			FallbackURL: "https://github.com/BurntSushi/ripgrep#installation",
 		},
 		{
+			Name:     "fd",
+			Binary:   "fd",
+			Required: true,
+			PackageInstalls: map[string]string{
+				"brew":  "brew install fd",
+				"choco": "choco install fd",
+			},
+			FallbackURL: "https://github.com/sharkdp/fd#installation",
+		},
+		{
+			Name:     "bat",
+			Binary:   "bat",
+			Required: true,
+			PackageInstalls: map[string]string{
+				"brew":  "brew install bat",
+				"choco": "choco install bat",
+			},
+			FallbackURL: "https://github.com/sharkdp/bat#installation",
+		},
+		{
+			Name:     "jq",
+			Binary:   "jq",
+			Required: true,
+			PackageInstalls: map[string]string{
+				"brew":  "brew install jq",
+				"choco": "choco install jq",
+			},
+			FallbackURL: "https://jqlang.github.io/jq/download/",
+		},
+		{
 			Name:     "Claude",
 			Binary:   "claude",
 			Required: false,

@@ -58,11 +58,8 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 	})
 	scanPrereqs = func(prereq.Commander) prereq.Report {
 		return prereq.Report{
-			OS: prereq.Linux,
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-			},
+			OS:      prereq.Linux,
+			Results: missingResultsFor("gh", "rg"),
 		}
 	}
 
@@ -115,12 +112,7 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 				Installed:      false,
 				SelfInstallCmd: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`,
 			},
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-				{Tool: prereq.Registry()[2], Installed: false},
-				{Tool: prereq.Registry()[3], Installed: false},
-			},
+			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex"),
 		}
 	}
 
@@ -159,6 +151,15 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
 		t.Fatalf("manual install note = %q, want ripgrep URL", manual.body)
 	}
+	if !strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") {
+		t.Fatalf("manual install note = %q, want fd URL", manual.body)
+	}
+	if !strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") {
+		t.Fatalf("manual install note = %q, want bat URL", manual.body)
+	}
+	if !strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") {
+		t.Fatalf("manual install note = %q, want jq URL", manual.body)
+	}
 	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
 		t.Fatalf("manual install note = %q, want Claude URL", manual.body)
 	}
@@ -182,18 +183,13 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 				Name:      "brew",
 				Installed: true,
 			},
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-				{Tool: prereq.Registry()[2], Installed: false},
-				{Tool: prereq.Registry()[3], Installed: false},
-			},
+			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex"),
 		}
 	}
 
 	dir := t.TempDir()
 	ui := &fakeUI{
-		confirmValues: []bool{true, true, true, false, false},
+		confirmValues: []bool{true, true, true, true, false, false, false, false},
 		settings: projectSettings{
 			Name:        "demo",
 			ProjectType: "go",
@@ -224,23 +220,32 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if len(ui.confirmCalls) != 5 {
-		t.Fatalf("confirm calls = %+v, want install gate plus four tool prompts", ui.confirmCalls)
+	if len(ui.confirmCalls) != 8 {
+		t.Fatalf("confirm calls = %+v, want install gate plus seven tool prompts", ui.confirmCalls)
 	}
 	if ui.confirmCalls[1].title != "Install GitHub CLI via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[1])
 	}
-	if len(installs) != 2 {
-		t.Fatalf("install calls = %v, want 2", installs)
-	}
-	if installs[0] != "brew install gh" || installs[1] != "brew install ripgrep" {
-		t.Fatalf("installs = %v", installs)
-	}
-	if ui.confirmCalls[3].title != "Install Claude via Homebrew?" {
+	if ui.confirmCalls[3].title != "Install fd via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[3])
 	}
-	if ui.confirmCalls[4].title != "Install Codex via Homebrew?" {
+	if ui.confirmCalls[4].title != "Install bat via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[4])
+	}
+	if ui.confirmCalls[5].title != "Install jq via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[5])
+	}
+	if len(installs) != 3 {
+		t.Fatalf("install calls = %v, want 3", installs)
+	}
+	if installs[0] != "brew install gh" || installs[1] != "brew install ripgrep" || installs[2] != "brew install fd" {
+		t.Fatalf("installs = %v", installs)
+	}
+	if ui.confirmCalls[6].title != "Install Claude via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[6])
+	}
+	if ui.confirmCalls[7].title != "Install Codex via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[7])
 	}
 	final := ui.notes[len(ui.notes)-1]
 	if final.title != "Project scaffold complete!" {
@@ -263,12 +268,7 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 				Name:      "choco",
 				Installed: false,
 			},
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-				{Tool: prereq.Registry()[2], Installed: false},
-				{Tool: prereq.Registry()[3], Installed: false},
-			},
+			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex"),
 		}
 	}
 
@@ -322,6 +322,15 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
 		t.Fatalf("manual install note = %q", manual.body)
 	}
+	if !strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
+	if !strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
+	if !strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") {
+		t.Fatalf("manual install note = %q", manual.body)
+	}
 	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
 		t.Fatalf("manual install note = %q", manual.body)
 	}
@@ -339,12 +348,7 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 				Name:      "choco",
 				Installed: true,
 			},
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-				{Tool: prereq.Registry()[2], Installed: false},
-				{Tool: prereq.Registry()[3], Installed: false},
-			},
+			Results: missingResultsFor("gh", "rg", "claude", "codex"),
 		}
 	}
 
@@ -393,13 +397,8 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 	})
 	scanPrereqs = func(prereq.Commander) prereq.Report {
 		return prereq.Report{
-			OS: prereq.Linux,
-			Results: []prereq.CheckResult{
-				{Tool: prereq.Registry()[0], Installed: false},
-				{Tool: prereq.Registry()[1], Installed: false},
-				{Tool: prereq.Registry()[2], Installed: false},
-				{Tool: prereq.Registry()[3], Installed: false},
-			},
+			OS:      prereq.Linux,
+			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex"),
 		}
 	}
 
@@ -431,6 +430,9 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 	manual := ui.notes[len(ui.notes)-2]
 	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") ||
 		!strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") ||
+		!strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") ||
+		!strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") ||
+		!strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") ||
 		!strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") ||
 		!strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
 		t.Fatalf("manual install note = %q", manual.body)
@@ -476,4 +478,24 @@ func (p *prereqTestCommander) Run(name string, args ...string) error {
 		p.runHook(name, args...)
 	}
 	return nil
+}
+
+func missingResultsFor(binaries ...string) []prereq.CheckResult {
+	results := make([]prereq.CheckResult, 0, len(binaries))
+	for _, binary := range binaries {
+		results = append(results, prereq.CheckResult{
+			Tool:      toolByBinary(binary),
+			Installed: false,
+		})
+	}
+	return results
+}
+
+func toolByBinary(binary string) prereq.Tool {
+	for _, tool := range prereq.Registry() {
+		if tool.Binary == binary {
+			return tool
+		}
+	}
+	panic("tool not found: " + binary)
 }
