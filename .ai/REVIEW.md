@@ -1,19 +1,16 @@
 # Review
 
-Status: **complete**
+Status: **pending**
 
-Review Round: **2**
+Review Round: **1**
 
-Reviewed: 2026-03-27
+Reviewed: YYYY-MM-DD
 
 ## Findings
-- None.
+- Pending review.
 
 ## Open Questions
 - None.
 
-## Required Fixes
-- None.
-
 ## Verdict
-`PASS`
+`PENDING`
