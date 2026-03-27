@@ -14,7 +14,8 @@
 - Stage newly created files explicitly:
   - `git add <new-file>`
 - Commit behavior by role:
-  - `plan` and `review` roles never commit.
+  - `plan` role never commits.
+  - `review` role may commit only when the staged set is limited to `.ai/REVIEW.md` and `.ai/TASKS.md`.
   - `implement` role must stage all changes and create a Conventional Commit after validations pass.
   - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
   - Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
@@ -129,7 +130,8 @@ Use these text commands inside the already-running role sessions.
   - `finish_cycle [TASK_ID]`
     - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
     - if the completion condition is not met, report the blocking task states and abort
-    - if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, report that reviewer-owned changes are pending and instruct the user to have the implementer stage and commit them before closing the cycle
+    - if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, the reviewer may stage and commit only those files before closing the cycle
+    - do not stage `.ai/HANDOFF.md` or any other file as part of reviewer-owned commits
     - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
 
 ## PR Policy
