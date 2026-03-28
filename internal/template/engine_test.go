@@ -86,6 +86,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Use `fd` instead of `find`",
 		"Use `bat` instead of `cat`",
 		"Use `jq` when parsing or filtering JSON output",
+		"When available, use `ast-grep` (`sg`)",
+		"When available, use `fzf` for interactive fuzzy file and symbol selection",
 	} {
 		if !strings.Contains(claude, rule) {
 			t.Errorf("CLAUDE.md should contain tool preference rule %q", rule)

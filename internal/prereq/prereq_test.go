@@ -39,9 +39,11 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 
 	cmdr := &mockCommander{
 		lookPath: map[string]error{
-			"rg":     os.ErrNotExist,
-			"bat":    os.ErrNotExist,
-			"claude": os.ErrNotExist,
+			"rg":          os.ErrNotExist,
+			"bat":         os.ErrNotExist,
+			"claude":      os.ErrNotExist,
+			"fzf":         os.ErrNotExist,
+			"tree-sitter": os.ErrNotExist,
 		},
 	}
 
@@ -82,6 +84,15 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 	}
 	if !results["codex"] {
 		t.Error("expected codex to be detected as installed")
+	}
+	if !results["sg"] {
+		t.Error("expected sg to be detected as installed")
+	}
+	if results["fzf"] {
+		t.Error("expected fzf to be detected as missing")
+	}
+	if results["tree-sitter"] {
+		t.Error("expected tree-sitter to be detected as missing")
 	}
 }
 
@@ -254,6 +265,35 @@ func TestResolveInstallPlanUsesHomebrewForDevTools(t *testing.T) {
 		{binary: "fd", command: "brew install fd"},
 		{binary: "bat", command: "brew install bat"},
 		{binary: "jq", command: "brew install jq"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.binary, func(t *testing.T) {
+			plan := ResolveInstallPlan(cmdr, toolByBinary(tc.binary), report)
+			if !plan.Auto || plan.Label != "Homebrew" || plan.Command != tc.command {
+				t.Fatalf("%s plan = %+v", tc.binary, plan)
+			}
+		})
+	}
+}
+
+func TestResolveInstallPlanUsesHomebrewForOptionalTools(t *testing.T) {
+	cmdr := &mockCommander{}
+	report := Report{
+		OS: Darwin,
+		PackageManager: PackageManager{
+			Name:      "brew",
+			Installed: true,
+		},
+	}
+
+	testCases := []struct {
+		binary  string
+		command string
+	}{
+		{binary: "sg", command: "brew install ast-grep"},
+		{binary: "fzf", command: "brew install fzf"},
+		{binary: "tree-sitter", command: "brew install tree-sitter"},
 	}
 
 	for _, tc := range testCases {

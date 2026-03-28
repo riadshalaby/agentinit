@@ -114,5 +114,33 @@ func Registry() []Tool {
 			},
 			FallbackURL: "https://github.com/openai/codex",
 		},
+		{
+			Name:     "ast-grep",
+			Binary:   "sg",
+			Required: false,
+			PackageInstalls: map[string]string{
+				"brew": "brew install ast-grep",
+			},
+			FallbackURL: "https://ast-grep.github.io/guide/quick-start.html",
+		},
+		{
+			Name:     "fzf",
+			Binary:   "fzf",
+			Required: false,
+			PackageInstalls: map[string]string{
+				"brew":  "brew install fzf",
+				"choco": "choco install fzf",
+			},
+			FallbackURL: "https://github.com/junegunn/fzf#installation",
+		},
+		{
+			Name:     "tree-sitter",
+			Binary:   "tree-sitter",
+			Required: false,
+			PackageInstalls: map[string]string{
+				"brew": "brew install tree-sitter",
+			},
+			FallbackURL: "https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md",
+		},
 	}
 }
