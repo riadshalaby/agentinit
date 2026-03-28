@@ -69,6 +69,19 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("CLAUDE.md should document interrupted-session recovery")
 	}
+	if !strings.Contains(claude, "## Tool Preferences") {
+		t.Error("CLAUDE.md should contain the Tool Preferences section")
+	}
+	for _, rule := range []string{
+		"Use `rg` instead of `grep`",
+		"Use `fd` instead of `find`",
+		"Use `bat` instead of `cat`",
+		"Use `jq` when parsing or filtering JSON output",
+	} {
+		if !strings.Contains(claude, rule) {
+			t.Errorf("CLAUDE.md should contain tool preference rule %q", rule)
+		}
+	}
 
 	implementerPrompt := files[".ai/prompts/implementer.md"]
 	if strings.Contains(implementerPrompt, "@rework") {

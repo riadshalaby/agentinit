@@ -24,6 +24,14 @@
 ## Language Rules
 - Use English for code comments, log/output messages, `README.md`.
 
+## Tool Preferences
+- Use `rg` instead of `grep` for repository-wide code search.
+- Use `fd` instead of `find` for file discovery.
+- Use `bat` instead of `cat` when previewing files for context.
+- Use `jq` when parsing or filtering JSON output.
+- Respect `.gitignore` in all search operations.
+- Exclude build artifacts (`dist`, `build`, `node_modules`, `vendor`, `target`) by default.
+
 ## AI Workflow Rules
 - Plan Mode:
   - waits for explicit user start signal
