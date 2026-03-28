@@ -29,6 +29,8 @@
 - Use `fd` instead of `find` for file discovery.
 - Use `bat` instead of `cat` when previewing files for context.
 - Use `jq` when parsing or filtering JSON output.
+- When available, use `ast-grep` (`sg`) for structural code search using AST patterns (e.g. matching function signatures or type definitions).
+- When available, use `fzf` for interactive fuzzy file and symbol selection.
 - Respect `.gitignore` in all search operations.
 - Exclude build artifacts (`dist`, `build`, `node_modules`, `vendor`, `target`) by default.
 
@@ -106,7 +108,7 @@ Use these text commands inside the already-running role sessions.
     - read `ROADMAP.md` and current planning artifacts
     - create or restructure tasks in `.ai/TASKS.md` as needed
     - write or rewrite `.ai/PLAN.md`
-    - when planning is complete, move the selected first task to `ready_for_implement`
+    - when planning is complete, move **all** newly planned tasks to `ready_for_implement`
   - `rework_plan [TASK_ID]`
     - revisit an existing plan when scope, constraints, or approach change
     - update `.ai/PLAN.md`, `.ai/TASKS.md`, and `.ai/HANDOFF.md` as needed without modifying code

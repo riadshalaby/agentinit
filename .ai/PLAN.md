@@ -207,6 +207,39 @@ T-003 (search-strategy)  ──┐
 T-004 (extended stack)    ──┘
 ```
 
+### T-005 — Sync Planner Workflow Rule in Templates
+
+Small fix: the planner prompt template and CLAUDE.md template still say "move the selected first task to `ready_for_implement`". They must say "all newly planned tasks" to match the corrected own-project files.
+
+#### Step 1: Update CLAUDE.md.tmpl
+
+**File:** `internal/template/templates/base/CLAUDE.md.tmpl`
+
+Change the `start_plan` description from:
+```
+when planning is complete, move the selected first task to `ready_for_implement`
+```
+to:
+```
+when planning is complete, move all newly planned tasks to `ready_for_implement`
+```
+
+#### Step 2: Update planner.md.tmpl
+
+**File:** `internal/template/templates/base/ai/prompts/planner.md.tmpl`
+
+Same two changes as already applied to `.ai/prompts/planner.md`:
+1. `start_plan` description: "all newly planned tasks" instead of "selected first task"
+2. TASKS.md update instruction: "for all newly planned tasks" instead of "for the selected task"
+
+#### Step 3: Update tests
+
+**File:** `internal/template/engine_test.go`
+
+Assert that the rendered CLAUDE.md contains "all newly planned tasks" (not "selected first task").
+
+---
+
 ## Validation
 
 ```
