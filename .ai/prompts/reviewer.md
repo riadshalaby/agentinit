@@ -11,6 +11,7 @@ You are in `review` mode.
 - If the session was interrupted, reload `CLAUDE.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.
 - Compare implementation changes against `.ai/PLAN.md`.
 - Validate compliance with architecture and rules in `CLAUDE.md`.
+- Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices.
 - Write `.ai/REVIEW.md` with:
   - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
   - findings ordered by severity, each with:

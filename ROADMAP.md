@@ -115,31 +115,7 @@ When the skill layer is present, agents should consistently:
 
 ---
 
-## Phase 4 — MCP Integration Readiness
-
-Prepare scaffolded projects for MCP-based tool orchestration so that shell tools can be exposed as callable MCP tools.
-
-### MCP Requirements
-
-- Generated project includes an MCP server configuration stub
-- Shell tools (`rg`, `fd`, `bat`, `jq`) are wrapped as callable MCP tools
-- MCP servers are callable through STDIO transport
-
-### Example MCP Tool Candidates
-
-- `search_code(pattern, path?)` — wraps `rg`
-- `find_files(name, path?)` — wraps `fd`
-- `preview_file(path, range?)` — wraps `bat`
-
-### Acceptance Criteria
-
-- agentinit generates an MCP server configuration file when `--mcp` flag is provided
-- The configuration maps shell tools to MCP tool definitions
-- Documentation in generated README.md explains how to start the MCP server
-
----
-
-## Phase 5 — High-Performance Developer Stack
+## Phase 4 — High-Performance Developer Stack
 
 Extend the tool registry and generated rules with advanced code-navigation tools.
 
@@ -170,6 +146,4 @@ Projects scaffolded by agentinit must ensure that Claude Code and Codex CLI can:
 - Search large repositories efficiently using `rg` and `fd`
 - Inspect files safely using `bat`
 - Parse structured output cleanly using `jq`
-- Integrate with MCP-based local tooling when configured
-
 All tools are verified at scaffold time and the generated workflow rules instruct agents to use them by default. The agentinit project itself follows the same rules, serving as a living reference for every project it creates.
