@@ -11,6 +11,7 @@ You are in `implement` mode.
 - If the session was interrupted, reload `CLAUDE.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting when rework may apply.
 - Implement `.ai/PLAN.md` exactly.
 - Follow all constraints in `CLAUDE.md`.
+- Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices.
 - Update tests as needed.
 - Run the required validations from `CLAUDE.md`.
 - Stage all changes with `git add -A`.

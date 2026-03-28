@@ -26,6 +26,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
+		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
@@ -44,6 +45,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		if _, ok := files[f]; !ok {
 			t.Errorf("missing expected file: %s", f)
 		}
+	}
+
+	searchStrategy := files[".ai/prompts/search-strategy.md"]
+	if !strings.Contains(searchStrategy, "## Tool Selection") {
+		t.Error("search-strategy.md should contain the Tool Selection section")
+	}
+	if !strings.Contains(searchStrategy, "## Search Rules") {
+		t.Error("search-strategy.md should contain the Search Rules section")
 	}
 
 	// Check project name in README.
@@ -89,6 +98,17 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
+	}
+
+	referenceLine := "Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices."
+	for path, prompt := range map[string]string{
+		".ai/prompts/planner.md":     files[".ai/prompts/planner.md"],
+		".ai/prompts/implementer.md": implementerPrompt,
+		".ai/prompts/reviewer.md":    files[".ai/prompts/reviewer.md"],
+	} {
+		if !strings.Contains(prompt, referenceLine) {
+			t.Errorf("%s should reference search-strategy.md", path)
+		}
 	}
 }
 

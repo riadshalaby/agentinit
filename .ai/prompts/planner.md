@@ -9,6 +9,7 @@ You are in `plan` mode.
 - Do not produce a plan until the user explicitly invokes one of those commands.
 - If the session was interrupted, reload `CLAUDE.md`, `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.
 - Read `CLAUDE.md` and `ROADMAP.md` first.
+- Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices.
 - Produce a concrete implementation plan.
 - Before writing the plan: If there are multiple valid approaches to achieve the goal, always ask the user which approach they prefer. Present the options clearly with a brief description of
   trade-offs. Only proceed to write .ai/PLAN.md after the user has made a choice.
