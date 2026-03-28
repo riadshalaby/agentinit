@@ -78,6 +78,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("CLAUDE.md should document interrupted-session recovery")
 	}
+	if !strings.Contains(claude, "move all newly planned tasks to `ready_for_implement`") {
+		t.Error("CLAUDE.md should use the all newly planned tasks planner wording")
+	}
+	if strings.Contains(claude, "move the selected first task to `ready_for_implement`") {
+		t.Error("CLAUDE.md should not use the selected first task planner wording")
+	}
 	if !strings.Contains(claude, "## Tool Preferences") {
 		t.Error("CLAUDE.md should contain the Tool Preferences section")
 	}
@@ -111,6 +117,16 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		if !strings.Contains(prompt, referenceLine) {
 			t.Errorf("%s should reference search-strategy.md", path)
 		}
+	}
+	plannerPrompt := files[".ai/prompts/planner.md"]
+	if !strings.Contains(plannerPrompt, "move all newly planned tasks to `ready_for_implement`") {
+		t.Error("planner prompt should use the all newly planned tasks wording")
+	}
+	if !strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for all newly planned tasks:") {
+		t.Error("planner prompt should update TASKS for all newly planned tasks")
+	}
+	if strings.Contains(plannerPrompt, "move the selected first task to `ready_for_implement`") || strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for the selected task:") {
+		t.Error("planner prompt should not use the selected-task wording")
 	}
 }
 
