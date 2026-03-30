@@ -11,16 +11,25 @@ const serverName = "agentinit"
 var serveStdio = mcpserver.ServeStdio
 
 type Server struct {
-	server *mcpserver.MCPServer
+	server  *mcpserver.MCPServer
+	manager *SessionManager
 }
 
 func NewServer(version string) *Server {
+	return newServer(version, NewSessionManager())
+}
+
+func newServer(version string, manager *SessionManager) *Server {
+	srv := mcpserver.NewMCPServer(
+		serverName,
+		version,
+		mcpserver.WithToolCapabilities(false),
+	)
+	registerTools(srv, manager)
+
 	return &Server{
-		server: mcpserver.NewMCPServer(
-			serverName,
-			version,
-			mcpserver.WithToolCapabilities(false),
-		),
+		server:  srv,
+		manager: manager,
 	}
 }
 
