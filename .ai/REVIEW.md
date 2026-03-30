@@ -1,18 +1,16 @@
 # Review
 
-Status: **final**
-
-Task: **T-003**
+Status: **pending**
 
 Review Round: **1**
 
-Reviewed: 2026-03-30
+Reviewed: YYYY-MM-DD
 
 ## Findings
-- None.
+- Pending review.
 
-## Required Fixes
+## Open Questions
 - None.
 
 ## Verdict
-`PASS`
+`PENDING`
