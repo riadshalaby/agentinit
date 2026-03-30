@@ -115,10 +115,14 @@ Launcher scripts remain useful for the initial startup of each role, but the gen
 The expected flow is:
 
 1. Planner creates or refreshes the plan with `start_plan`.
-2. Implementer checks board state with `status_cycle`, then picks up work with `next_task`.
+2. Implementer picks up work with `next_task`.
 3. Reviewer picks up completed work with `next_task`.
 4. If review requests changes, implementer resumes with `rework_task`.
 5. Reviewer uses `finish_cycle` only after the requested task, or the whole board, is in a `done` state.
+
+Status flow: `in_planning` → `ready_for_implement` → `in_implementation` → `ready_for_review` → `in_review` → `done`
+
+Rework loop: `changes_requested` → `in_implementation` → `ready_for_review` → `in_review` → `done`
 
 ### What it generates
 
