@@ -25,12 +25,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/HANDOFF.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
+		".ai/prompts/po.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
+		"scripts/ai-po.sh",
 		"scripts/ai-review.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
@@ -127,6 +129,27 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if strings.Contains(plannerPrompt, "move the selected first task to `ready_for_implement`") || strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for the selected task:") {
 		t.Error("planner prompt should not use the selected-task wording")
+	}
+
+	poPrompt := files[".ai/prompts/po.md"]
+	for _, snippet := range []string{
+		"`start_session`",
+		"`send_command`",
+		"`stop_session`",
+		"`list_sessions`",
+		"`test_failed` -> back to `in_implementation`",
+	} {
+		if !strings.Contains(poPrompt, snippet) {
+			t.Errorf("po prompt should contain %q", snippet)
+		}
+	}
+
+	poScript := files["scripts/ai-po.sh"]
+	if !strings.Contains(poScript, "--mcp-config") {
+		t.Error("ai-po.sh should pass --mcp-config to claude")
+	}
+	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
+		t.Error("ai-po.sh should configure the agentinit mcp server")
 	}
 }
 
