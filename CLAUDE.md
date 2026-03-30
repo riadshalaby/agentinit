@@ -93,7 +93,7 @@
   - planner -> implementer uses `.ai/PLAN.md` + `.ai/TASKS.md` + `.ai/HANDOFF.md`
   - implementer -> reviewer uses commit + `.ai/TASKS.md` + `.ai/HANDOFF.md`
 - Recommended status flow in `.ai/TASKS.md`:
-  - `todo` -> `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
+  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
 - If a persistent session is interrupted or reopened, the role must reload `CLAUDE.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
   - planner: `ROADMAP.md`, `.ai/PLAN.md`
