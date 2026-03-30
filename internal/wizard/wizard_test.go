@@ -172,7 +172,7 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 	if !strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") {
 		t.Fatalf("manual install note = %q, want fzf URL", manual.body)
 	}
-	if !strings.Contains(manual.body, "tree-sitter: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
+	if !strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
 		t.Fatalf("manual install note = %q, want tree-sitter URL", manual.body)
 	}
 	if ui.notes[len(ui.notes)-1].title != "Project scaffold complete!" {
@@ -262,7 +262,7 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 	if ui.confirmCalls[9].title != "Install fzf via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[9])
 	}
-	if ui.confirmCalls[10].title != "Install tree-sitter via Homebrew?" {
+	if ui.confirmCalls[10].title != "Install tree-sitter CLI via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[10])
 	}
 	if ui.confirmCalls[8].affirmative {
@@ -367,7 +367,7 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 	if !strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") {
 		t.Fatalf("manual install note = %q, want fzf URL", manual.body)
 	}
-	if !strings.Contains(manual.body, "tree-sitter: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
+	if !strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
 		t.Fatalf("manual install note = %q, want tree-sitter URL", manual.body)
 	}
 }
@@ -473,7 +473,7 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 		!strings.Contains(manual.body, "Codex: https://github.com/openai/codex") ||
 		!strings.Contains(manual.body, "ast-grep: https://ast-grep.github.io/guide/quick-start.html") ||
 		!strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") ||
-		!strings.Contains(manual.body, "tree-sitter: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
+		!strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
 		t.Fatalf("manual install note = %q", manual.body)
 	}
 }

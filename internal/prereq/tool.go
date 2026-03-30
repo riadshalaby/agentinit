@@ -134,11 +134,11 @@ func Registry() []Tool {
 			FallbackURL: "https://github.com/junegunn/fzf#installation",
 		},
 		{
-			Name:     "tree-sitter",
+			Name:     "tree-sitter CLI",
 			Binary:   "tree-sitter",
 			Required: false,
 			PackageInstalls: map[string]string{
-				"brew": "brew install tree-sitter",
+				"brew": "brew install tree-sitter-cli",
 			},
 			FallbackURL: "https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md",
 		},

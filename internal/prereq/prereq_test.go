@@ -293,7 +293,7 @@ func TestResolveInstallPlanUsesHomebrewForOptionalTools(t *testing.T) {
 	}{
 		{binary: "sg", command: "brew install ast-grep"},
 		{binary: "fzf", command: "brew install fzf"},
-		{binary: "tree-sitter", command: "brew install tree-sitter"},
+		{binary: "tree-sitter", command: "brew install tree-sitter-cli"},
 	}
 
 	for _, tc := range testCases {
