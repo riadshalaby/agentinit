@@ -1,11 +1,71 @@
 # agentinit
 
-A CLI tool that scaffolds a 3-agent AI workflow (Planner, Implementer, Reviewer) for new projects.
+Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates the structure for persistent agent sessions that collaborate through shared files with a well-defined status flow.
 
-## Install
+## Concepts
+
+**Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
+
+**Roles** — each cycle uses three persistent agent sessions:
+
+| Role | Responsibility | Reads | Writes |
+|------|---------------|-------|--------|
+| **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
+| **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
+| **Reviewer** | Reviews commits, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
+
+**File-based coordination** — roles communicate exclusively through files in `.ai/`. No role calls another role directly. The user switches between terminal sessions to drive each role forward.
+
+**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`:
+
+```
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → done
+                                          ↑                                     |
+                                          └──── changes_requested ◄─────────────┘
+```
+
+## Prerequisites
+
+- **Go 1.23+** (to install `agentinit` itself)
+- **Git**
+- At least one supported AI agent CLI:
+  - [Claude Code](https://claude.ai/download) (default for planner and reviewer)
+  - [Codex](https://github.com/openai/codex) (default for implementer)
+
+The interactive wizard can detect and install additional recommended tools (`gh`, `rg`, `fd`, `bat`, `jq`).
+
+## Quick Start
 
 ```bash
+# Install
 go install github.com/riadshalaby/agentinit@latest
+
+# Scaffold a project with the interactive wizard
+agentinit init
+
+# Or scaffold non-interactively
+agentinit init myapp --type go
+
+# Enter the project and edit ROADMAP.md with your goals
+cd myapp
+$EDITOR ROADMAP.md
+
+# Start your first cycle
+scripts/ai-start-cycle.sh feature/first-feature
+
+# Launch three persistent agent sessions (one terminal each)
+scripts/ai-plan.sh          # terminal 1
+scripts/ai-implement.sh     # terminal 2
+scripts/ai-review.sh        # terminal 3
+
+# Drive the cycle with text commands inside those sessions
+planner>      start_plan
+implementer>  next_task
+reviewer>     next_task
+reviewer>     finish_cycle
+
+# Create or update the PR
+scripts/ai-pr.sh sync
 ```
 
 ## Usage
@@ -16,8 +76,8 @@ agentinit init [project-name] [--type go|java|node] [--dir .] [--no-git]
 
 `agentinit init` has two entry paths:
 
-- Interactive wizard: run `agentinit init` with no positional argument in a terminal.
-- Non-interactive flags: run `agentinit init <project-name>` with the usual flags.
+- **Interactive wizard**: run `agentinit init` with no positional argument in a terminal.
+- **Non-interactive flags**: run `agentinit init <project-name>` with the usual flags.
 
 ### Interactive Wizard
 
@@ -35,7 +95,7 @@ Wizard project settings:
 - `Target directory`
 - `Initialize git?`
 
-### Tool Detection And Installation
+### Tool Detection and Installation
 
 The wizard checks these tools:
 
@@ -51,9 +111,9 @@ The wizard checks these tools:
 
 Platform behavior:
 
-- macOS: prefers Homebrew and can offer to install Homebrew first if it is missing. `gh`, `rg`, `fd`, `bat`, `jq`, Claude, and Codex all install through Homebrew when available.
-- Windows: prefers Chocolatey for `gh`, `rg`, `fd`, `bat`, and `jq`, but Claude and Codex use their own Windows install paths. Claude uses the official `install.cmd` flow, and Codex uses `npm install -g @openai/codex` only when `npm` is available.
-- Linux: does not assume a package manager; the wizard shows official install URLs instead.
+- **macOS**: prefers Homebrew and can offer to install Homebrew first if it is missing. `gh`, `rg`, `fd`, `bat`, `jq`, Claude, and Codex all install through Homebrew when available.
+- **Windows**: prefers Chocolatey for `gh`, `rg`, `fd`, `bat`, and `jq`, but Claude and Codex use their own Windows install paths. Claude uses the official `install.cmd` flow, and Codex uses `npm install -g @openai/codex` only when `npm` is available.
+- **Linux**: does not assume a package manager; the wizard shows official install URLs instead.
 
 The wizard lets you skip all installs and scaffold the project immediately, or confirm installs one tool at a time. Required tools default to install, optional tools default to skip. If you decline Homebrew on macOS, all Homebrew-backed tools fall back to manual links. If you decline Chocolatey on Windows, `gh`, `rg`, `fd`, `bat`, and `jq` fall back; Claude and Codex still use their Windows-specific install flows when available.
 
@@ -73,67 +133,89 @@ agentinit init myservice --type java --dir ~/projects
 agentinit init mylib --type node --no-git
 ```
 
-### Summary Output
+## Workflows
 
-Both the wizard and the non-interactive path finish with the same scaffold summary content:
+### 3-Agent Persistent Workflow
 
-- local `README.md` path for the generated project documentation
-- key generated paths such as `CLAUDE.md`, `ROADMAP.md`, `.ai/`, and `scripts/`
-- next steps for starting a development cycle
-- overlay validation commands when a typed project scaffold is used
+The default workflow uses three persistent agent sessions that stay open for an entire cycle.
 
-## Persistent AI Workflow
+#### Lifecycle
 
-Generated projects use a persistent 3-agent workflow with file-based coordination:
-
-1. Start a cycle once with `scripts/ai-start-cycle.sh <branch-name>`.
-2. Launch the planner, implementer, and reviewer once.
-3. Keep those sessions open for the full cycle.
-4. Drive work by sending text commands inside the existing sessions instead of relaunching the agents.
-
-Typical session startup:
-
-```bash
-scripts/ai-plan.sh
-scripts/ai-implement.sh
-scripts/ai-review.sh
+```
+ ┌──────────────────────────────────────────────────────────┐
+ │                     CYCLE START                          │
+ │         scripts/ai-start-cycle.sh feature/xyz           │
+ └──────────────────┬───────────────────────────────────────┘
+                    ▼
+ ┌──────────────────────────────┐
+ │  1. PLANNER                  │
+ │     start_plan               │
+ │     Reads ROADMAP.md         │
+ │     Writes PLAN.md, TASKS.md │
+ └──────────────────┬───────────┘
+                    ▼
+ ┌──────────────────────────────┐
+ │  2. IMPLEMENTER              │
+ │     next_task                │◄──────────────────┐
+ │     Reads PLAN.md            │                   │
+ │     Writes code, commits     │                   │
+ └──────────────────┬───────────┘                   │
+                    ▼                               │
+ ┌──────────────────────────────┐                   │
+ │  3. REVIEWER                 │    rework_task    │
+ │     next_task                │───────────────────┘
+ │     Reads commits, PLAN.md   │  (changes_requested)
+ │     Writes REVIEW.md         │
+ │     finish_cycle when done   │
+ └──────────────────┬───────────┘
+                    ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │                      PR SYNC                             │
+ │              scripts/ai-pr.sh sync                       │
+ └──────────────────────────────────────────────────────────┘
 ```
 
-Typical in-session commands across one cycle:
+#### Session Commands
 
-```text
-planner> start_plan
-implementer> status_cycle
-implementer> next_task T-001
-reviewer> next_task T-001
-implementer> rework_task T-001
-reviewer> finish_cycle
-```
+Launch each role once per cycle. All subsequent interaction happens through text commands in the already-running sessions.
 
-Launcher scripts remain useful for the initial startup of each role, but the generated workflow guidance treats the persistent sessions and text commands as the primary operating model.
+**Planner**
 
-The expected flow is:
+| Command | Description |
+|---------|-------------|
+| `start_plan` | Read `ROADMAP.md`, create/update `.ai/PLAN.md` and `.ai/TASKS.md`, move tasks to `ready_for_implement` |
+| `rework_plan [TASK_ID]` | Revisit the plan when scope or approach changes |
 
-1. Planner creates or refreshes the plan with `start_plan`.
-2. Implementer picks up work with `next_task`.
-3. Reviewer picks up completed work with `next_task`.
-4. If review requests changes, implementer resumes with `rework_task`.
-5. Reviewer uses `finish_cycle` only after the requested task, or the whole board, is in a `done` state.
+**Implementer**
 
-Status flow: `in_planning` → `ready_for_implement` → `in_implementation` → `ready_for_review` → `in_review` → `done`
+| Command | Description |
+|---------|-------------|
+| `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
+| `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
+| `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
-Rework loop: `changes_requested` → `in_implementation` → `ready_for_review` → `in_review` → `done`
+**Reviewer**
 
-### What it generates
+| Command | Description |
+|---------|-------------|
+| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task (or a specific one) |
+| `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 
-- `.ai/` directory with plan, tasks, review, and handoff templates
-- `.ai/prompts/` with planner, implementer, and reviewer system prompts
-- `scripts/` with launcher, cycle bootstrap, gate checks, and PR scripts
-- `CLAUDE.md` with workflow rules and validation commands
-- `ROADMAP.md` and `ROADMAP.template.md`
-- `.gitignore` and `.gitattributes` (with type-specific entries)
+#### File Map
 
-### Supported project types
+| File | Purpose | Tracked in git |
+|------|---------|---------------|
+| `.ai/PLAN.md` | Current plan written by the planner | yes |
+| `.ai/TASKS.md` | Task board with status per task | yes |
+| `.ai/REVIEW.md` | Review findings written by the reviewer | yes |
+| `.ai/HANDOFF.md` | Runtime handoff log between roles | no (gitignored) |
+| `.ai/prompts/` | System prompts for each role | yes |
+| `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
+| `CLAUDE.md` | Agent rules and validation commands | yes |
+| `scripts/` | Launcher, cycle bootstrap, gate, and PR scripts | yes |
+
+### Supported Project Types
 
 | Type | Validation Commands |
 |------|-------------------|
