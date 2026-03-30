@@ -21,8 +21,9 @@ You are in `review` mode.
     - whether it is a required fix (`blocker` and `major` are always required)
   - required fixes (if any)
 - Update `.ai/TASKS.md` for the task:
-  - set status to `done` when verdict is `PASS` or `PASS_WITH_NOTES`
+  - set status to `in_testing` when verdict is `PASS` or `PASS_WITH_NOTES`
   - set status to `changes_requested` when verdict is `FAIL`
+  - set owner role to `test` if review passes
   - set owner role to `implement` if changes are requested
 - Reviewer-owned commits may include only `.ai/REVIEW.md` and `.ai/TASKS.md`.
 - Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:

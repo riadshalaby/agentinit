@@ -1,0 +1,21 @@
+# Test Report
+
+Status: **pending**
+
+Task: **T-XXX**
+
+Test Round: **1**
+
+Tested: YYYY-MM-DD
+
+## Steps
+- Pending test execution.
+
+## Findings
+- None.
+
+## Risks
+- None.
+
+## Verdict
+`PENDING`

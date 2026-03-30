@@ -6,22 +6,25 @@ Scaffold a file-based AI agent coordination framework for any codebase. Instead 
 
 **Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
 
-**Roles** — each cycle uses three persistent agent sessions:
+**Roles** — each cycle uses four persistent agent sessions:
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
+| **Tester** | Verifies the reviewed implementation and records test results | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
 
 **File-based coordination** — roles communicate exclusively through files in `.ai/`. No role calls another role directly. The user switches between terminal sessions to drive each role forward.
 
 **Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`:
 
 ```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → done
-                                          ↑                                     |
-                                          └──── changes_requested ◄─────────────┘
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → in_testing → test_passed → done
+                                          ↑                                     |                        |
+                                          └──── changes_requested ◄─────────────┘                        |
+                                                ▲                                                         |
+                                                └──────────────────────── test_failed ◄───────────────────┘
 ```
 
 ## Prerequisites
@@ -53,15 +56,17 @@ $EDITOR ROADMAP.md
 # Start your first cycle
 scripts/ai-start-cycle.sh feature/first-feature
 
-# Launch three persistent agent sessions (one terminal each)
+# Launch four persistent agent sessions (one terminal each)
 scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
+scripts/ai-test.sh          # terminal 4
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
+tester>       next_task
 reviewer>     finish_cycle
 
 # Create or update the PR
@@ -135,9 +140,9 @@ agentinit init mylib --type node --no-git
 
 ## Workflows
 
-### 3-Agent Persistent Workflow
+### 4-Agent Persistent Workflow
 
-The default workflow uses three persistent agent sessions that stay open for an entire cycle.
+The default workflow uses four persistent agent sessions that stay open for an entire cycle.
 
 #### Lifecycle
 
@@ -166,7 +171,13 @@ The default workflow uses three persistent agent sessions that stay open for an 
  │     next_task                │───────────────────┘
  │     Reads commits, PLAN.md   │  (changes_requested)
  │     Writes REVIEW.md         │
- │     finish_cycle when done   │
+ └──────────────────┬───────────┘
+                    ▼
+ ┌──────────────────────────────┐                   │
+ │  4. TESTER                   │    test_failed    │
+ │     next_task                │───────────────────┘
+ │     Reads commits, PLAN.md   │  (returns to implementer)
+ │     Writes TEST_REPORT.md    │
  └──────────────────┬───────────┘
                     ▼
  ┌──────────────────────────────────────────────────────────┐
@@ -200,7 +211,14 @@ Launch each role once per cycle. All subsequent interaction happens through text
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task (or a specific one) |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `test_passed` or `done` |
+
+**Tester**
+
+| Command | Description |
+|---------|-------------|
+| `next_task [TASK_ID]` | Pick up the next `in_testing` task (or a specific one) |
+| `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 #### File Map
 
@@ -209,6 +227,7 @@ Launch each role once per cycle. All subsequent interaction happens through text
 | `.ai/PLAN.md` | Current plan written by the planner | yes |
 | `.ai/TASKS.md` | Task board with status per task | yes |
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes |
+| `.ai/TEST_REPORT.md` | Test findings written by the tester | yes |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | no (gitignored) |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |

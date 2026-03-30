@@ -22,11 +22,13 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
+		".ai/TEST_REPORT.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/po.md",
 		".ai/prompts/reviewer.md",
+		".ai/prompts/tester.md",
 		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
@@ -34,6 +36,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"scripts/ai-implement.sh",
 		"scripts/ai-po.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -69,6 +72,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "reviewer> finish_cycle") {
 		t.Error("README.md should contain finish_cycle example")
 	}
+	if !strings.Contains(readme, "tester> next_task T-001") {
+		t.Error("README.md should contain tester example")
+	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("README.md should not contain legacy @ command aliases")
 	}
@@ -76,6 +82,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	claude := files["CLAUDE.md"]
 	if !strings.Contains(claude, "`status_cycle [TASK_ID]`") {
 		t.Error("CLAUDE.md should describe status_cycle")
+	}
+	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("CLAUDE.md should describe the tester launcher")
+	}
+	if !strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+		t.Error("CLAUDE.md should contain the extended test status flow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("CLAUDE.md should document interrupted-session recovery")
@@ -150,6 +162,32 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
 		t.Error("ai-po.sh should configure the agentinit mcp server")
+	}
+
+	testerPrompt := files[".ai/prompts/tester.md"]
+	for _, snippet := range []string{
+		"You are in `test` mode.",
+		"`next_task [TASK_ID]`",
+		"`.ai/TEST_REPORT.md`",
+		"`test_passed`",
+		"`test_failed`",
+	} {
+		if !strings.Contains(testerPrompt, snippet) {
+			t.Errorf("tester prompt should contain %q", snippet)
+		}
+	}
+
+	testerScript := files["scripts/ai-test.sh"]
+	if !strings.Contains(testerScript, "ai-launch.sh\" test") {
+		t.Error("ai-test.sh should delegate to ai-launch.sh test")
+	}
+
+	launchScript := files["scripts/ai-launch.sh"]
+	if !strings.Contains(launchScript, "plan | implement | review | test") {
+		t.Error("ai-launch.sh should list the test role")
+	}
+	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
+		t.Error("ai-launch.sh should route the test role to tester prompt")
 	}
 }
 

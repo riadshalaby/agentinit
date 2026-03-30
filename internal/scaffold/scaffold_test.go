@@ -21,17 +21,20 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
+		".ai/TEST_REPORT.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/po.md",
 		".ai/prompts/reviewer.md",
+		".ai/prompts/tester.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-po.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -74,6 +77,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(claude, "`finish_cycle [TASK_ID]`") {
 		t.Error("generated CLAUDE.md should describe finish_cycle")
 	}
+	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("generated CLAUDE.md should describe ai-test.sh")
+	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("generated CLAUDE.md should describe interrupted-session recovery")
 	}
@@ -94,6 +100,7 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 		"scripts/ai-implement.sh",
 		"scripts/ai-po.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-pr.sh",
 	}
