@@ -224,3 +224,10 @@ Launch each role once per cycle. All subsequent interaction happens through text
 | node | `npm run lint`, `npm run build`, `npm test` |
 
 No type = generic scaffold without validation commands.
+
+
+Proudly created by
+
+![logo.png](logo.png)
+
+Built by Agents, Directed by Humans
