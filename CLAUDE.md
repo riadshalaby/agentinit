@@ -25,12 +25,12 @@
 - Use English for code comments, log/output messages, `README.md`.
 
 ## Tool Preferences
-- Use `rg` instead of `grep` for repository-wide code search.
-- Use `fd` instead of `find` for file discovery.
-- Use `bat` instead of `cat` when previewing files for context.
-- Use `jq` when parsing or filtering JSON output.
-- When available, use `ast-grep` (`sg`) for structural code search using AST patterns (e.g. matching function signatures or type definitions).
-- When available, use `fzf` for interactive fuzzy file and symbol selection.
+- For shell-based repository search, prefer `rg` over `grep`.
+- For shell-based file discovery, prefer `fd` over `find`.
+- For shell-based file previews, prefer `bat` over `cat`.
+- For shell-based JSON parsing or filtering, prefer `jq`.
+- When available, use `ast-grep` (`sg`) for structural code search using AST patterns (for example, matching function signatures or type definitions).
+- When available, use `fzf` for interactive fuzzy file and symbol selection in the shell.
 - Respect `.gitignore` in all search operations.
 - Exclude build artifacts (`dist`, `build`, `node_modules`, `vendor`, `target`) by default.
 

@@ -378,6 +378,34 @@ func TestInstallToolRunsWindowsShellCommand(t *testing.T) {
 	}
 }
 
+func TestRegistryAssignsCategoryToEveryTool(t *testing.T) {
+	for _, tool := range Registry() {
+		if tool.Category == "" {
+			t.Fatalf("tool %q is missing a category", tool.Binary)
+		}
+	}
+
+	expectedCategories := map[string]ToolCategory{
+		"gh":          ToolCategoryAgentDependency,
+		"jq":          ToolCategoryAgentDependency,
+		"rg":          ToolCategoryDeveloperTool,
+		"fd":          ToolCategoryDeveloperTool,
+		"bat":         ToolCategoryDeveloperTool,
+		"fzf":         ToolCategoryDeveloperTool,
+		"tree-sitter": ToolCategoryDeveloperTool,
+		"sg":          ToolCategorySharedTool,
+		"claude":      ToolCategoryAgentRuntime,
+		"codex":       ToolCategoryAgentRuntime,
+	}
+
+	for binary, category := range expectedCategories {
+		tool := toolByBinary(binary)
+		if tool.Category != category {
+			t.Fatalf("%s category = %q, want %q", binary, tool.Category, category)
+		}
+	}
+}
+
 func toolByBinary(binary string) Tool {
 	for _, tool := range Registry() {
 		if tool.Binary == binary {
