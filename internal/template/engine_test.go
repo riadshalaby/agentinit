@@ -102,12 +102,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("CLAUDE.md should contain the Tool Preferences section")
 	}
 	for _, rule := range []string{
-		"Use `rg` instead of `grep`",
-		"Use `fd` instead of `find`",
-		"Use `bat` instead of `cat`",
-		"Use `jq` when parsing or filtering JSON output",
+		"For shell-based repository search, prefer `rg` over `grep`",
+		"For shell-based file discovery, prefer `fd` over `find`",
+		"For shell-based file previews, prefer `bat` over `cat`",
+		"For shell-based JSON parsing or filtering, prefer `jq`",
 		"When available, use `ast-grep` (`sg`)",
-		"When available, use `fzf` for interactive fuzzy file and symbol selection",
+		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 	} {
 		if !strings.Contains(claude, rule) {
 			t.Errorf("CLAUDE.md should contain tool preference rule %q", rule)

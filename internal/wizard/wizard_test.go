@@ -93,6 +93,15 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 	if len(ui.confirmCalls) != 1 || ui.confirmCalls[0].title != "Install missing tools?" {
 		t.Fatalf("confirm calls = %+v, want skip-install prompt", ui.confirmCalls)
 	}
+	scan := ui.notes[0]
+	for _, heading := range []string{
+		"Agent dependencies:",
+		"Developer tools:",
+	} {
+		if !strings.Contains(scan.body, heading) {
+			t.Fatalf("scan note = %q, want heading %q", scan.body, heading)
+		}
+	}
 	last := ui.notes[len(ui.notes)-1]
 	if last.title != "Project scaffold complete!" {
 		t.Fatalf("final note title = %q", last.title)
@@ -145,6 +154,16 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 		t.Fatalf("notes = %+v, want scan note, manual install note, and final summary note", ui.notes)
 	}
 	manual := ui.notes[len(ui.notes)-2]
+	for _, heading := range []string{
+		"Agent dependencies:",
+		"Developer tools:",
+		"Recommended for both agents and developers:",
+		"Agent runtimes:",
+	} {
+		if !strings.Contains(manual.body, heading) {
+			t.Fatalf("manual install note = %q, want heading %q", manual.body, heading)
+		}
+	}
 	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") {
 		t.Fatalf("manual install note = %q, want GitHub CLI URL", manual.body)
 	}
@@ -497,6 +516,30 @@ func TestDefaultInstallChoiceFollowsToolRequiredFlag(t *testing.T) {
 	}
 	if defaultInstallChoice(prereq.Tool{Required: false}) {
 		t.Fatal("optional tool should default to skip")
+	}
+}
+
+func TestFormatScanReportGroupsToolsByCategory(t *testing.T) {
+	report := prereq.Report{
+		OS: prereq.Linux,
+		Results: []prereq.CheckResult{
+			{Tool: toolByBinary("gh"), Installed: false},
+			{Tool: toolByBinary("rg"), Installed: true},
+			{Tool: toolByBinary("sg"), Installed: true},
+			{Tool: toolByBinary("claude"), Installed: false},
+		},
+	}
+
+	body := formatScanReport(report)
+	for _, heading := range []string{
+		"Agent dependencies:",
+		"Developer tools:",
+		"Recommended for both agents and developers:",
+		"Agent runtimes:",
+	} {
+		if !strings.Contains(body, heading) {
+			t.Fatalf("formatScanReport() = %q, want heading %q", body, heading)
+		}
 	}
 }
 

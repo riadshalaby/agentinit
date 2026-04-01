@@ -3,11 +3,21 @@ package prereq
 type Tool struct {
 	Name            string
 	Binary          string
+	Category        ToolCategory
 	Required        bool
 	PackageInstalls map[string]string
 	OSInstalls      map[OS]InstallMethod
 	FallbackURL     string
 }
+
+type ToolCategory string
+
+const (
+	ToolCategoryAgentRuntime    ToolCategory = "agent_runtime"
+	ToolCategoryAgentDependency ToolCategory = "agent_dependency"
+	ToolCategoryDeveloperTool   ToolCategory = "developer_tool"
+	ToolCategorySharedTool      ToolCategory = "shared_tool"
+)
 
 type InstallMethod struct {
 	Label    string
@@ -35,6 +45,7 @@ func Registry() []Tool {
 		{
 			Name:     "GitHub CLI",
 			Binary:   "gh",
+			Category: ToolCategoryAgentDependency,
 			Required: true,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install gh",
@@ -45,6 +56,7 @@ func Registry() []Tool {
 		{
 			Name:     "ripgrep",
 			Binary:   "rg",
+			Category: ToolCategoryDeveloperTool,
 			Required: true,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install ripgrep",
@@ -55,6 +67,7 @@ func Registry() []Tool {
 		{
 			Name:     "fd",
 			Binary:   "fd",
+			Category: ToolCategoryDeveloperTool,
 			Required: true,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install fd",
@@ -65,6 +78,7 @@ func Registry() []Tool {
 		{
 			Name:     "bat",
 			Binary:   "bat",
+			Category: ToolCategoryDeveloperTool,
 			Required: true,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install bat",
@@ -75,6 +89,7 @@ func Registry() []Tool {
 		{
 			Name:     "jq",
 			Binary:   "jq",
+			Category: ToolCategoryAgentDependency,
 			Required: true,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install jq",
@@ -85,6 +100,7 @@ func Registry() []Tool {
 		{
 			Name:     "Claude",
 			Binary:   "claude",
+			Category: ToolCategoryAgentRuntime,
 			Required: false,
 			PackageInstalls: map[string]string{
 				"brew": "brew install --cask claude-code",
@@ -101,6 +117,7 @@ func Registry() []Tool {
 		{
 			Name:     "Codex",
 			Binary:   "codex",
+			Category: ToolCategoryAgentRuntime,
 			Required: false,
 			PackageInstalls: map[string]string{
 				"brew": "brew install --cask codex",
@@ -117,6 +134,7 @@ func Registry() []Tool {
 		{
 			Name:     "ast-grep",
 			Binary:   "sg",
+			Category: ToolCategorySharedTool,
 			Required: false,
 			PackageInstalls: map[string]string{
 				"brew": "brew install ast-grep",
@@ -126,6 +144,7 @@ func Registry() []Tool {
 		{
 			Name:     "fzf",
 			Binary:   "fzf",
+			Category: ToolCategoryDeveloperTool,
 			Required: false,
 			PackageInstalls: map[string]string{
 				"brew":  "brew install fzf",
@@ -136,6 +155,7 @@ func Registry() []Tool {
 		{
 			Name:     "tree-sitter CLI",
 			Binary:   "tree-sitter",
+			Category: ToolCategoryDeveloperTool,
 			Required: false,
 			PackageInstalls: map[string]string{
 				"brew": "brew install tree-sitter-cli",

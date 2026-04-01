@@ -201,9 +201,17 @@ func formatScanReport(report prereq.Report) string {
 	} else {
 		lines = append(lines, fmt.Sprintf("Package manager: %s (%s)", packageManagerDisplayName(report.PackageManager.Name), installedLabel(report.PackageManager.Installed)))
 	}
-	lines = append(lines, "")
-	for _, result := range report.Results {
-		lines = append(lines, fmt.Sprintf("- %s (%s): %s", result.Tool.Name, result.Tool.Binary, installedLabel(result.Installed)))
+	grouped := groupResultsByCategory(report.Results)
+	for _, category := range toolCategoryOrder() {
+		results := grouped[category]
+		if len(results) == 0 {
+			continue
+		}
+		lines = append(lines, "")
+		lines = append(lines, fmt.Sprintf("%s:", toolCategoryLabel(category)))
+		for _, result := range results {
+			lines = append(lines, fmt.Sprintf("- %s (%s): %s", result.Tool.Name, result.Tool.Binary, installedLabel(result.Installed)))
+		}
 	}
 	return strings.Join(lines, "\n")
 }
@@ -214,11 +222,20 @@ func showManualInstallURLs(ui ui, plans []prereq.InstallPlan) error {
 	}
 
 	lines := []string{"Manual install resources:"}
-	for _, plan := range plans {
-		if plan.FallbackURL == "" {
+	grouped := groupPlansByCategory(plans)
+	for _, category := range toolCategoryOrder() {
+		categoryPlans := grouped[category]
+		if len(categoryPlans) == 0 {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf("- %s: %s", plan.Tool.Name, plan.FallbackURL))
+		lines = append(lines, "")
+		lines = append(lines, fmt.Sprintf("%s:", toolCategoryLabel(category)))
+		for _, plan := range categoryPlans {
+			if plan.FallbackURL == "" {
+				continue
+			}
+			lines = append(lines, fmt.Sprintf("- %s: %s", plan.Tool.Name, plan.FallbackURL))
+		}
 	}
 
 	return ui.Note("Some tools need manual installation", strings.Join(lines, "\n"))
@@ -265,6 +282,49 @@ func manualInstallPlans(plans []prereq.InstallPlan) []prereq.InstallPlan {
 
 func defaultInstallChoice(tool prereq.Tool) bool {
 	return tool.Required
+}
+
+func groupResultsByCategory(results []prereq.CheckResult) map[prereq.ToolCategory][]prereq.CheckResult {
+	grouped := make(map[prereq.ToolCategory][]prereq.CheckResult)
+	for _, result := range results {
+		grouped[result.Tool.Category] = append(grouped[result.Tool.Category], result)
+	}
+	return grouped
+}
+
+func groupPlansByCategory(plans []prereq.InstallPlan) map[prereq.ToolCategory][]prereq.InstallPlan {
+	grouped := make(map[prereq.ToolCategory][]prereq.InstallPlan)
+	for _, plan := range plans {
+		if plan.FallbackURL == "" {
+			continue
+		}
+		grouped[plan.Tool.Category] = append(grouped[plan.Tool.Category], plan)
+	}
+	return grouped
+}
+
+func toolCategoryOrder() []prereq.ToolCategory {
+	return []prereq.ToolCategory{
+		prereq.ToolCategoryAgentDependency,
+		prereq.ToolCategoryDeveloperTool,
+		prereq.ToolCategorySharedTool,
+		prereq.ToolCategoryAgentRuntime,
+	}
+}
+
+func toolCategoryLabel(category prereq.ToolCategory) string {
+	switch category {
+	case prereq.ToolCategoryAgentDependency:
+		return "Agent dependencies"
+	case prereq.ToolCategoryDeveloperTool:
+		return "Developer tools"
+	case prereq.ToolCategorySharedTool:
+		return "Recommended for both agents and developers"
+	case prereq.ToolCategoryAgentRuntime:
+		return "Agent runtimes"
+	default:
+		return "Other tools"
+	}
 }
 
 func packageManagerDisplayName(name string) string {
