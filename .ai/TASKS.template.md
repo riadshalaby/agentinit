@@ -8,8 +8,8 @@ Status values:
 - `in_implementation`
 - `ready_for_review`
 - `in_review`
+- `ready_for_test`
 - `in_testing`
-- `test_passed`
 - `test_failed`
 - `changes_requested`
 - `done`
