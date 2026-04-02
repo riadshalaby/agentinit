@@ -158,6 +158,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
 		t.Error("ai-launch.sh should route the test role in manual workflow")
 	}
+	startCycleScript := files["scripts/ai-start-cycle.sh"]
+	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
+		if !strings.Contains(startCycleScript, snippet) {
+			t.Errorf("ai-start-cycle.sh should contain %q", snippet)
+		}
+	}
 	if _, ok := files[".ai/prompts/po.md"]; ok {
 		t.Error("manual workflow should not render the PO prompt")
 	}
@@ -259,6 +265,13 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 	}
 	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
 		t.Error("ai-launch.sh should route the test role to tester prompt in auto workflow")
+	}
+
+	startCycleScript := files["scripts/ai-start-cycle.sh"]
+	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
+		if !strings.Contains(startCycleScript, snippet) {
+			t.Errorf("ai-start-cycle.sh should contain %q in auto workflow", snippet)
+		}
 	}
 }
 
