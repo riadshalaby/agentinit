@@ -44,13 +44,13 @@
 - Review Mode:
   - waits for explicit user start signal
   - writes `.ai/REVIEW.md`
-  - updates `.ai/TASKS.md` status to `in_testing` or `changes_requested`
+  - updates `.ai/TASKS.md` status to `ready_for_test` or `changes_requested`
   - appends a handoff entry to `.ai/HANDOFF.md`
   - never edits code
 - Tester Mode:
   - waits for explicit user start signal
   - writes `.ai/TEST_REPORT.md`
-  - updates `.ai/TASKS.md` status to `test_passed` or `test_failed`
+  - updates `.ai/TASKS.md` status to `done` or `test_failed`
   - appends a handoff entry to `.ai/HANDOFF.md`
   - never edits code
 - Implement Mode:
@@ -100,12 +100,12 @@
   - planner -> implementer uses `.ai/PLAN.md` + `.ai/TASKS.md` + `.ai/HANDOFF.md`
   - implementer -> reviewer uses commit + `.ai/TASKS.md` + `.ai/HANDOFF.md`
 - Recommended status flow in `.ai/TASKS.md`:
-  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `in_testing` -> `test_passed` -> `done`
+  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
-  - Test failure loop: `test_failed` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `in_testing`
+  - Test failure loop: `test_failed` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing`
 - If a persistent session is interrupted or reopened, the role must reload `CLAUDE.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
   - planner: `ROADMAP.md`, `.ai/PLAN.md`
-  - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking
+  - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking review findings, `.ai/TEST_REPORT.md` when addressing failed testing
   - reviewer: `.ai/PLAN.md`, `.ai/REVIEW.md`
   - tester: `.ai/PLAN.md`, `.ai/TEST_REPORT.md`
 - Files are the source of truth. No role should rely on hidden session memory when file state disagrees.
@@ -130,8 +130,8 @@ Use these text commands inside the already-running role sessions.
     - when work begins, update the task to `in_implementation`
   - `rework_task [TASK_ID]`
     - implementer only
-    - target a task in `changes_requested`
-    - load `.ai/REVIEW.md` as the required-fix checklist before editing
+    - target a task in `changes_requested` or `test_failed`
+    - load `.ai/REVIEW.md` as the required-fix checklist for review rework, and `.ai/TEST_REPORT.md` when addressing a failed test run
     - if no task matches, report that no tasks are pending rework
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
@@ -147,15 +147,14 @@ Use these text commands inside the already-running role sessions.
     - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
     - if no task matches the caller's role, say so explicitly and summarize the board
   - `finish_cycle [TASK_ID]`
-    - verify the requested task is `test_passed` or `done`, or all tasks are `test_passed`/`done` when no task ID is supplied
+    - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
     - if the completion condition is not met, report the blocking task states and abort
-    - if the completion condition is met, update any final `test_passed` task states to `done`
     - if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, the reviewer may stage and commit only those files before closing the cycle
     - do not stage `.ai/HANDOFF.md` or any other file as part of reviewer-owned commits
     - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
 - Tester session:
   - `next_task [TASK_ID]`
-    - select the first task in `in_testing` when no task ID is supplied
+    - select the first task in `ready_for_test` when no task ID is supplied
     - if the supplied task is not valid for tester work, report its current status and abort
     - when testing begins, update the task to `in_testing`
   - `status_cycle [TASK_ID]`

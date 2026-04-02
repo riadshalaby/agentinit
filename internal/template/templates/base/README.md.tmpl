@@ -37,11 +37,11 @@ This project uses a persistent 3-agent workflow with file-based coordination. Th
 
 {{- if eq .Workflow "auto"}}
 ```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → in_testing → test_passed → done
-                                          ↑                                     |                        |
-                                          └──── changes_requested ◄─────────────┘                        |
-                                                ▲                                                         |
-                                                └──────────────────────── test_failed ◄───────────────────┘
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
+                                          ↑                                     |                              |
+                                          └──── changes_requested ◄─────────────┘                              |
+                                                ▲                                                               |
+                                                └──────────────────────────── test_failed ◄──────────────────────┘
 ```
 {{- else}}
 ```
@@ -106,7 +106,7 @@ reviewer> finish_cycle
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 {{- if eq .Workflow "auto"}}
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `test_passed` or `done` |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 {{- else}}
 | `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 {{- end}}
@@ -116,7 +116,7 @@ reviewer> finish_cycle
 
 | Command | Description |
 |---------|-------------|
-| `next_task [TASK_ID]` | Pick up the next `in_testing` task |
+| `next_task [TASK_ID]` | Pick up the next `ready_for_test` task |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 {{- end}}
 

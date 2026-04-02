@@ -78,7 +78,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(claude, "`in_review` -> `done`") {
 		t.Error("generated CLAUDE.md should describe the manual status flow")
 	}
-	if strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+	if strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
 		t.Error("generated CLAUDE.md should not describe the auto test status flow in manual workflow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
@@ -110,6 +110,19 @@ func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {
 	}
 	if result.DocumentationPath != filepath.Join(projectDir, "README.md") {
 		t.Fatalf("DocumentationPath = %q, want README.md path", result.DocumentationPath)
+	}
+
+	claudeBytes, err := os.ReadFile(filepath.Join(projectDir, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	claude := string(claudeBytes)
+	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
+		t.Error("generated CLAUDE.md should describe the ready_for_test auto status flow")
+	}
+	legacyPassedStatus := "`test" + "_passed`"
+	if strings.Contains(claude, legacyPassedStatus) {
+		t.Error("generated CLAUDE.md should not contain the legacy passed-test status")
 	}
 }
 

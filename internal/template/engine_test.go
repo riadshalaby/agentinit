@@ -88,7 +88,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(claude, "`in_review` -> `done`") {
 		t.Error("CLAUDE.md should contain the manual status flow")
 	}
-	if strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+	if strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
 		t.Error("CLAUDE.md should not contain the extended test status flow in manual workflow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
@@ -122,6 +122,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
+	}
+	if strings.Contains(implementerPrompt, "`test_failed`") {
+		t.Error("implementer prompt should not mention test_failed in manual workflow")
 	}
 
 	referenceLine := "Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices."
@@ -190,7 +193,7 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
 		t.Error("CLAUDE.md should describe the tester launcher in auto workflow")
 	}
-	if !strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
 		t.Error("CLAUDE.md should contain the extended test status flow in auto workflow")
 	}
 
@@ -220,11 +223,19 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 		"You are in `test` mode.",
 		"`next_task [TASK_ID]`",
 		"`.ai/TEST_REPORT.md`",
-		"`test_passed`",
+		"`ready_for_test`",
 		"`test_failed`",
+		"`done`",
 	} {
 		if !strings.Contains(testerPrompt, snippet) {
 			t.Errorf("tester prompt should contain %q", snippet)
+		}
+	}
+
+	implementerPrompt := files[".ai/prompts/implementer.md"]
+	for _, snippet := range []string{"`test_failed`", "`.ai/TEST_REPORT.md`"} {
+		if !strings.Contains(implementerPrompt, snippet) {
+			t.Errorf("implementer prompt should contain %q in auto workflow", snippet)
 		}
 	}
 
