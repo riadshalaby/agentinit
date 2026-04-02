@@ -27,3 +27,5 @@ Thumbs.db
 
 # AI workflow runtime artifacts
 .ai/HANDOFF.md
+.ai/REVIEW.md
+.ai/TEST_REPORT.md
