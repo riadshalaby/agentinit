@@ -11,7 +11,11 @@ Usage:
   scripts/ai-launch.sh <role> <agent> [agent-options...]
 
 Roles:
+{{- if eq .Workflow "auto"}}
   plan | implement | review | test
+{{- else}}
+  plan | implement | review
+{{- end}}
 
 Agents:
   claude | codex
@@ -20,7 +24,9 @@ Examples:
   scripts/ai-launch.sh plan claude
   scripts/ai-launch.sh review codex
   scripts/ai-launch.sh implement codex -m gpt-5
+{{- if eq .Workflow "auto"}}
   scripts/ai-launch.sh test claude
+{{- end}}
 EOF
 }
 
@@ -46,10 +52,12 @@ case "$role" in
     prompt_file=".ai/prompts/reviewer.md"
     expected_output=".ai/REVIEW.md"
     ;;
+{{- if eq .Workflow "auto"}}
   test)
     prompt_file=".ai/prompts/tester.md"
     expected_output=".ai/TEST_REPORT.md"
     ;;
+{{- end}}
   *)
     echo "Unsupported role: $role" >&2
     usage

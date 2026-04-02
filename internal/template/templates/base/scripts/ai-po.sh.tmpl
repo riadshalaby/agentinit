@@ -1,3 +1,4 @@
+{{- if eq .Workflow "auto" -}}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -37,3 +38,4 @@ claude \
 status=$?
 
 exit "$status"
+{{- end -}}

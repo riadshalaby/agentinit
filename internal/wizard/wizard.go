@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/riadshalaby/agentinit/internal/prereq"
 	"github.com/riadshalaby/agentinit/internal/scaffold"
+	"github.com/riadshalaby/agentinit/internal/template"
 )
 
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
@@ -17,6 +18,7 @@ var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
 type projectSettings struct {
 	Name        string
 	ProjectType string
+	Workflow    string
 	TargetDir   string
 	InitGit     bool
 }
@@ -24,7 +26,7 @@ type projectSettings struct {
 type ui interface {
 	Note(title, body string) error
 	Confirm(title, description string, affirmative bool) (bool, error)
-	CollectProjectSettings(defaultDir string) (projectSettings, error)
+	CollectProjectSettings(defaultDir, defaultWorkflow string) (projectSettings, error)
 }
 
 type huhUI struct{}
@@ -35,16 +37,16 @@ var (
 	installTool           = prereq.InstallTool
 )
 
-func Run(cmdr prereq.Commander) error {
+func Run(cmdr prereq.Commander, defaultWorkflow string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("cannot determine current directory: %w", err)
 	}
 
-	return run(cmdr, huhUI{}, cwd, scaffold.Run)
+	return run(cmdr, huhUI{}, cwd, template.NormalizeWorkflow(defaultWorkflow), scaffold.Run)
 }
 
-func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
+func run(cmdr prereq.Commander, ui ui, cwd, defaultWorkflow string, scaffoldFn func(name, projectType, dir, workflow string, initGit bool) (scaffold.Result, error)) error {
 	report := scanPrereqs(cmdr)
 	if err := ui.Note("Checking your system...", formatScanReport(report)); err != nil {
 		return err
@@ -109,19 +111,20 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 		}
 	}
 
-	return runScaffoldStep(ui, cwd, scaffoldFn)
+	return runScaffoldStep(ui, cwd, defaultWorkflow, scaffoldFn)
 }
 
-func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
-	settings, err := ui.CollectProjectSettings(cwd)
+func runScaffoldStep(ui ui, cwd, defaultWorkflow string, scaffoldFn func(name, projectType, dir, workflow string, initGit bool) (scaffold.Result, error)) error {
+	settings, err := ui.CollectProjectSettings(cwd, defaultWorkflow)
 	if err != nil {
 		return err
 	}
+	settings.Workflow = template.NormalizeWorkflow(settings.Workflow)
 	if err := validateProjectSettings(settings); err != nil {
 		return err
 	}
 
-	result, err := scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.InitGit)
+	result, err := scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.Workflow, settings.InitGit)
 	if err != nil {
 		return err
 	}
@@ -153,8 +156,9 @@ func (huhUI) Confirm(title, description string, affirmative bool) (bool, error) 
 	return value, err
 }
 
-func (huhUI) CollectProjectSettings(defaultDir string) (projectSettings, error) {
+func (huhUI) CollectProjectSettings(defaultDir, defaultWorkflow string) (projectSettings, error) {
 	settings := projectSettings{
+		Workflow:  template.NormalizeWorkflow(defaultWorkflow),
 		TargetDir: defaultDir,
 		InitGit:   true,
 	}
@@ -173,6 +177,13 @@ func (huhUI) CollectProjectSettings(defaultDir string) (projectSettings, error) 
 					huh.NewOption("go", "go"),
 					huh.NewOption("java", "java"),
 					huh.NewOption("node", "node"),
+				),
+			huh.NewSelect[string]().
+				Title("Workflow").
+				Value(&settings.Workflow).
+				Options(
+					huh.NewOption("manual", template.WorkflowManual),
+					huh.NewOption("auto", template.WorkflowAuto),
 				),
 			huh.NewInput().
 				Title("Target directory").
@@ -348,6 +359,9 @@ func installedLabel(installed bool) string {
 func validateProjectSettings(settings projectSettings) error {
 	if err := validateProjectName(settings.Name); err != nil {
 		return err
+	}
+	if !template.ValidWorkflow(settings.Workflow) {
+		return fmt.Errorf("invalid workflow %q: must be one of %q or %q", settings.Workflow, template.WorkflowManual, template.WorkflowAuto)
 	}
 	return validateDirectory(settings.TargetDir)
 }

@@ -11,8 +11,8 @@ var version = "0.1.0"
 
 var rootCmd = &cobra.Command{
 	Use:   "agentinit",
-	Short: "Scaffold a 3-agent AI workflow for new projects",
-	Long:  "agentinit generates a complete 3-agent (Planner, Implementer, Reviewer) workflow scaffold with file-based coordination, shell scripts, and manual gates.",
+	Short: "Scaffold file-based AI workflows for new projects",
+	Long:  "agentinit generates manual and auto AI workflow scaffolds with file-based coordination, shell scripts, and persistent role sessions.",
 }
 
 func Execute() {

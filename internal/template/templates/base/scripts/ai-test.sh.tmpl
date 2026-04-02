@@ -1,3 +1,4 @@
+{{- if eq .Workflow "auto" -}}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -8,3 +9,4 @@ if [[ $# -gt 0 ]]; then
 fi
 
 exec "$SCRIPT_DIR/ai-launch.sh" test "$agent" "$@"
+{{- end -}}
