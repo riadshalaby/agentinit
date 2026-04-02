@@ -8,6 +8,7 @@ import (
 
 	"github.com/riadshalaby/agentinit/internal/prereq"
 	"github.com/riadshalaby/agentinit/internal/scaffold"
+	"github.com/riadshalaby/agentinit/internal/template"
 )
 
 type fakeFileInfo struct {
@@ -26,22 +27,25 @@ func TestInitCommandRunsWizardOnTTYWithoutArgs(t *testing.T) {
 	originalScaffold := runScaffold
 	originalStdinStat := stdinStat
 	originalCLIOutput := cliOutput
+	originalWorkflow := workflow
 	t.Cleanup(func() {
 		runWizard = originalWizard
 		runScaffold = originalScaffold
 		stdinStat = originalStdinStat
 		cliOutput = originalCLIOutput
+		workflow = originalWorkflow
 	})
 
 	wizardCalled := false
-	runWizard = func(prereq.Commander) error {
+	runWizard = func(prereq.Commander, string) error {
 		wizardCalled = true
 		return nil
 	}
-	runScaffold = func(name, projectType, dir string, initGit bool) (scaffold.Result, error) {
+	runScaffold = func(name, projectType, dir, workflow string, initGit bool) (scaffold.Result, error) {
 		t.Fatal("scaffold path should not run in wizard mode")
 		return scaffold.Result{}, nil
 	}
+	workflow = template.WorkflowManual
 	stdinStat = func() (fs.FileInfo, error) {
 		return fakeFileInfo{mode: fs.ModeCharDevice}, nil
 	}
@@ -77,6 +81,7 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 	originalCLIOutput := cliOutput
 	originalType := projectType
 	originalDir := targetDir
+	originalWorkflow := workflow
 	originalNoGit := noGit
 	t.Cleanup(func() {
 		runWizard = originalWizard
@@ -85,13 +90,15 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 		cliOutput = originalCLIOutput
 		projectType = originalType
 		targetDir = originalDir
+		workflow = originalWorkflow
 		noGit = originalNoGit
 	})
 
 	projectType = "go"
 	targetDir = t.TempDir()
+	workflow = template.WorkflowAuto
 	noGit = true
-	runWizard = func(prereq.Commander) error {
+	runWizard = func(prereq.Commander, string) error {
 		t.Fatal("wizard path should not run with positional arg")
 		return nil
 	}
@@ -99,10 +106,10 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 	var output bytes.Buffer
 	cliOutput = &output
 	called := false
-	runScaffold = func(name, projectType, dir string, initGit bool) (scaffold.Result, error) {
+	runScaffold = func(name, projectType, dir, workflow string, initGit bool) (scaffold.Result, error) {
 		called = true
-		if name != "demo" || projectType != "go" || dir != targetDir || initGit {
-			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, dir, initGit)
+		if name != "demo" || projectType != "go" || dir != targetDir || workflow != template.WorkflowAuto || initGit {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %q, %v", name, projectType, dir, workflow, initGit)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
@@ -128,5 +135,18 @@ func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
 	}
 	if got := output.String(); !bytes.Contains([]byte(got), []byte("Project scaffold complete!")) {
 		t.Fatalf("CLI output = %q", got)
+	}
+}
+
+func TestInitCommandRejectsInvalidWorkflow(t *testing.T) {
+	originalWorkflow := workflow
+	t.Cleanup(func() {
+		workflow = originalWorkflow
+	})
+
+	workflow = "broken"
+	err := initCmd.RunE(initCmd, []string{"demo"})
+	if err == nil {
+		t.Fatal("RunE() error = nil, want error")
 	}
 }

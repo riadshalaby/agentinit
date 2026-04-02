@@ -1,24 +1,32 @@
 # agentinit
 
-Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates the structure for persistent agent sessions that collaborate through shared files with a well-defined status flow.
+Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates either a manual 3-agent workflow or an auto 4-agent workflow where persistent sessions collaborate through shared files with a well-defined status flow.
 
 ## Concepts
 
 **Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
 
-**Roles** — each cycle uses four persistent agent sessions:
+**Roles** — a cycle always includes Planner, Implementer, and Reviewer sessions. The optional auto workflow also adds a Tester session and a PO-driven orchestration layer.
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
-| **Tester** | Verifies the reviewed implementation and records test results | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
+| **Tester** | Verifies the reviewed implementation and records test results in the auto workflow | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
 
 **File-based coordination** — roles communicate exclusively through files in `.ai/`. No role calls another role directly. The user switches between terminal sessions to drive each role forward.
 
-**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`:
+**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. The default manual workflow ends at review, while the auto workflow extends into testing:
 
+Manual:
+```
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → done
+                                          ↑                                     |
+                                          └──── changes_requested ◄─────────────┘
+```
+
+Auto:
 ```
 in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → in_testing → test_passed → done
                                           ↑                                     |                        |
@@ -46,8 +54,11 @@ go install github.com/riadshalaby/agentinit@latest
 # Scaffold a project with the interactive wizard
 agentinit init
 
-# Or scaffold non-interactively
+# Or scaffold the default manual workflow non-interactively
 agentinit init myapp --type go
+
+# Or scaffold the auto workflow with PO and tester support
+agentinit init myapp-auto --type go --workflow auto
 
 # Enter the project and edit ROADMAP.md with your goals
 cd myapp
@@ -56,17 +67,15 @@ $EDITOR ROADMAP.md
 # Start your first cycle
 scripts/ai-start-cycle.sh feature/first-feature
 
-# Launch four persistent agent sessions (one terminal each)
+# Launch the manual workflow's three persistent agent sessions (one terminal each)
 scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
-scripts/ai-test.sh          # terminal 4
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
-tester>       next_task
 reviewer>     finish_cycle
 
 # Create or update the PR
@@ -76,7 +85,7 @@ scripts/ai-pr.sh sync
 ## Usage
 
 ```bash
-agentinit init [project-name] [--type go|java|node] [--dir .] [--no-git]
+agentinit init [project-name] [--type go|java|node] [--workflow manual|auto] [--dir .] [--no-git]
 ```
 
 `agentinit init` has two entry paths:
@@ -97,6 +106,7 @@ Wizard project settings:
 
 - `Project name`
 - `Project type`: `none`, `go`, `java`, `node`
+- `Workflow`: `manual` or `auto`
 - `Target directory`
 - `Initialize git?`
 
@@ -131,6 +141,9 @@ agentinit init
 # Scaffold a Go project without the wizard
 agentinit init myapp --type go
 
+# Scaffold an auto workflow with PO/tester artifacts
+agentinit init myapp-auto --type go --workflow auto
+
 # Scaffold a Java project in a specific directory without the wizard
 agentinit init myservice --type java --dir ~/projects
 
@@ -140,9 +153,13 @@ agentinit init mylib --type node --no-git
 
 ## Workflows
 
-### 4-Agent Persistent Workflow
+### Manual Workflow (`--workflow manual`)
 
-The default workflow uses four persistent agent sessions that stay open for an entire cycle.
+`manual` is the default workflow. It scaffolds the original 3-agent persistent workflow with Planner, Implementer, and Reviewer sessions. The user advances the cycle by switching between those sessions and issuing commands such as `next_task`, `rework_task`, and `finish_cycle`.
+
+### Auto Workflow (`--workflow auto`)
+
+`auto` adds the PO and tester workflow artifacts on top of the base scaffold. The generated project includes the PO prompt and launcher, the tester prompt and launcher, the test report template, and the extended test-aware status flow.
 
 #### Lifecycle
 
@@ -227,7 +244,7 @@ Launch each role once per cycle. All subsequent interaction happens through text
 | `.ai/PLAN.md` | Current plan written by the planner | yes |
 | `.ai/TASKS.md` | Task board with status per task | yes |
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes |
-| `.ai/TEST_REPORT.md` | Test findings written by the tester | yes |
+| `.ai/TEST_REPORT.md` | Test findings written by the tester in auto workflow | yes |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | no (gitignored) |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |

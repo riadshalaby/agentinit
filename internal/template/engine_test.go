@@ -8,6 +8,7 @@ import (
 func TestRenderAllBaseOnly(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "myproject",
+		Workflow:        WorkflowManual,
 		ProjectType:     "",
 		PRTestPlanItems: []string{"All validations pass"},
 	}
@@ -22,21 +23,16 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
-		".ai/TEST_REPORT.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
-		".ai/prompts/po.md",
 		".ai/prompts/reviewer.md",
-		".ai/prompts/tester.md",
 		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
-		"scripts/ai-po.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -72,8 +68,11 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "reviewer> finish_cycle") {
 		t.Error("README.md should contain finish_cycle example")
 	}
-	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("README.md should contain tester example")
+	if !strings.Contains(readme, "Selected workflow: `manual`") {
+		t.Error("README.md should document the selected manual workflow")
+	}
+	if strings.Contains(readme, "tester> next_task T-001") {
+		t.Error("README.md should not contain tester example in manual workflow")
 	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("README.md should not contain legacy @ command aliases")
@@ -83,11 +82,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(claude, "`status_cycle [TASK_ID]`") {
 		t.Error("CLAUDE.md should describe status_cycle")
 	}
-	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("CLAUDE.md should describe the tester launcher")
+	if strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("CLAUDE.md should not describe the tester launcher in manual workflow")
 	}
-	if !strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
-		t.Error("CLAUDE.md should contain the extended test status flow")
+	if !strings.Contains(claude, "`in_review` -> `done`") {
+		t.Error("CLAUDE.md should contain the manual status flow")
+	}
+	if strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+		t.Error("CLAUDE.md should not contain the extended test status flow in manual workflow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("CLAUDE.md should document interrupted-session recovery")
@@ -143,6 +145,55 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("planner prompt should not use the selected-task wording")
 	}
 
+	launchScript := files["scripts/ai-launch.sh"]
+	if !strings.Contains(launchScript, "plan | implement | review") {
+		t.Error("ai-launch.sh should list the manual roles")
+	}
+	if strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
+		t.Error("ai-launch.sh should not route the test role in manual workflow")
+	}
+}
+
+func TestRenderAllAutoWorkflow(t *testing.T) {
+	data := &ProjectData{
+		ProjectName:     "autoapp",
+		Workflow:        WorkflowAuto,
+		PRTestPlanItems: []string{"All validations pass"},
+	}
+
+	files, err := RenderAll(data)
+	if err != nil {
+		t.Fatalf("RenderAll() error: %v", err)
+	}
+
+	for _, f := range []string{
+		".ai/TEST_REPORT.template.md",
+		".ai/prompts/po.md",
+		".ai/prompts/tester.md",
+		"scripts/ai-po.sh",
+		"scripts/ai-test.sh",
+	} {
+		if _, ok := files[f]; !ok {
+			t.Errorf("missing expected auto workflow file: %s", f)
+		}
+	}
+
+	readme := files["README.md"]
+	if !strings.Contains(readme, "Selected workflow: `auto`") {
+		t.Error("README.md should document the selected auto workflow")
+	}
+	if !strings.Contains(readme, "tester> next_task T-001") {
+		t.Error("README.md should contain tester example in auto workflow")
+	}
+
+	claude := files["CLAUDE.md"]
+	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("CLAUDE.md should describe the tester launcher in auto workflow")
+	}
+	if !strings.Contains(claude, "`in_review` -> `in_testing` -> `test_passed` -> `done`") {
+		t.Error("CLAUDE.md should contain the extended test status flow in auto workflow")
+	}
+
 	poPrompt := files[".ai/prompts/po.md"]
 	for _, snippet := range []string{
 		"`start_session`",
@@ -184,10 +235,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	launchScript := files["scripts/ai-launch.sh"]
 	if !strings.Contains(launchScript, "plan | implement | review | test") {
-		t.Error("ai-launch.sh should list the test role")
+		t.Error("ai-launch.sh should list the test role in auto workflow")
 	}
 	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should route the test role to tester prompt")
+		t.Error("ai-launch.sh should route the test role to tester prompt in auto workflow")
 	}
 }
 
@@ -195,6 +246,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "goapp",
 		ProjectType: "go",
+		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "go fmt ./..."},
 			{Label: "Vet", Command: "go vet ./..."},
@@ -234,6 +286,7 @@ func TestRenderAllJavaOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "javaapp",
 		ProjectType: "java",
+		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "mvn -q spotless:apply"},
 			{Label: "Compile", Command: "mvn -q -DskipTests test-compile"},
@@ -262,6 +315,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "nodeapp",
 		ProjectType: "node",
+		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Lint", Command: "npm run lint"},
 			{Label: "Build", Command: "npm run build"},
@@ -284,6 +338,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 func TestDotfileMapping(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "testproj",
+		Workflow:        WorkflowManual,
 		PRTestPlanItems: []string{"All validations pass"},
 	}
 

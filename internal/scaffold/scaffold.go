@@ -11,7 +11,12 @@ import (
 )
 
 // Run orchestrates the full scaffold process.
-func Run(name, projectType, dir string, initGit bool) (Result, error) {
+func Run(name, projectType, dir, workflow string, initGit bool) (Result, error) {
+	workflow = template.NormalizeWorkflow(workflow)
+	if !template.ValidWorkflow(workflow) {
+		return Result{}, fmt.Errorf("invalid workflow %q: must be one of %q or %q", workflow, template.WorkflowManual, template.WorkflowAuto)
+	}
+
 	targetDir := filepath.Join(dir, name)
 
 	// Check target does not exist.
@@ -29,6 +34,7 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	data := &template.ProjectData{
 		ProjectName:        name,
 		ProjectType:        projectType,
+		Workflow:           workflow,
 		ValidationCommands: ov.ValidationCommands,
 		PRTestPlanItems:    ov.PRTestPlanItems,
 	}

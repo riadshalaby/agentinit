@@ -10,7 +10,13 @@ TODO: Add setup instructions.
 
 ## AI Workflow
 
+Selected workflow: `{{.Workflow}}`
+
+{{- if eq .Workflow "auto"}}
 This project uses a persistent 4-agent workflow with file-based coordination. Four roles (Planner, Implementer, Reviewer, Tester) communicate through shared files in `.ai/` and follow a defined task status flow.
+{{- else}}
+This project uses a persistent 3-agent workflow with file-based coordination. Three roles (Planner, Implementer, Reviewer) communicate through shared files in `.ai/` and follow a defined task status flow.
+{{- end}}
 
 ### Concepts
 
@@ -23,10 +29,13 @@ This project uses a persistent 4-agent workflow with file-based coordination. Fo
 | Planner | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | Implementer | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | Reviewer | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
+{{- if eq .Workflow "auto"}}
 | Tester | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
+{{- end}}
 
 **Status flow:**
 
+{{- if eq .Workflow "auto"}}
 ```
 in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → in_testing → test_passed → done
                                           ↑                                     |                        |
@@ -34,6 +43,13 @@ in_planning → ready_for_implement → in_implementation → ready_for_review �
                                                 ▲                                                         |
                                                 └──────────────────────── test_failed ◄───────────────────┘
 ```
+{{- else}}
+```
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → done
+                                          ↑                                     |
+                                          └──── changes_requested ◄─────────────┘
+```
+{{- end}}
 
 ### Start a new development cycle
 
@@ -48,7 +64,9 @@ scripts/ai-start-cycle.sh feature/<scope>
 scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
+{{- if eq .Workflow "auto"}}
 scripts/ai-test.sh          # terminal 4
+{{- end}}
 ```
 
 Launch each role once, then keep those sessions open for the rest of the cycle.
@@ -59,7 +77,9 @@ Launch each role once, then keep those sessions open for the rest of the cycle.
 planner> start_plan
 implementer> next_task T-001
 reviewer> next_task T-001
+{{- if eq .Workflow "auto"}}
 tester> next_task T-001
+{{- end}}
 implementer> rework_task T-001
 reviewer> finish_cycle
 ```
@@ -85,14 +105,20 @@ reviewer> finish_cycle
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
+{{- if eq .Workflow "auto"}}
 | `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `test_passed` or `done` |
+{{- else}}
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
+{{- end}}
 
+{{- if eq .Workflow "auto"}}
 **Tester commands:**
 
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `in_testing` task |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
+{{- end}}
 
 ### File map
 
@@ -101,7 +127,9 @@ reviewer> finish_cycle
 | `.ai/PLAN.md` | Current plan | yes |
 | `.ai/TASKS.md` | Task board with status | yes |
 | `.ai/REVIEW.md` | Review findings | yes |
+{{- if eq .Workflow "auto"}}
 | `.ai/TEST_REPORT.md` | Test findings | yes |
+{{- end}}
 | `.ai/HANDOFF.md` | Runtime handoff log | no |
 | `ROADMAP.md` | Cycle goals (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation | yes |

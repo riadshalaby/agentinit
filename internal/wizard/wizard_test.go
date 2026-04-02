@@ -47,8 +47,12 @@ func (f *fakeUI) Confirm(title, description string, affirmative bool) (bool, err
 	return value, nil
 }
 
-func (f *fakeUI) CollectProjectSettings(string) (projectSettings, error) {
-	return f.settings, nil
+func (f *fakeUI) CollectProjectSettings(_ string, defaultWorkflow string) (projectSettings, error) {
+	settings := f.settings
+	if settings.Workflow == "" {
+		settings.Workflow = defaultWorkflow
+	}
+	return settings, nil
 }
 
 func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
@@ -75,9 +79,9 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
-		if name != "demo" || projectType != "" || targetDir != dir || !initGit {
-			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+		if name != "demo" || projectType != "" || targetDir != dir || workflow != template.WorkflowManual || !initGit {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %q, %v", name, projectType, targetDir, workflow, initGit)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
@@ -137,7 +141,7 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -233,7 +237,7 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:        name,
 			ProjectType:        projectType,
@@ -339,7 +343,7 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -424,7 +428,7 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -469,7 +473,7 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -494,6 +498,32 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 		!strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") ||
 		!strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
 		t.Fatalf("manual install note = %q", manual.body)
+	}
+}
+
+func TestRunDefaultsWizardWorkflowToProvidedValue(t *testing.T) {
+	dir := t.TempDir()
+	ui := &fakeUI{
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   false,
+		},
+	}
+
+	err := run((&prereqTestCommander{}), ui, dir, template.WorkflowAuto, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+		if workflow != template.WorkflowAuto {
+			t.Fatalf("workflow = %q, want %q", workflow, template.WorkflowAuto)
+		}
+		return scaffold.Result{
+			ProjectName:       name,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("run() error = %v", err)
 	}
 }
 
