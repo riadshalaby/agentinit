@@ -6,13 +6,15 @@ Goal: implement all deliverables from `ROADMAP.md` — MCP server foundation, PO
 
 ## Task Order
 
-1. **T-001 — Bugfix: tree-sitter-cli** (quick win first)
-2. **T-002 — MCP server skeleton** (Cobra subcommand + mcp-go wiring + stdio transport)
-3. **T-003 — MCP session management tools** (start/stop/send via os/exec, state tracking)
-4. **T-004 — PO agent role and orchestration logic**
-5. **T-005 — Tester role**
-6. **T-006 — Tool categorization improvement** (alongside scaffold changes)
-7. **T-007 — Scaffold integration** (--workflow flag, PO + Tester templates)
+1. **T-001 — Bugfix: tree-sitter-cli** (quick win first) ✅
+2. **T-002 — MCP server skeleton** (Cobra subcommand + mcp-go wiring + stdio transport) ✅
+3. **T-003 — MCP session management tools** (start/stop/send via os/exec, state tracking) ✅
+4. **T-004 — PO agent role and orchestration logic** ✅
+5. **T-005 — Tester role** ✅ (status flow rework in T-008)
+6. **T-006 — Tool categorization improvement** (alongside scaffold changes) ✅
+7. **T-007 — Scaffold integration** (--workflow flag, PO + Tester templates) ✅
+8. **T-008 — Fix tester status flow** (correct handoff statuses between reviewer, tester, and implementer) ✅
+9. **T-009 — Gitignore runtime artifacts + tester in manual workflow**
 
 ---
 
@@ -103,19 +105,21 @@ Add a Tester agent that validates implemented work, writes a test report, and up
   - Reads the commit diff for what changed.
   - Performs exploratory/manual verification.
   - Writes findings to `.ai/TEST_REPORT.md`.
-  - Can mark task as `test_passed` or `test_failed` in `.ai/TASKS.md`.
+  - Can mark task as `done` or `test_failed` in `.ai/TASKS.md`.
   - Waits for explicit start signal (same pattern as other roles).
 - `internal/template/templates/base/ai/TEST_REPORT.template.md.tmpl`: New template file for test report structure.
 - `internal/template/templates/base/scripts/ai-test.sh.tmpl`: New launcher script for the tester role.
 - `scripts/ai-launch.sh`: Update the role validation to accept `test` as a valid role (in addition to plan/implement/review).
-- Extend status flow: add `in_testing`, `test_passed`, `test_failed` to the documented status values in CLAUDE.md template and TASKS template.
-- `internal/template/templates/base/ai/TASKS.template.md.tmpl`: Add `in_testing`, `test_passed`, `test_failed` to status values list.
+- Extend status flow: add `ready_for_test`, `in_testing`, `test_failed` to the documented status values in CLAUDE.md template and TASKS template.
+- `internal/template/templates/base/ai/TASKS.template.md.tmpl`: Add `ready_for_test`, `in_testing`, `test_failed` to status values list.
 - `internal/template/templates/base/CLAUDE.md.tmpl`: Add Tester role to AI Workflow Rules, update status flow, add tester session commands, add `test` role to launcher docs.
 
 ### Acceptance Criteria
 - `scripts/ai-test.sh` launches a tester session.
-- Status flow includes `in_testing` → `test_passed` | `test_failed`.
+- Reviewer sets `ready_for_test` on successful review.
+- Tester picks up `ready_for_test`, sets `in_testing`, then `done` or `test_failed`.
 - `test_failed` loops back to `in_implementation`.
+- Implementer handles `test_failed` tasks (like `changes_requested`).
 - `.ai/TEST_REPORT.md` template exists.
 - Existing tests pass.
 
@@ -165,6 +169,99 @@ Let `agentinit init` generate projects that support the auto workflow out of the
 - `agentinit init --workflow manual` produces the same output as today (no PO/tester files).
 - `agentinit init --workflow auto` additionally generates PO prompt, tester prompt, test report template, and launcher scripts.
 - Both workflows share the same `.ai/` file structure; `auto` adds `TEST_REPORT.md` and PO prompt.
+- `go vet ./...` and `go test ./...` pass.
+
+> **Note (superseded by T-009):** The tester is now part of both workflows. T-007's original gating of tester files behind `auto` is corrected in T-009. Only PO files remain `auto`-exclusive.
+
+---
+
+## T-008 — Fix Tester Status Flow
+
+### Scope
+Correct the status flow for the tester workflow across all prompts, templates, and repo docs. The current implementation uses `test_passed` as an intermediate status and has the reviewer setting `in_testing` directly. The correct flow is:
+
+**Corrected status flow:**
+```
+in_review → ready_for_test → in_testing → done
+                                  ↓
+                             test_failed → in_implementation (back to implementer)
+```
+
+**Key rules:**
+- Reviewer sets `ready_for_test` on successful review (not `in_testing`).
+- Tester picks up tasks in `ready_for_test`, sets `in_testing` when starting.
+- Tester sets `done` on success (no intermediate `test_passed` status).
+- Tester sets `test_failed` on failure → loops back to implementer.
+- Implementer handles `test_failed` tasks the same way as `changes_requested`.
+- `test_passed` is removed as a status value entirely.
+- `finish_cycle` checks for `done` only (no `test_passed`).
+
+### Changes
+- **`CLAUDE.md`** (checked-in repo copy): Update status flow, Review Mode output (`ready_for_test` not `in_testing`), Tester Mode output (`done` not `test_passed`), `finish_cycle` rule, Implementer rework to include `test_failed`, remove `test_passed` from status values.
+- **`internal/template/templates/base/CLAUDE.md.tmpl`**: Same changes as above in the scaffold template.
+- **`.ai/TASKS.md`** (checked-in repo copy): Replace `test_passed` with `ready_for_test` in status values. Update any tasks currently at `test_passed` to `ready_for_test`.
+- **`internal/template/templates/base/ai/TASKS.template.md.tmpl`**: Replace `test_passed` with `ready_for_test` in status values list.
+- **`internal/template/templates/base/ai/prompts/reviewer.md.tmpl`**: Reviewer sets `ready_for_test` on pass (not `in_testing`).
+- **`internal/template/templates/base/ai/prompts/tester.md.tmpl`**: Tester picks up `ready_for_test`, sets `done` or `test_failed` (not `test_passed`).
+- **`internal/template/templates/base/ai/prompts/implementer.md.tmpl`**: Implementer handles `test_failed` in addition to `changes_requested`.
+- **`internal/template/templates/base/ai/prompts/po.md.tmpl`**: Update PO's understanding of the status flow to use `ready_for_test` and remove `test_passed`.
+- **`.ai/prompts/reviewer.md`**: Update checked-in reviewer prompt.
+- **`.ai/prompts/tester.md`**: Update checked-in tester prompt.
+- **`.ai/prompts/implementer.md`**: Update checked-in implementer prompt if it exists.
+- **`.ai/TASKS.template.md`**: Update checked-in TASKS template.
+
+### Acceptance Criteria
+- `test_passed` does not appear as a status value anywhere in the codebase.
+- `ready_for_test` is used consistently as the handoff status from reviewer to tester.
+- Reviewer prompt sets `ready_for_test` on successful review.
+- Tester prompt sets `done` on success, `test_failed` on failure.
+- Implementer prompt handles both `changes_requested` and `test_failed`.
+- `finish_cycle` checks for `done` only.
+- `go vet ./...` and `go test ./...` pass.
+
+---
+
+## T-009 — Gitignore Runtime Artifacts + Tester in Manual Workflow
+
+### Scope
+Two related corrections:
+
+**A) Gitignore REVIEW.md and TEST_REPORT.md**
+`.ai/REVIEW.md` and `.ai/TEST_REPORT.md` are runtime artifacts (like `.ai/HANDOFF.md`) and must never be checked in. They should be gitignored, and any references to committing them must be removed.
+
+**B) Tester available in both workflows**
+The tester role belongs in the manual workflow too — it's a standard workflow step, not an automation-only feature. Only the PO agent (orchestration layer) should be gated behind `--workflow auto`.
+
+### Changes
+
+**Part A — Gitignore runtime artifacts:**
+- **`.gitignore`** (checked-in repo): Add `.ai/REVIEW.md` and `.ai/TEST_REPORT.md`.
+- **`internal/template/templates/base/gitignore.tmpl`**: Add `.ai/REVIEW.md` and `.ai/TEST_REPORT.md` to the generated gitignore.
+- **`CLAUDE.md`** (checked-in repo): Update reviewer commit rule from "may commit only when the staged set is limited to `.ai/REVIEW.md` and `.ai/TASKS.md`" → "may commit only when the staged set is limited to `.ai/TASKS.md`". Reviewer no longer commits REVIEW.md since it's gitignored.
+- **`internal/template/templates/base/CLAUDE.md.tmpl`**: Same change as above in the scaffold template.
+- **`.ai/prompts/reviewer.md`** (checked-in prompt): Update any instructions about committing REVIEW.md.
+- **`internal/template/templates/base/ai/prompts/reviewer.md.tmpl`**: Same change in the scaffold template.
+- Add tracked templates (like HANDOFF.template.md pattern):
+  - **`.ai/REVIEW.template.md`** already exists — verify it's tracked.
+  - **`.ai/TEST_REPORT.template.md`** already exists — verify it's tracked.
+
+**Part B — Tester in manual workflow:**
+- **`internal/template/engine.go`**: Remove the `auto`-only gate from tester files. Only PO files (`ai-po.sh.tmpl`, `po.md.tmpl`) remain gated behind `auto`.
+- **`internal/template/templates/base/CLAUDE.md.tmpl`**: Tester workflow rules, status flow with `ready_for_test`/`in_testing`/`test_failed`, tester session commands, and `test` role in launcher docs should be unconditional (not wrapped in `{{if eq .Workflow "auto"}}`).
+- **`internal/template/templates/base/README.md.tmpl`**: Tester documentation should be unconditional.
+- **`internal/template/templates/base/scripts/ai-launch.sh.tmpl`**: `test` role should always be valid.
+- Tester files always generated: `ai-test.sh.tmpl`, `tester.md.tmpl`, `TEST_REPORT.template.md.tmpl`.
+- **`cmd/init_test.go`**: Update tests — `manual` should now include tester files; `auto` adds only PO files on top.
+- **`internal/scaffold/scaffold_test.go`** and **`internal/template/engine_test.go`**: Update any assertions about tester file gating.
+- **`CLAUDE.md`** (checked-in repo): Ensure tester rules are present (not conditional on workflow).
+- **`README.md`** (checked-in repo): Update workflow documentation to reflect tester in both workflows.
+
+### Acceptance Criteria
+- `.ai/REVIEW.md` and `.ai/TEST_REPORT.md` are in `.gitignore` (both repo and scaffold template).
+- Reviewer commit rule references only `.ai/TASKS.md` (not `.ai/REVIEW.md`).
+- `agentinit init --workflow manual` generates tester prompt, tester launcher, test report template, and includes tester in CLAUDE.md status flow.
+- `agentinit init --workflow auto` additionally generates only PO prompt and PO launcher on top of manual.
+- `rg "REVIEW.md" .gitignore` finds a match; `rg "TEST_REPORT.md" .gitignore` finds a match.
 - `go vet ./...` and `go test ./...` pass.
 
 ---
