@@ -98,6 +98,17 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			t.Errorf("generated .gitignore should contain %s", entry)
 		}
 	}
+
+	startCycleBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-start-cycle.sh"))
+	if err != nil {
+		t.Fatalf("read scripts/ai-start-cycle.sh: %v", err)
+	}
+	startCycle := string(startCycleBytes)
+	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
+		if !strings.Contains(startCycle, snippet) {
+			t.Errorf("generated ai-start-cycle.sh should contain %q", snippet)
+		}
+	}
 }
 
 func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {

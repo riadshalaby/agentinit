@@ -97,9 +97,11 @@ main() {
 
   git add .ai/PLAN.md .ai/TASKS.md ROADMAP.md
 
-  if git ls-files --error-unmatch .ai/HANDOFF.md >/dev/null 2>&1; then
-    git rm --cached .ai/HANDOFF.md >/dev/null 2>&1 || die "failed to untrack .ai/HANDOFF.md"
-  fi
+  for runtime_artifact in .ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md; do
+    if git ls-files --error-unmatch "$runtime_artifact" >/dev/null 2>&1; then
+      git rm --cached "$runtime_artifact" >/dev/null 2>&1 || die "failed to untrack $runtime_artifact"
+    fi
+  done
 
   git commit -m "chore: start cycle $(basename "$branch_name")" >/dev/null 2>&1 || die "failed to commit cycle bootstrap files"
   git push -u origin "$branch_name" >/dev/null 2>&1 || die "failed to push branch '$branch_name' to origin"
