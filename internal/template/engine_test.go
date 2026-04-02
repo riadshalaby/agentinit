@@ -24,15 +24,18 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
+		".ai/TEST_REPORT.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
+		".ai/prompts/tester.md",
 		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -71,25 +74,25 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "Selected workflow: `manual`") {
 		t.Error("README.md should document the selected manual workflow")
 	}
-	if strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("README.md should not contain tester example in manual workflow")
+	if !strings.Contains(readme, "tester> next_task T-001") {
+		t.Error("README.md should contain tester example in manual workflow")
 	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("README.md should not contain legacy @ command aliases")
+	}
+	if !strings.Contains(readme, "no (gitignored runtime artifact)") {
+		t.Error("README.md should mark review and test reports as gitignored runtime artifacts")
 	}
 
 	claude := files["CLAUDE.md"]
 	if !strings.Contains(claude, "`status_cycle [TASK_ID]`") {
 		t.Error("CLAUDE.md should describe status_cycle")
 	}
-	if strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("CLAUDE.md should not describe the tester launcher in manual workflow")
+	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("CLAUDE.md should describe the tester launcher in manual workflow")
 	}
-	if !strings.Contains(claude, "`in_review` -> `done`") {
-		t.Error("CLAUDE.md should contain the manual status flow")
-	}
-	if strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("CLAUDE.md should not contain the extended test status flow in manual workflow")
+	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
+		t.Error("CLAUDE.md should contain the test-aware status flow in manual workflow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("CLAUDE.md should document interrupted-session recovery")
@@ -123,8 +126,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
 	}
-	if strings.Contains(implementerPrompt, "`test_failed`") {
-		t.Error("implementer prompt should not mention test_failed in manual workflow")
+	if !strings.Contains(implementerPrompt, "`test_failed`") {
+		t.Error("implementer prompt should mention test_failed in manual workflow")
 	}
 
 	referenceLine := "Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices."
@@ -149,11 +152,17 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 
 	launchScript := files["scripts/ai-launch.sh"]
-	if !strings.Contains(launchScript, "plan | implement | review") {
-		t.Error("ai-launch.sh should list the manual roles")
+	if !strings.Contains(launchScript, "plan | implement | review | test") {
+		t.Error("ai-launch.sh should list the test role in manual workflow")
 	}
-	if strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should not route the test role in manual workflow")
+	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
+		t.Error("ai-launch.sh should route the test role in manual workflow")
+	}
+	if _, ok := files[".ai/prompts/po.md"]; ok {
+		t.Error("manual workflow should not render the PO prompt")
+	}
+	if _, ok := files["scripts/ai-po.sh"]; ok {
+		t.Error("manual workflow should not render the PO launcher")
 	}
 }
 
@@ -170,11 +179,8 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 	}
 
 	for _, f := range []string{
-		".ai/TEST_REPORT.template.md",
 		".ai/prompts/po.md",
-		".ai/prompts/tester.md",
 		"scripts/ai-po.sh",
-		"scripts/ai-test.sh",
 	} {
 		if _, ok := files[f]; !ok {
 			t.Errorf("missing expected auto workflow file: %s", f)
@@ -187,6 +193,9 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 	}
 	if !strings.Contains(readme, "tester> next_task T-001") {
 		t.Error("README.md should contain tester example in auto workflow")
+	}
+	if !strings.Contains(readme, "auto-only PO orchestration layer") {
+		t.Error("README.md should describe the auto workflow as adding the PO layer")
 	}
 
 	claude := files["CLAUDE.md"]
@@ -275,6 +284,11 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	gitignore := files[".gitignore"]
 	if !strings.Contains(gitignore, "vendor/") {
 		t.Error(".gitignore should contain Go-specific entries")
+	}
+	for _, entry := range []string{".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+		if !strings.Contains(gitignore, entry) {
+			t.Errorf(".gitignore should contain %q", entry)
+		}
 	}
 
 	// Verify CLAUDE.md has validation commands.

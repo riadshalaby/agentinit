@@ -1,32 +1,24 @@
 # agentinit
 
-Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates either a manual 3-agent workflow or an auto 4-agent workflow where persistent sessions collaborate through shared files with a well-defined status flow.
+Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates either a manual workflow with planner, implementer, reviewer, and tester sessions, or an auto workflow that adds a PO orchestration layer on top of the same role set.
 
 ## Concepts
 
 **Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
 
-**Roles** — a cycle always includes Planner, Implementer, and Reviewer sessions. The optional auto workflow also adds a Tester session and a PO-driven orchestration layer.
+**Roles** — a cycle always includes Planner, Implementer, Reviewer, and Tester sessions. The optional auto workflow adds a PO-driven orchestration layer on top of those persistent role sessions.
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
-| **Tester** | Verifies the reviewed implementation and records test results in the auto workflow | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
+| **Tester** | Verifies the reviewed implementation and records test results | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
 
 **File-based coordination** — roles communicate exclusively through files in `.ai/`. No role calls another role directly. The user switches between terminal sessions to drive each role forward.
 
-**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. The default manual workflow ends at review, while the auto workflow extends into testing:
+**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. Both workflows include testing; the auto workflow adds orchestration on top of the same task flow:
 
-Manual:
-```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → done
-                                          ↑                                     |
-                                          └──── changes_requested ◄─────────────┘
-```
-
-Auto:
 ```
 in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
                                           ↑                                     |                              |
@@ -67,15 +59,17 @@ $EDITOR ROADMAP.md
 # Start your first cycle
 scripts/ai-start-cycle.sh feature/first-feature
 
-# Launch the manual workflow's three persistent agent sessions (one terminal each)
+# Launch the persistent role sessions (one terminal each)
 scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
+scripts/ai-test.sh          # terminal 4
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
+tester>       next_task
 reviewer>     finish_cycle
 
 # Create or update the PR
@@ -155,11 +149,11 @@ agentinit init mylib --type node --no-git
 
 ### Manual Workflow (`--workflow manual`)
 
-`manual` is the default workflow. It scaffolds the original 3-agent persistent workflow with Planner, Implementer, and Reviewer sessions. The user advances the cycle by switching between those sessions and issuing commands such as `next_task`, `rework_task`, and `finish_cycle`.
+`manual` is the default workflow. It scaffolds the core persistent workflow with Planner, Implementer, Reviewer, and Tester sessions. The user advances the cycle by switching between those sessions and issuing commands such as `next_task`, `rework_task`, and `finish_cycle`.
 
 ### Auto Workflow (`--workflow auto`)
 
-`auto` adds the PO and tester workflow artifacts on top of the base scaffold. The generated project includes the PO prompt and launcher, the tester prompt and launcher, the test report template, and the extended test-aware status flow.
+`auto` adds the PO orchestration artifacts on top of the base scaffold. The generated project includes everything from the manual workflow plus the PO prompt and launcher.
 
 #### Lifecycle
 
@@ -219,7 +213,7 @@ Launch each role once per cycle. All subsequent interaction happens through text
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
-| `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
+| `rework_task [TASK_ID]` | Address `changes_requested` or `test_failed` findings from `.ai/REVIEW.md` and `.ai/TEST_REPORT.md` |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 **Reviewer**
@@ -243,8 +237,8 @@ Launch each role once per cycle. All subsequent interaction happens through text
 |------|---------|---------------|
 | `.ai/PLAN.md` | Current plan written by the planner | yes |
 | `.ai/TASKS.md` | Task board with status per task | yes |
-| `.ai/REVIEW.md` | Review findings written by the reviewer | yes |
-| `.ai/TEST_REPORT.md` | Test findings written by the tester in auto workflow | yes |
+| `.ai/REVIEW.md` | Review findings written by the reviewer | no (gitignored runtime artifact) |
+| `.ai/TEST_REPORT.md` | Test findings written by the tester | no (gitignored runtime artifact) |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | no (gitignored) |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |

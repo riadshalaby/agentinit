@@ -22,14 +22,17 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
+		".ai/TEST_REPORT.template.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
+		".ai/prompts/tester.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"CLAUDE.md",
 		"README.md",
@@ -60,6 +63,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
+	if !strings.Contains(readme, "tester> next_task T-001") {
+		t.Error("generated README.md should contain tester examples in manual workflow")
+	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
 	}
@@ -72,17 +78,25 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(claude, "`finish_cycle [TASK_ID]`") {
 		t.Error("generated CLAUDE.md should describe finish_cycle")
 	}
-	if strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("generated CLAUDE.md should not describe ai-test.sh in manual workflow")
+	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
+		t.Error("generated CLAUDE.md should describe ai-test.sh in manual workflow")
 	}
-	if !strings.Contains(claude, "`in_review` -> `done`") {
-		t.Error("generated CLAUDE.md should describe the manual status flow")
-	}
-	if strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("generated CLAUDE.md should not describe the auto test status flow in manual workflow")
+	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
+		t.Error("generated CLAUDE.md should describe the test-aware status flow in manual workflow")
 	}
 	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
 		t.Error("generated CLAUDE.md should describe interrupted-session recovery")
+	}
+
+	gitignoreBytes, err := os.ReadFile(filepath.Join(projectDir, ".gitignore"))
+	if err != nil {
+		t.Fatalf("read .gitignore: %v", err)
+	}
+	gitignore := string(gitignoreBytes)
+	for _, entry := range []string{".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+		if !strings.Contains(gitignore, entry) {
+			t.Errorf("generated .gitignore should contain %s", entry)
+		}
 	}
 }
 
@@ -96,11 +110,8 @@ func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "testproj")
 	expectedFiles := []string{
-		".ai/TEST_REPORT.template.md",
 		".ai/prompts/po.md",
-		".ai/prompts/tester.md",
 		"scripts/ai-po.sh",
-		"scripts/ai-test.sh",
 	}
 	for _, f := range expectedFiles {
 		path := filepath.Join(projectDir, f)
@@ -140,6 +151,7 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
+		"scripts/ai-test.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-pr.sh",
 	}

@@ -90,11 +90,12 @@ main() {
 
   cp .ai/PLAN.template.md .ai/PLAN.md
   cp .ai/REVIEW.template.md .ai/REVIEW.md
+  cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md
   cp .ai/TASKS.template.md .ai/TASKS.md
   cp ROADMAP.template.md ROADMAP.md
   rm -f .ai/HANDOFF.md
 
-  git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md ROADMAP.md
+  git add .ai/PLAN.md .ai/TASKS.md ROADMAP.md
 
   if git ls-files --error-unmatch .ai/HANDOFF.md >/dev/null 2>&1; then
     git rm --cached .ai/HANDOFF.md >/dev/null 2>&1 || die "failed to untrack .ai/HANDOFF.md"

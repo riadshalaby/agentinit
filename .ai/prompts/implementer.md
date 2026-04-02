@@ -27,6 +27,7 @@ You are in `implement` mode.
 
 ## Rework after rejection (`rework_task`)
 - Read `.ai/REVIEW.md` and treat every required-fix finding as a checklist item.
+- Read `.ai/TEST_REPORT.md` when reworking a task that failed testing.
 - Address each finding. Do not skip any.
 - Re-run the required validations from `CLAUDE.md`.
 - Stage all changes with `git add -A`.
