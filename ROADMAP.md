@@ -33,8 +33,8 @@ Objective: add a Tester agent that validates implemented work beyond automated t
 - Create a Tester system prompt focused on exploratory/manual verification of the implemented feature.
 - The Tester reads `.ai/PLAN.md` for expected behavior and the commit diff for what changed.
 - The Tester writes findings to `.ai/TEST_REPORT.md`.
-- The Tester can mark a task as `test_passed` or `test_failed` in `.ai/TASKS.md`.
-- Extend the status flow: `in_review` → `done` becomes `in_review` → `in_testing` → `done` (with `test_failed` looping back to `in_implementation`).
+- The Tester can mark a task as `done` or `test_failed` in `.ai/TASKS.md`.
+- Extend the status flow: `in_review` → `done` becomes `in_review` → `ready_for_test` → `in_testing` → `done` (with `test_failed` looping back to `in_implementation`).
 
 ## Priority 4 — Scaffold Integration
 

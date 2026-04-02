@@ -9,8 +9,8 @@ Status values:
 - `ready_for_review`
 - `in_review`
 {{- if eq .Workflow "auto"}}
+- `ready_for_test`
 - `in_testing`
-- `test_passed`
 - `test_failed`
 {{- end}}
 - `changes_requested`
@@ -20,8 +20,8 @@ Command expectations:
 - planner moves tasks into `in_planning` and `ready_for_implement`
 - implementer moves tasks into `in_implementation` and `ready_for_review`, and resumes work from `changes_requested`
 {{- if eq .Workflow "auto"}}
-- reviewer moves tasks into `in_review`, `in_testing`, or `changes_requested`
-- tester moves tasks into `in_testing`, `test_passed`, or `test_failed`
+- reviewer moves tasks into `in_review`, `ready_for_test`, or `changes_requested`
+- tester moves tasks into `in_testing`, `done`, or `test_failed`
 {{- else}}
 - reviewer moves tasks into `in_review`, `done`, or `changes_requested`
 {{- end}}

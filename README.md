@@ -28,11 +28,11 @@ in_planning → ready_for_implement → in_implementation → ready_for_review �
 
 Auto:
 ```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → in_testing → test_passed → done
-                                          ↑                                     |                        |
-                                          └──── changes_requested ◄─────────────┘                        |
-                                                ▲                                                         |
-                                                └──────────────────────── test_failed ◄───────────────────┘
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
+                                          ↑                                     |                              |
+                                          └──── changes_requested ◄─────────────┘                              |
+                                                ▲                                                               |
+                                                └──────────────────────────── test_failed ◄──────────────────────┘
 ```
 
 ## Prerequisites
@@ -228,13 +228,13 @@ Launch each role once per cycle. All subsequent interaction happens through text
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task (or a specific one) |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `test_passed` or `done` |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 
 **Tester**
 
 | Command | Description |
 |---------|-------------|
-| `next_task [TASK_ID]` | Pick up the next `in_testing` task (or a specific one) |
+| `next_task [TASK_ID]` | Pick up the next `ready_for_test` task (or a specific one) |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 #### File Map

@@ -8,8 +8,8 @@ Status values:
 - `in_implementation`
 - `ready_for_review`
 - `in_review`
+- `ready_for_test`
 - `in_testing`
-- `test_passed`
 - `test_failed`
 - `changes_requested`
 - `done`
@@ -20,6 +20,7 @@ Status values:
 | T-002 | MCP server skeleton (Cobra subcommand + mcp-go + stdio) | claude | codex | claude | done | `agentinit mcp` starts MCP server on stdio; responds to `initialize`; tests pass | `go vet ./...` PASS; `go test ./...` PASS | none |
 | T-003 | MCP session management tools (start/stop/send/list) | claude | codex | claude | done | MCP client can manage agent sessions; one session per role enforced; tests pass | `go vet ./...` PASS; `go test ./...` PASS | none |
 | T-004 | PO agent role and orchestration logic | claude | codex | claude | done | PO prompt + launcher script; covers full orchestration flow; templates render | `go vet ./...` PASS; `go test ./...` PASS | none |
-| T-005 | Tester role (prompt, launcher, status flow extension) | claude | codex | claude | test_passed | Tester prompt + launcher; status flow includes in_testing/test_passed/test_failed; tests pass | `go vet ./...` PASS; `go test ./...` PASS; `go run . init tester-smoke --type go --dir /tmp --no-git` PASS | review |
-| T-006 | Honest tool categorization and agent-neutral CLAUDE.md | claude | codex | claude | test_passed | Tool struct has Category field; wizard groups by category; CLAUDE.md template is agent-neutral; tests pass | `go test ./internal/prereq ./internal/wizard ./internal/template` PASS; `go vet ./...` PASS; `go run . init category-smoke --type go --dir /tmp --no-git` PASS | review |
-| T-007 | Scaffold integration (--workflow flag for auto workflow) | claude | codex | claude | ready_for_review | `--workflow manual` matches current output; `--workflow auto` adds PO/tester files; tests pass | `go vet ./...` PASS; `go test ./...` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-manual-smoke --type go --workflow manual --dir /tmp --no-git` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-auto-smoke --type go --workflow auto --dir /tmp --no-git` PASS | review |
+| T-005 | Tester role (prompt, launcher, status flow extension) | claude | codex | claude | ready_for_test | Tester prompt + launcher; status flow includes ready_for_test/in_testing/test_failed; tests pass | `go vet ./...` PASS; `go test ./...` PASS; `go run . init tester-smoke --type go --dir /tmp --no-git` PASS | test |
+| T-006 | Honest tool categorization and agent-neutral CLAUDE.md | claude | codex | claude | ready_for_test | Tool struct has Category field; wizard groups by category; CLAUDE.md template is agent-neutral; tests pass | `go test ./internal/prereq ./internal/wizard ./internal/template` PASS; `go vet ./...` PASS; `go run . init category-smoke --type go --dir /tmp --no-git` PASS | test |
+| T-007 | Scaffold integration (--workflow flag for auto workflow) | claude | codex | claude | ready_for_test | `--workflow manual` matches current output; `--workflow auto` adds PO/tester files; tests pass | `go vet ./...` PASS; `go test ./...` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-manual-test --type go --workflow manual --dir /tmp --no-git` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-auto-test --type go --workflow auto --dir /tmp --no-git` PASS | test |
+| T-008 | Fix tester status flow (ready_for_test, remove test_passed) | claude | codex | claude | ready_for_review | test_passed removed; ready_for_test used consistently; reviewer/tester/implementer prompts correct; tests pass | `rg -n "test_passed" .` no matches; `go vet ./...` PASS; `go test ./...` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-manual-status-2 --type go --workflow manual --dir /tmp --no-git` PASS; `GOCACHE=/tmp/agentinit-gocache go run . init workflow-auto-status-2 --type go --workflow auto --dir /tmp --no-git` PASS | review |

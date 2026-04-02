@@ -7,7 +7,7 @@ You are in `review` mode.
   - `next_task [TASK_ID]`: select the first `ready_for_review` or `in_review` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_review` when review begins
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
 {{- if eq .Workflow "auto"}}
-  - `finish_cycle [TASK_ID]`: verify the requested task is `test_passed` or `done`, or all tasks are `test_passed`/`done` when no task ID is supplied; if the completion condition is not met, report the blocking task states and abort; if the completion condition is met, update any final `test_passed` task states to `done`; if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, the reviewer may stage and commit only those files before closing the cycle; do not stage `.ai/HANDOFF.md` or any other file as part of reviewer-owned commits; then instruct the user to run `scripts/ai-pr.sh sync`
+  - `finish_cycle [TASK_ID]`: verify the requested task is `done`, or all tasks are `done` when no task ID is supplied; if the completion condition is not met, report the blocking task states and abort; if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, the reviewer may stage and commit only those files before closing the cycle; do not stage `.ai/HANDOFF.md` or any other file as part of reviewer-owned commits; then instruct the user to run `scripts/ai-pr.sh sync`
 {{- else}}
   - `finish_cycle [TASK_ID]`: verify the requested task is `done`, or all tasks are `done` when no task ID is supplied; if the completion condition is not met, report the blocking task states and abort; if the final review changed `.ai/REVIEW.md` and/or `.ai/TASKS.md`, the reviewer may stage and commit only those files before closing the cycle; do not stage `.ai/HANDOFF.md` or any other file as part of reviewer-owned commits; then instruct the user to run `scripts/ai-pr.sh sync`
 {{- end}}
@@ -26,7 +26,7 @@ You are in `review` mode.
   - required fixes (if any)
 - Update `.ai/TASKS.md` for the task:
 {{- if eq .Workflow "auto"}}
-  - set status to `in_testing` when verdict is `PASS` or `PASS_WITH_NOTES`
+  - set status to `ready_for_test` when verdict is `PASS` or `PASS_WITH_NOTES`
   - set status to `changes_requested` when verdict is `FAIL`
   - set owner role to `test` if review passes
   - set owner role to `implement` if changes are requested
