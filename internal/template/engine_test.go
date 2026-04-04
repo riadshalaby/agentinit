@@ -25,11 +25,11 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/TEST_REPORT.template.md",
+		".ai/AGENTS.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
-		".ai/prompts/search-strategy.md",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
@@ -37,6 +37,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"scripts/ai-review.sh",
 		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
+		"AGENTS.md",
 		"CLAUDE.md",
 		"README.md",
 		"ROADMAP.md",
@@ -50,13 +51,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 			t.Errorf("missing expected file: %s", f)
 		}
 	}
-
-	searchStrategy := files[".ai/prompts/search-strategy.md"]
-	if !strings.Contains(searchStrategy, "## Tool Selection") {
-		t.Error("search-strategy.md should contain the Tool Selection section")
-	}
-	if !strings.Contains(searchStrategy, "## Search Rules") {
-		t.Error("search-strategy.md should contain the Search Rules section")
+	if _, ok := files[".ai/prompts/search-strategy.md"]; ok {
+		t.Error("search-strategy.md should not be rendered")
 	}
 
 	// Check project name in README.
@@ -83,30 +79,57 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "no (gitignored runtime artifact)") {
 		t.Error("README.md should mark review and test reports as gitignored runtime artifacts")
 	}
+	for _, snippet := range []string{
+		"| `.ai/AGENTS.md` | Workflow-managed agent rules and session model | yes |",
+		"| `AGENTS.md` | Project-specific agent rules and validation | yes |",
+		"| `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |",
+		"Full workflow details and session recovery rules are in `.ai/AGENTS.md`.",
+	} {
+		if !strings.Contains(readme, snippet) {
+			t.Errorf("README.md should contain %q", snippet)
+		}
+	}
 
-	claude := files["CLAUDE.md"]
-	if !strings.Contains(claude, "`status_cycle [TASK_ID]`") {
-		t.Error("CLAUDE.md should describe status_cycle")
+	claude := strings.TrimSpace(files["CLAUDE.md"])
+	if claude != "@AGENTS.md" {
+		t.Fatalf("CLAUDE.md = %q, want @AGENTS.md", claude)
 	}
-	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("CLAUDE.md should describe the tester launcher in manual workflow")
+	if strings.Contains(claude, "##") {
+		t.Error("CLAUDE.md should not contain additional sections")
 	}
-	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("CLAUDE.md should contain the test-aware status flow in manual workflow")
+
+	agents := files["AGENTS.md"]
+	for _, snippet := range []string{
+		"## Scope",
+		"## Session Workflow",
+		"## Validation Commands",
+		"## Commit Conventions",
+		"## Language Rules",
+		"## PR Policy",
+		"## Git Rules",
+		"## Agent Workflow References",
+		".ai/AGENTS.md",
+		".ai/prompts/planner.md",
+		".ai/prompts/implementer.md",
+		".ai/prompts/reviewer.md",
+		".ai/prompts/tester.md",
+	} {
+		if !strings.Contains(agents, snippet) {
+			t.Errorf("AGENTS.md should contain %q", snippet)
+		}
 	}
-	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
-		t.Error("CLAUDE.md should document interrupted-session recovery")
-	}
-	if !strings.Contains(claude, "move all newly planned tasks to `ready_for_implement`") {
-		t.Error("CLAUDE.md should use the all newly planned tasks planner wording")
-	}
-	if strings.Contains(claude, "move the selected first task to `ready_for_implement`") {
-		t.Error("CLAUDE.md should not use the selected first task planner wording")
-	}
-	if !strings.Contains(claude, "## Tool Preferences") {
-		t.Error("CLAUDE.md should contain the Tool Preferences section")
-	}
-	for _, rule := range []string{
+
+	workflowAgents := files[".ai/AGENTS.md"]
+	for _, snippet := range []string{
+		"`status_cycle [TASK_ID]`",
+		"`scripts/ai-test.sh [agent] [agent-options...]`",
+		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
+		"persistent session is interrupted or reopened",
+		"move all newly planned tasks to `ready_for_implement`",
+		"## Tool Preferences",
+		"### Tool Selection",
+		"### Search Rules",
+		"### Example Commands",
 		"For shell-based repository search, prefer `rg` over `grep`",
 		"For shell-based file discovery, prefer `fd` over `find`",
 		"For shell-based file previews, prefer `bat` over `cat`",
@@ -114,9 +137,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 	} {
-		if !strings.Contains(claude, rule) {
-			t.Errorf("CLAUDE.md should contain tool preference rule %q", rule)
+		if !strings.Contains(workflowAgents, snippet) {
+			t.Errorf(".ai/AGENTS.md should contain %q", snippet)
 		}
+	}
+	if strings.Contains(workflowAgents, "move the selected first task to `ready_for_implement`") {
+		t.Error(".ai/AGENTS.md should not use the selected first task planner wording")
 	}
 
 	implementerPrompt := files[".ai/prompts/implementer.md"]
@@ -129,17 +155,13 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`test_failed`") {
 		t.Error("implementer prompt should mention test_failed in manual workflow")
 	}
-
-	referenceLine := "Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices."
-	for path, prompt := range map[string]string{
-		".ai/prompts/planner.md":     files[".ai/prompts/planner.md"],
-		".ai/prompts/implementer.md": implementerPrompt,
-		".ai/prompts/reviewer.md":    files[".ai/prompts/reviewer.md"],
-	} {
-		if !strings.Contains(prompt, referenceLine) {
-			t.Errorf("%s should reference search-strategy.md", path)
-		}
+	if !strings.Contains(implementerPrompt, "Follow all project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.") {
+		t.Error("implementer prompt should reference AGENTS.md and .ai/AGENTS.md")
 	}
+	if strings.Contains(implementerPrompt, "search-strategy.md") {
+		t.Error("implementer prompt should not reference search-strategy.md")
+	}
+
 	plannerPrompt := files[".ai/prompts/planner.md"]
 	if !strings.Contains(plannerPrompt, "move all newly planned tasks to `ready_for_implement`") {
 		t.Error("planner prompt should use the all newly planned tasks wording")
@@ -149,6 +171,28 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if strings.Contains(plannerPrompt, "move the selected first task to `ready_for_implement`") || strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for the selected task:") {
 		t.Error("planner prompt should not use the selected-task wording")
+	}
+	if !strings.Contains(plannerPrompt, "Read `AGENTS.md`, `.ai/AGENTS.md`, and `ROADMAP.md` first.") {
+		t.Error("planner prompt should read AGENTS.md and .ai/AGENTS.md first")
+	}
+	if strings.Contains(plannerPrompt, "search-strategy.md") {
+		t.Error("planner prompt should not reference search-strategy.md")
+	}
+
+	reviewerPrompt := files[".ai/prompts/reviewer.md"]
+	if !strings.Contains(reviewerPrompt, "Validate compliance with project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.") {
+		t.Error("reviewer prompt should reference AGENTS.md and .ai/AGENTS.md")
+	}
+	if strings.Contains(reviewerPrompt, "search-strategy.md") {
+		t.Error("reviewer prompt should not reference search-strategy.md")
+	}
+
+	testerPrompt := files[".ai/prompts/tester.md"]
+	if !strings.Contains(testerPrompt, "reload `AGENTS.md`, `.ai/AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.") {
+		t.Error("tester prompt should reload AGENTS.md and .ai/AGENTS.md")
+	}
+	if strings.Contains(testerPrompt, "search-strategy.md") {
+		t.Error("tester prompt should not reference search-strategy.md")
 	}
 
 	launchScript := files["scripts/ai-launch.sh"]
@@ -204,12 +248,24 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 		t.Error("README.md should describe the auto workflow as adding the PO layer")
 	}
 
-	claude := files["CLAUDE.md"]
-	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("CLAUDE.md should describe the tester launcher in auto workflow")
+	claude := strings.TrimSpace(files["CLAUDE.md"])
+	if claude != "@AGENTS.md" {
+		t.Fatalf("CLAUDE.md = %q, want @AGENTS.md", claude)
 	}
-	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("CLAUDE.md should contain the extended test status flow in auto workflow")
+
+	agents := files["AGENTS.md"]
+	if !strings.Contains(agents, ".ai/prompts/po.md") {
+		t.Error("AGENTS.md should reference the PO prompt in auto workflow")
+	}
+
+	workflowAgents := files[".ai/AGENTS.md"]
+	for _, snippet := range []string{
+		"`scripts/ai-test.sh [agent] [agent-options...]`",
+		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
+	} {
+		if !strings.Contains(workflowAgents, snippet) {
+			t.Errorf(".ai/AGENTS.md should contain %q in auto workflow", snippet)
+		}
 	}
 
 	poPrompt := files[".ai/prompts/po.md"]
@@ -219,6 +275,8 @@ func TestRenderAllAutoWorkflow(t *testing.T) {
 		"`stop_session`",
 		"`list_sessions`",
 		"`test_failed` -> back to `in_implementation`",
+		"`AGENTS.md`",
+		"`.ai/AGENTS.md`",
 	} {
 		if !strings.Contains(poPrompt, snippet) {
 			t.Errorf("po prompt should contain %q", snippet)
@@ -304,13 +362,13 @@ func TestRenderAllGoOverlay(t *testing.T) {
 		}
 	}
 
-	// Verify CLAUDE.md has validation commands.
-	claude := files["CLAUDE.md"]
-	if !strings.Contains(claude, "go fmt ./...") {
-		t.Error("CLAUDE.md should contain go fmt command")
+	// Verify AGENTS.md has validation commands.
+	agents := files["AGENTS.md"]
+	if !strings.Contains(agents, "go fmt ./...") {
+		t.Error("AGENTS.md should contain go fmt command")
 	}
-	if !strings.Contains(claude, "go test ./...") {
-		t.Error("CLAUDE.md should contain go test command")
+	if !strings.Contains(agents, "go test ./...") {
+		t.Error("AGENTS.md should contain go test command")
 	}
 
 	// Verify PLAN.template.md has validation commands.
@@ -343,9 +401,9 @@ func TestRenderAllJavaOverlay(t *testing.T) {
 		t.Error(".gitignore should contain Java/Maven-specific entries")
 	}
 
-	claude := files["CLAUDE.md"]
-	if !strings.Contains(claude, "mvn -q spotless:apply") {
-		t.Error("CLAUDE.md should contain mvn spotless command")
+	agents := files["AGENTS.md"]
+	if !strings.Contains(agents, "mvn -q spotless:apply") {
+		t.Error("AGENTS.md should contain mvn spotless command")
 	}
 }
 

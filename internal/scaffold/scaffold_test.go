@@ -23,6 +23,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/TEST_REPORT.template.md",
+		".ai/AGENTS.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
@@ -34,6 +35,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"scripts/ai-review.sh",
 		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
+		"AGENTS.md",
 		"CLAUDE.md",
 		"README.md",
 		"ROADMAP.md",
@@ -48,11 +50,14 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			t.Errorf("expected file missing: %s", f)
 		}
 	}
+	if _, err := os.Stat(filepath.Join(projectDir, ".ai/prompts/search-strategy.md")); !os.IsNotExist(err) {
+		t.Error("search-strategy.md should not be generated")
+	}
 	if result.DocumentationPath != filepath.Join(projectDir, "README.md") {
 		t.Fatalf("DocumentationPath = %q", result.DocumentationPath)
 	}
-	if len(result.KeyPaths) != 5 {
-		t.Fatalf("KeyPaths len = %d, want 5", len(result.KeyPaths))
+	if len(result.KeyPaths) != 6 {
+		t.Fatalf("KeyPaths len = %d, want 6", len(result.KeyPaths))
 	}
 
 	readmeBytes, err := os.ReadFile(filepath.Join(projectDir, "README.md"))
@@ -69,23 +74,57 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
 	}
+	for _, snippet := range []string{
+		"| `.ai/AGENTS.md` | Workflow-managed agent rules and session model | yes |",
+		"| `AGENTS.md` | Project-specific agent rules and validation | yes |",
+		"| `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |",
+		"Full workflow details and session recovery rules are in `.ai/AGENTS.md`.",
+	} {
+		if !strings.Contains(readme, snippet) {
+			t.Errorf("generated README.md should contain %q", snippet)
+		}
+	}
 
 	claudeBytes, err := os.ReadFile(filepath.Join(projectDir, "CLAUDE.md"))
 	if err != nil {
 		t.Fatalf("read CLAUDE.md: %v", err)
 	}
-	claude := string(claudeBytes)
-	if !strings.Contains(claude, "`finish_cycle [TASK_ID]`") {
-		t.Error("generated CLAUDE.md should describe finish_cycle")
+	claude := strings.TrimSpace(string(claudeBytes))
+	if claude != "@AGENTS.md" {
+		t.Fatalf("generated CLAUDE.md = %q, want @AGENTS.md", claude)
 	}
-	if !strings.Contains(claude, "`scripts/ai-test.sh [agent] [agent-options...]`") {
-		t.Error("generated CLAUDE.md should describe ai-test.sh in manual workflow")
+
+	agentsBytes, err := os.ReadFile(filepath.Join(projectDir, "AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
 	}
-	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("generated CLAUDE.md should describe the test-aware status flow in manual workflow")
+	agents := string(agentsBytes)
+	for _, snippet := range []string{
+		"## Validation Commands",
+		"go fmt ./...",
+		"go test ./...",
+		"## Agent Workflow References",
+		".ai/AGENTS.md",
+	} {
+		if !strings.Contains(agents, snippet) {
+			t.Errorf("generated AGENTS.md should contain %q", snippet)
+		}
 	}
-	if !strings.Contains(claude, "persistent session is interrupted or reopened") {
-		t.Error("generated CLAUDE.md should describe interrupted-session recovery")
+
+	workflowAgentsBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read .ai/AGENTS.md: %v", err)
+	}
+	workflowAgents := string(workflowAgentsBytes)
+	for _, snippet := range []string{
+		"`finish_cycle [TASK_ID]`",
+		"`scripts/ai-test.sh [agent] [agent-options...]`",
+		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
+		"persistent session is interrupted or reopened",
+	} {
+		if !strings.Contains(workflowAgents, snippet) {
+			t.Errorf("generated .ai/AGENTS.md should contain %q", snippet)
+		}
 	}
 
 	gitignoreBytes, err := os.ReadFile(filepath.Join(projectDir, ".gitignore"))
@@ -121,8 +160,11 @@ func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "testproj")
 	expectedFiles := []string{
+		".ai/AGENTS.md",
 		".ai/prompts/po.md",
 		"scripts/ai-po.sh",
+		"AGENTS.md",
+		"CLAUDE.md",
 	}
 	for _, f := range expectedFiles {
 		path := filepath.Join(projectDir, f)
@@ -138,13 +180,22 @@ func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read CLAUDE.md: %v", err)
 	}
-	claude := string(claudeBytes)
-	if !strings.Contains(claude, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("generated CLAUDE.md should describe the ready_for_test auto status flow")
+	claude := strings.TrimSpace(string(claudeBytes))
+	if claude != "@AGENTS.md" {
+		t.Fatalf("generated CLAUDE.md = %q, want @AGENTS.md", claude)
+	}
+
+	workflowAgentsBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read .ai/AGENTS.md: %v", err)
+	}
+	workflowAgents := string(workflowAgentsBytes)
+	if !strings.Contains(workflowAgents, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
+		t.Error("generated .ai/AGENTS.md should describe the ready_for_test auto status flow")
 	}
 	legacyPassedStatus := "`test" + "_passed`"
-	if strings.Contains(claude, legacyPassedStatus) {
-		t.Error("generated CLAUDE.md should not contain the legacy passed-test status")
+	if strings.Contains(workflowAgents, legacyPassedStatus) {
+		t.Error("generated .ai/AGENTS.md should not contain the legacy passed-test status")
 	}
 }
 

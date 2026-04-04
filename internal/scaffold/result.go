@@ -36,7 +36,8 @@ func buildResult(name, projectType, targetDir string, initGit bool, validationCo
 func defaultKeyPaths() []KeyPath {
 	return []KeyPath{
 		{Path: "README.md", Description: "project overview and setup"},
-		{Path: "CLAUDE.md", Description: "project rules and agent workflow"},
+		{Path: "CLAUDE.md", Description: "agent instruction entry point (imports AGENTS.md)"},
+		{Path: "AGENTS.md", Description: "project-specific agent rules"},
 		{Path: "ROADMAP.md", Description: "project goals to edit first"},
 		{Path: ".ai/", Description: "planning, review, and handoff templates"},
 		{Path: "scripts/", Description: "launchers for plan, implement, review, and PR sync"},

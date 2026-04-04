@@ -106,11 +106,13 @@ reviewer> finish_cycle
 |------|---------|---------|
 | `.ai/PLAN.md` | Current plan | yes |
 | `.ai/TASKS.md` | Task board with status | yes |
+| `.ai/AGENTS.md` | Workflow-managed agent rules and session model | yes |
 | `.ai/REVIEW.md` | Review findings | no (gitignored runtime artifact) |
 | `.ai/TEST_REPORT.md` | Test findings | no (gitignored runtime artifact) |
 | `.ai/HANDOFF.md` | Runtime handoff log | no |
 | `ROADMAP.md` | Cycle goals (edit before planning) | yes |
-| `CLAUDE.md` | Agent rules and validation | yes |
+| `AGENTS.md` | Project-specific agent rules and validation | yes |
+| `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |
 
 ### Create a PR
 
@@ -118,4 +120,4 @@ reviewer> finish_cycle
 scripts/ai-pr.sh sync
 ```
 
-Full workflow details and session recovery rules are in `CLAUDE.md`.
+Full workflow details and session recovery rules are in `.ai/AGENTS.md`.
