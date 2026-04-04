@@ -22,8 +22,8 @@ AGENTS.md            → project-specific rules + references to .ai/AGENTS.md an
 1. `agentinit init` with manual workflow produces `CLAUDE.md`, `AGENTS.md`, `.ai/AGENTS.md`, and `.ai/prompts/*.md` with no content duplication between them.
 2. `agentinit init` with auto workflow additionally produces `.ai/prompts/po.md` and `scripts/ai-po.sh`.
 3. `CLAUDE.md` template contains only `@AGENTS.md` (one line, no other content).
-4. `AGENTS.md` template contains project-specific sections: Scope, Language Rules, Validation Commands (from overlay), Commit Conventions, PR Policy, Git Rules, and explicit file references to `.ai/AGENTS.md` and `.ai/prompts/*.md`.
-5. `.ai/AGENTS.md` template contains all workflow mechanics: AI Workflow Rules (role summaries), AI Operating Mode, Persistent Session Workflow, Session Commands, Tool Preferences, and status flow.
+4. `AGENTS.md` template contains project-specific sections: Scope, Language Rules, Validation Commands (from overlay), PR Policy, Git Rules, and explicit file references to `.ai/AGENTS.md` and `.ai/prompts/*.md`.
+5. `.ai/AGENTS.md` template contains all workflow mechanics: AI Workflow Rules (role summaries), AI Operating Mode, Persistent Session Workflow, Session Commands, Tool Preferences, Commit Conventions, and status flow.
 6. `.ai/prompts/search-strategy.md` is removed; its content is merged into the Tool Preferences section of `.ai/AGENTS.md`.
 7. Role prompts (`.ai/prompts/*.md`) reference `.ai/AGENTS.md` instead of `CLAUDE.md` for workflow rules, and reference `AGENTS.md` for project-specific constraints.
 8. `scripts/ai-launch.sh` is unchanged (already loads role prompts from `.ai/prompts/`).
@@ -38,7 +38,8 @@ AGENTS.md            → project-specific rules + references to .ai/AGENTS.md an
 | Current Location (CLAUDE.md) | New Location | Notes |
 |------------------------------|-------------|-------|
 | `## Scope` | `AGENTS.md` | Project-specific |
-| `## Session Workflow` (validation commands, staging, commit behavior) | Split: validation commands → `AGENTS.md`; commit conventions → `AGENTS.md` | Project-specific config |
+| `## Session Workflow` (validation commands, staging) | `AGENTS.md` | Project-specific config |
+| `## Commit Conventions` | `.ai/AGENTS.md` | Workflow-managed — defines how each role commits; updatable by `agentinit update` |
 | `## Language Rules` | `AGENTS.md` | Project-specific |
 | `## Tool Preferences` | `.ai/AGENTS.md` | Workflow-managed; merge `search-strategy.md` examples here |
 | `## AI Workflow Rules` (role summaries) | `.ai/AGENTS.md` | Workflow-managed |
@@ -69,7 +70,7 @@ Create and modify template files under `internal/template/templates/base/`.
 1. `AGENTS.md.tmpl` — project-specific rules extracted from current `CLAUDE.md.tmpl`:
    - `## Scope` (keep existing content)
    - `## Language Rules` (keep existing)
-   - `## Session Workflow` — retain only: validation commands (conditional on overlay), staging rules, commit behavior by role
+   - `## Session Workflow` — retain only: validation commands (conditional on overlay), staging rules
    - `## PR Policy` (keep existing)
    - `## Git Rules` (keep existing)
    - `## Agent Workflow References` — explicit references:
@@ -81,6 +82,7 @@ Create and modify template files under `internal/template/templates/base/`.
    - `## AI Operating Mode` (launcher scripts, convenience wrappers)
    - `## Persistent Session Workflow` (status flow, handoff log policy, file-based handoffs, interrupted-session recovery)
    - `## Session Commands` (planner, implementer, reviewer, tester commands)
+   - `## Commit Conventions` (commit behavior by role, Conventional Commit format, Co-Authored-By policy)
    - `## Tool Preferences` (current bullet list + merged search-strategy.md content: Tool Selection table, Search Rules, Example Commands)
 
 **Modified files:**
@@ -122,6 +124,21 @@ Create and modify template files under `internal/template/templates/base/`.
    - Update File Map table: add `AGENTS.md` and `.ai/AGENTS.md` rows, remove `search-strategy.md` implicit reference
    - Change `CLAUDE.md` description in file map
    - Update "Full workflow details" reference at the bottom to point to `.ai/AGENTS.md`
+
+### Phase 3 — Move Commit Conventions to .ai/AGENTS.md (rework)
+
+The `## Commit Conventions` section was incorrectly placed in root `AGENTS.md` (project-owned). It defines workflow mechanics (how each role commits) and must live in `.ai/AGENTS.md` (agentinit-managed) so `agentinit update` can maintain it.
+
+**Template changes:**
+1. `AGENTS.md.tmpl` — remove `## Commit Conventions` section (lines 23-30)
+2. `ai/AGENTS.md.tmpl` — add `## Commit Conventions` section (after `## Session Commands`, before `## Tool Preferences`)
+
+**Live repo file changes:**
+3. `AGENTS.md` — remove `## Commit Conventions` section
+4. `.ai/AGENTS.md` — add `## Commit Conventions` section
+
+**Test changes:**
+5. `engine_test.go` — move `"## Commit Conventions"` assertion from `AGENTS.md` snippet list to `.ai/AGENTS.md` snippet list
 
 ## Validation
 

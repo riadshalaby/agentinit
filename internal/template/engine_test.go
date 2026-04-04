@@ -103,7 +103,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"## Scope",
 		"## Session Workflow",
 		"## Validation Commands",
-		"## Commit Conventions",
 		"## Language Rules",
 		"## PR Policy",
 		"## Git Rules",
@@ -121,6 +120,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	workflowAgents := files[".ai/AGENTS.md"]
 	for _, snippet := range []string{
+		"## Commit Conventions",
 		"`status_cycle [TASK_ID]`",
 		"`scripts/ai-test.sh [agent] [agent-options...]`",
 		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",

@@ -16,15 +16,6 @@
   - Vet: `go vet ./...`
   - Test: `go test ./...`
 
-## Commit Conventions
-- Commit behavior by role:
-  - `plan` role never commits.
-  - `review` role may commit only when the staged set is limited to `.ai/TASKS.md`.
-  - `implement` role must stage all changes and create a Conventional Commit after validations pass.
-- Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
-- Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
-- Never include `Co-Authored-By` trailers in commit messages.
-
 ## Language Rules
 - Use English for code comments, log/output messages, `README.md`.
 
