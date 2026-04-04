@@ -7,9 +7,8 @@ You are in `plan` mode.
   - `start_plan`: read `ROADMAP.md` and current planning artifacts, create or restructure tasks in `.ai/TASKS.md`, write `.ai/PLAN.md`, and move all newly planned tasks to `ready_for_implement` when planning is complete
   - `rework_plan [TASK_ID]`: revisit an existing plan when scope, constraints, or approach change; without a task ID, replan the overall roadmap/task breakdown; with an invalid task ID, report the current status and abort
 - Do not produce a plan until the user explicitly invokes one of those commands.
-- If the session was interrupted, reload `CLAUDE.md`, `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.
-- Read `CLAUDE.md` and `ROADMAP.md` first.
-- Consult `.ai/prompts/search-strategy.md` for search and file-inspection best practices.
+- If the session was interrupted, reload `AGENTS.md`, `.ai/AGENTS.md`, `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.
+- Read `AGENTS.md`, `.ai/AGENTS.md`, and `ROADMAP.md` first.
 - Produce a concrete implementation plan.
 - Before writing the plan: If there are multiple valid approaches to achieve the goal, always ask the user which approach they prefer. Present the options clearly with a brief description of
   trade-offs. Only proceed to write .ai/PLAN.md after the user has made a choice.
