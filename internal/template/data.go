@@ -33,7 +33,7 @@ func ValidWorkflow(workflow string) bool {
 	}
 }
 
-// ValidationCommand represents a single validation step shown in CLAUDE.md and PLAN.template.md.
+// ValidationCommand represents a single validation step shown in AGENTS.md and PLAN.template.md.
 type ValidationCommand struct {
 	Label   string
 	Command string

@@ -16,4 +16,5 @@ Status values:
 
 | Task ID | Scope | Planner Agent | Implementer Agent | Reviewer Agent | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| T-001 | replace with task scope | claude | codex | claude | in_planning | replace with measurable acceptance criteria | n/a | planner |
+| T-001 | Restructure templates into four-file layout (CLAUDE.md, AGENTS.md, .ai/AGENTS.md, .ai/prompts/*.md); merge search-strategy.md; update role prompt references | claude | codex | claude | ready_for_review | AC 1-8 from PLAN.md: new layout scaffolded for both manual and auto workflows, no content duplication, search-strategy.md removed, role prompts updated | `go fmt ./...`; `go vet ./...`; `go test ./...` | review |
+| T-002 | Update scaffold code (result.go), tests (engine_test.go, scaffold_test.go), and README.md template to reflect new file layout | claude | codex | claude | ready_for_review | AC 9-11 from PLAN.md: all tests pass, defaultKeyPaths updated, README file map accurate | `go fmt ./...`; `go vet ./...`; `go test ./...` | review |
