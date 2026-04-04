@@ -110,6 +110,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			t.Errorf("generated AGENTS.md should contain %q", snippet)
 		}
 	}
+	if strings.Contains(agents, "## Commit Conventions") {
+		t.Error("generated AGENTS.md should not contain Commit Conventions")
+	}
 
 	workflowAgentsBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/AGENTS.md"))
 	if err != nil {
@@ -117,6 +120,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	workflowAgents := string(workflowAgentsBytes)
 	for _, snippet := range []string{
+		"## Commit Conventions",
 		"`finish_cycle [TASK_ID]`",
 		"`scripts/ai-test.sh [agent] [agent-options...]`",
 		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
