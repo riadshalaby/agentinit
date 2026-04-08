@@ -15,7 +15,7 @@ var mcpCmd = &cobra.Command{
 	Use:   "mcp",
 	Short: "Start the agentinit MCP server on stdio",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMCPServer(cmd.Context(), version)
+		return runMCPServer(cmd.Context(), rootCmd.Version)
 	},
 }
 

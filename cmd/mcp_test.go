@@ -17,15 +17,15 @@ func TestMCPCommandIsRegistered(t *testing.T) {
 
 func TestMCPCommandRunsServerWithRootVersion(t *testing.T) {
 	originalRunMCPServer := runMCPServer
-	originalVersion := version
+	originalVersion := rootCmd.Version
 	originalContext := mcpCmd.Context()
 	t.Cleanup(func() {
 		runMCPServer = originalRunMCPServer
-		version = originalVersion
+		rootCmd.Version = originalVersion
 		mcpCmd.SetContext(originalContext)
 	})
 
-	version = "9.9.9-test"
+	rootCmd.Version = "9.9.9-test"
 	mcpCmd.SetContext(context.Background())
 
 	called := false
@@ -34,8 +34,8 @@ func TestMCPCommandRunsServerWithRootVersion(t *testing.T) {
 		if ctx == nil {
 			t.Fatal("expected command context")
 		}
-		if serverVersion != version {
-			t.Fatalf("server version = %q, want %q", serverVersion, version)
+		if serverVersion != rootCmd.Version {
+			t.Fatalf("server version = %q, want %q", serverVersion, rootCmd.Version)
 		}
 		return nil
 	}
