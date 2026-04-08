@@ -10,7 +10,7 @@ import (
 func TestRunCreatesProjectStructure(t *testing.T) {
 	dir := t.TempDir()
 
-	result, err := Run("testproj", "go", dir, "manual", false)
+	result, err := Run("testproj", "go", dir, false)
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -154,59 +154,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 }
 
-func TestRunCreatesAutoWorkflowProjectStructure(t *testing.T) {
-	dir := t.TempDir()
-
-	result, err := Run("testproj", "", dir, "auto", false)
-	if err != nil {
-		t.Fatalf("Run() error: %v", err)
-	}
-
-	projectDir := filepath.Join(dir, "testproj")
-	expectedFiles := []string{
-		".ai/AGENTS.md",
-		".ai/prompts/po.md",
-		"scripts/ai-po.sh",
-		"AGENTS.md",
-		"CLAUDE.md",
-	}
-	for _, f := range expectedFiles {
-		path := filepath.Join(projectDir, f)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Errorf("expected auto workflow file missing: %s", f)
-		}
-	}
-	if result.DocumentationPath != filepath.Join(projectDir, "README.md") {
-		t.Fatalf("DocumentationPath = %q, want README.md path", result.DocumentationPath)
-	}
-
-	claudeBytes, err := os.ReadFile(filepath.Join(projectDir, "CLAUDE.md"))
-	if err != nil {
-		t.Fatalf("read CLAUDE.md: %v", err)
-	}
-	claude := strings.TrimSpace(string(claudeBytes))
-	if claude != "@AGENTS.md" {
-		t.Fatalf("generated CLAUDE.md = %q, want @AGENTS.md", claude)
-	}
-
-	workflowAgentsBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/AGENTS.md"))
-	if err != nil {
-		t.Fatalf("read .ai/AGENTS.md: %v", err)
-	}
-	workflowAgents := string(workflowAgentsBytes)
-	if !strings.Contains(workflowAgents, "`in_review` -> `ready_for_test` -> `in_testing` -> `done`") {
-		t.Error("generated .ai/AGENTS.md should describe the ready_for_test auto status flow")
-	}
-	legacyPassedStatus := "`test" + "_passed`"
-	if strings.Contains(workflowAgents, legacyPassedStatus) {
-		t.Error("generated .ai/AGENTS.md should not contain the legacy passed-test status")
-	}
-}
-
 func TestRunScriptsAreExecutable(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := Run("testproj", "", dir, "manual", false)
+	_, err := Run("testproj", "", dir, false)
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -236,33 +187,11 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 	}
 }
 
-func TestRunAutoWorkflowScriptsAreExecutable(t *testing.T) {
-	dir := t.TempDir()
-
-	_, err := Run("testproj", "", dir, "auto", false)
-	if err != nil {
-		t.Fatalf("Run() error: %v", err)
-	}
-
-	projectDir := filepath.Join(dir, "testproj")
-	for _, s := range []string{"scripts/ai-po.sh", "scripts/ai-test.sh"} {
-		path := filepath.Join(projectDir, s)
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Errorf("stat %s: %v", s, err)
-			continue
-		}
-		if info.Mode()&0o111 == 0 {
-			t.Errorf("%s should be executable, mode: %v", s, info.Mode())
-		}
-	}
-}
-
 func TestRunFailsIfDirExists(t *testing.T) {
 	dir := t.TempDir()
 	os.MkdirAll(filepath.Join(dir, "existing"), 0o755)
 
-	_, err := Run("existing", "", dir, "manual", false)
+	_, err := Run("existing", "", dir, false)
 	if err == nil {
 		t.Error("Run() should fail when target directory exists")
 	}
@@ -276,7 +205,7 @@ func TestRunWithGitInit(t *testing.T) {
 
 	dir := t.TempDir()
 
-	result, err := Run("gitproj", "node", dir, "manual", true)
+	result, err := Run("gitproj", "node", dir, true)
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -297,17 +226,8 @@ func TestRunWithGitInit(t *testing.T) {
 func TestRunUnknownType(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := Run("testproj", "python", dir, "manual", false)
+	_, err := Run("testproj", "python", dir, false)
 	if err == nil {
 		t.Error("Run() should fail for unknown project type")
-	}
-}
-
-func TestRunUnknownWorkflow(t *testing.T) {
-	dir := t.TempDir()
-
-	_, err := Run("testproj", "", dir, "broken", false)
-	if err == nil {
-		t.Error("Run() should fail for unknown workflow")
 	}
 }

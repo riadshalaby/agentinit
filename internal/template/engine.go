@@ -19,12 +19,14 @@ var filenameMapping = map[string]string{
 // It first renders any overlay fragments and injects results into data,
 // then renders base templates and returns a map of relative output path -> content.
 func RenderAll(data *ProjectData) (map[string]string, error) {
-	data.Workflow = NormalizeWorkflow(data.Workflow)
-	if !ValidWorkflow(data.Workflow) {
-		return nil, fmt.Errorf("unknown workflow %q", data.Workflow)
-	}
-
 	result := make(map[string]string)
+	renderData := struct {
+		*ProjectData
+		Workflow string
+	}{
+		ProjectData: data,
+		Workflow:    "manual",
+	}
 
 	// Step 1: Render overlay gitignore fragment if it exists.
 	if data.ProjectType != "" {
@@ -53,7 +55,7 @@ func RenderAll(data *ProjectData) (map[string]string, error) {
 			return fmt.Errorf("read %s: %w", path, err)
 		}
 
-		rendered, err := renderTemplate(string(content), path, data)
+		rendered, err := renderTemplate(string(content), path, renderData)
 		if err != nil {
 			return fmt.Errorf("render %s: %w", path, err)
 		}
@@ -86,7 +88,7 @@ func RenderAll(data *ProjectData) (map[string]string, error) {
 	return result, nil
 }
 
-func renderTemplate(tmplContent, name string, data *ProjectData) (string, error) {
+func renderTemplate(tmplContent, name string, data any) (string, error) {
 	funcMap := template.FuncMap{
 		"indent": func(spaces int, s string) string {
 			pad := strings.Repeat(" ", spaces)
