@@ -8,7 +8,6 @@ import (
 func TestRenderAllBaseOnly(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "myproject",
-		Workflow:        WorkflowManual,
 		ProjectType:     "",
 		PRTestPlanItems: []string{"All validations pass"},
 	}
@@ -216,128 +215,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 }
 
-func TestRenderAllAutoWorkflow(t *testing.T) {
-	data := &ProjectData{
-		ProjectName:     "autoapp",
-		Workflow:        WorkflowAuto,
-		PRTestPlanItems: []string{"All validations pass"},
-	}
-
-	files, err := RenderAll(data)
-	if err != nil {
-		t.Fatalf("RenderAll() error: %v", err)
-	}
-
-	for _, f := range []string{
-		".ai/prompts/po.md",
-		"scripts/ai-po.sh",
-	} {
-		if _, ok := files[f]; !ok {
-			t.Errorf("missing expected auto workflow file: %s", f)
-		}
-	}
-
-	readme := files["README.md"]
-	if !strings.Contains(readme, "Selected workflow: `auto`") {
-		t.Error("README.md should document the selected auto workflow")
-	}
-	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("README.md should contain tester example in auto workflow")
-	}
-	if !strings.Contains(readme, "auto-only PO orchestration layer") {
-		t.Error("README.md should describe the auto workflow as adding the PO layer")
-	}
-
-	claude := strings.TrimSpace(files["CLAUDE.md"])
-	if claude != "@AGENTS.md" {
-		t.Fatalf("CLAUDE.md = %q, want @AGENTS.md", claude)
-	}
-
-	agents := files["AGENTS.md"]
-	if !strings.Contains(agents, ".ai/prompts/po.md") {
-		t.Error("AGENTS.md should reference the PO prompt in auto workflow")
-	}
-
-	workflowAgents := files[".ai/AGENTS.md"]
-	for _, snippet := range []string{
-		"`scripts/ai-test.sh [agent] [agent-options...]`",
-		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
-	} {
-		if !strings.Contains(workflowAgents, snippet) {
-			t.Errorf(".ai/AGENTS.md should contain %q in auto workflow", snippet)
-		}
-	}
-
-	poPrompt := files[".ai/prompts/po.md"]
-	for _, snippet := range []string{
-		"`start_session`",
-		"`send_command`",
-		"`stop_session`",
-		"`list_sessions`",
-		"`test_failed` -> back to `in_implementation`",
-		"`AGENTS.md`",
-		"`.ai/AGENTS.md`",
-	} {
-		if !strings.Contains(poPrompt, snippet) {
-			t.Errorf("po prompt should contain %q", snippet)
-		}
-	}
-
-	poScript := files["scripts/ai-po.sh"]
-	if !strings.Contains(poScript, "--mcp-config") {
-		t.Error("ai-po.sh should pass --mcp-config to claude")
-	}
-	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
-		t.Error("ai-po.sh should configure the agentinit mcp server")
-	}
-
-	testerPrompt := files[".ai/prompts/tester.md"]
-	for _, snippet := range []string{
-		"You are in `test` mode.",
-		"`next_task [TASK_ID]`",
-		"`.ai/TEST_REPORT.md`",
-		"`ready_for_test`",
-		"`test_failed`",
-		"`done`",
-	} {
-		if !strings.Contains(testerPrompt, snippet) {
-			t.Errorf("tester prompt should contain %q", snippet)
-		}
-	}
-
-	implementerPrompt := files[".ai/prompts/implementer.md"]
-	for _, snippet := range []string{"`test_failed`", "`.ai/TEST_REPORT.md`"} {
-		if !strings.Contains(implementerPrompt, snippet) {
-			t.Errorf("implementer prompt should contain %q in auto workflow", snippet)
-		}
-	}
-
-	testerScript := files["scripts/ai-test.sh"]
-	if !strings.Contains(testerScript, "ai-launch.sh\" test") {
-		t.Error("ai-test.sh should delegate to ai-launch.sh test")
-	}
-
-	launchScript := files["scripts/ai-launch.sh"]
-	if !strings.Contains(launchScript, "plan | implement | review | test") {
-		t.Error("ai-launch.sh should list the test role in auto workflow")
-	}
-	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should route the test role to tester prompt in auto workflow")
-	}
-
-	startCycleScript := files["scripts/ai-start-cycle.sh"]
-	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
-		if !strings.Contains(startCycleScript, snippet) {
-			t.Errorf("ai-start-cycle.sh should contain %q in auto workflow", snippet)
-		}
-	}
-}
-
 func TestRenderAllGoOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "goapp",
 		ProjectType: "go",
-		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "go fmt ./..."},
 			{Label: "Vet", Command: "go vet ./..."},
@@ -382,7 +263,6 @@ func TestRenderAllJavaOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "javaapp",
 		ProjectType: "java",
-		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "mvn -q spotless:apply"},
 			{Label: "Compile", Command: "mvn -q -DskipTests test-compile"},
@@ -411,7 +291,6 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "nodeapp",
 		ProjectType: "node",
-		Workflow:    WorkflowManual,
 		ValidationCommands: []ValidationCommand{
 			{Label: "Lint", Command: "npm run lint"},
 			{Label: "Build", Command: "npm run build"},
@@ -434,7 +313,6 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 func TestDotfileMapping(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "testproj",
-		Workflow:        WorkflowManual,
 		PRTestPlanItems: []string{"All validations pass"},
 	}
 

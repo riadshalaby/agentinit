@@ -9,7 +9,6 @@ import (
 
 	"github.com/riadshalaby/agentinit/internal/prereq"
 	"github.com/riadshalaby/agentinit/internal/scaffold"
-	"github.com/riadshalaby/agentinit/internal/template"
 	"github.com/riadshalaby/agentinit/internal/wizard"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,6 @@ import (
 var (
 	projectType string
 	targetDir   string
-	workflow    string
 	noGit       bool
 )
 
@@ -32,16 +30,11 @@ var (
 
 var initCmd = &cobra.Command{
 	Use:   "init [project-name]",
-	Short: "Scaffold a new project with a manual or auto AI workflow",
+	Short: "Scaffold a new project with AI workflow support",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		workflow = template.NormalizeWorkflow(workflow)
-		if !template.ValidWorkflow(workflow) {
-			return fmt.Errorf("invalid workflow %q: must be one of %q or %q", workflow, template.WorkflowManual, template.WorkflowAuto)
-		}
-
 		if len(args) == 0 && isTerminal() {
-			return runWizard(prereq.NewExecCommander(), workflow)
+			return runWizard(prereq.NewExecCommander())
 		}
 		if len(args) == 0 {
 			return fmt.Errorf("project name argument is required when stdin is not a terminal")
@@ -62,7 +55,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		result, err := runScaffold(name, projectType, dir, workflow, !noGit)
+		result, err := runScaffold(name, projectType, dir, !noGit)
 		if err != nil {
 			return err
 		}
@@ -75,7 +68,6 @@ var initCmd = &cobra.Command{
 func init() {
 	initCmd.Flags().StringVar(&projectType, "type", "", "Project type overlay (go, java, node)")
 	initCmd.Flags().StringVar(&targetDir, "dir", "", "Target directory (default: current directory)")
-	initCmd.Flags().StringVar(&workflow, "workflow", template.WorkflowManual, "Workflow mode (manual or auto)")
 	initCmd.Flags().BoolVar(&noGit, "no-git", false, "Skip git init and initial commit")
 	rootCmd.AddCommand(initCmd)
 }

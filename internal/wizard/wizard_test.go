@@ -47,12 +47,8 @@ func (f *fakeUI) Confirm(title, description string, affirmative bool) (bool, err
 	return value, nil
 }
 
-func (f *fakeUI) CollectProjectSettings(_ string, defaultWorkflow string) (projectSettings, error) {
-	settings := f.settings
-	if settings.Workflow == "" {
-		settings.Workflow = defaultWorkflow
-	}
-	return settings, nil
+func (f *fakeUI) CollectProjectSettings(_ string) (projectSettings, error) {
+	return f.settings, nil
 }
 
 func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
@@ -79,9 +75,9 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
-		if name != "demo" || projectType != "" || targetDir != dir || workflow != template.WorkflowManual || !initGit {
-			t.Fatalf("unexpected scaffold args: %q, %q, %q, %q, %v", name, projectType, targetDir, workflow, initGit)
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		if name != "demo" || projectType != "" || targetDir != dir || !initGit {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
@@ -141,7 +137,7 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -237,7 +233,7 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:        name,
 			ProjectType:        projectType,
@@ -343,7 +339,7 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -428,7 +424,7 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -473,7 +469,7 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, template.WorkflowManual, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
 			TargetDir:         targetDir + "/demo",
@@ -501,19 +497,20 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 	}
 }
 
-func TestRunDefaultsWizardWorkflowToProvidedValue(t *testing.T) {
+func TestRunUsesCollectedProjectSettings(t *testing.T) {
 	dir := t.TempDir()
 	ui := &fakeUI{
 		settings: projectSettings{
-			Name:      "demo",
-			TargetDir: dir,
-			InitGit:   false,
+			Name:        "demo",
+			ProjectType: "go",
+			TargetDir:   dir,
+			InitGit:     false,
 		},
 	}
 
-	err := run((&prereqTestCommander{}), ui, dir, template.WorkflowAuto, func(name, projectType, targetDir, workflow string, initGit bool) (scaffold.Result, error) {
-		if workflow != template.WorkflowAuto {
-			t.Fatalf("workflow = %q, want %q", workflow, template.WorkflowAuto)
+	err := run((&prereqTestCommander{}), ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		if name != "demo" || projectType != "go" || targetDir != dir || initGit {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
