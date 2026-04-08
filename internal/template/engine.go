@@ -20,13 +20,6 @@ var filenameMapping = map[string]string{
 // then renders base templates and returns a map of relative output path -> content.
 func RenderAll(data *ProjectData) (map[string]string, error) {
 	result := make(map[string]string)
-	renderData := struct {
-		*ProjectData
-		Workflow string
-	}{
-		ProjectData: data,
-		Workflow:    "manual",
-	}
 
 	// Step 1: Render overlay gitignore fragment if it exists.
 	if data.ProjectType != "" {
@@ -55,7 +48,7 @@ func RenderAll(data *ProjectData) (map[string]string, error) {
 			return fmt.Errorf("read %s: %w", path, err)
 		}
 
-		rendered, err := renderTemplate(string(content), path, renderData)
+		rendered, err := renderTemplate(string(content), path, data)
 		if err != nil {
 			return fmt.Errorf("render %s: %w", path, err)
 		}
