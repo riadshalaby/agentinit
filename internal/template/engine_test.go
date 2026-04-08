@@ -25,10 +25,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/HANDOFF.template.md",
 		".ai/TEST_REPORT.template.md",
 		".ai/AGENTS.md",
+		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
+		"scripts/ai-po.sh",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
@@ -66,11 +68,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "reviewer> finish_cycle") {
 		t.Error("README.md should contain finish_cycle example")
 	}
-	if !strings.Contains(readme, "Selected workflow: `manual`") {
-		t.Error("README.md should document the selected manual workflow")
+	if strings.Contains(readme, "Selected workflow:") {
+		t.Error("README.md should not include a selected workflow line")
 	}
 	if !strings.Contains(readme, "tester> next_task T-001") {
 		t.Error("README.md should contain tester example in manual workflow")
+	}
+	if !strings.Contains(readme, "scripts/ai-po.sh") {
+		t.Error("README.md should describe the PO orchestration script")
 	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("README.md should not contain legacy @ command aliases")
@@ -111,6 +116,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
+		".ai/prompts/po.md",
 	} {
 		if !strings.Contains(agents, snippet) {
 			t.Errorf("AGENTS.md should contain %q", snippet)
@@ -207,11 +213,25 @@ func TestRenderAllBaseOnly(t *testing.T) {
 			t.Errorf("ai-start-cycle.sh should contain %q", snippet)
 		}
 	}
-	if _, ok := files[".ai/prompts/po.md"]; ok {
-		t.Error("manual workflow should not render the PO prompt")
+	poPrompt := files[".ai/prompts/po.md"]
+	for _, snippet := range []string{
+		"`start_session`",
+		"`send_command`",
+		"`stop_session`",
+		"`list_sessions`",
+		"`test_failed` -> back to `in_implementation`",
+	} {
+		if !strings.Contains(poPrompt, snippet) {
+			t.Errorf("PO prompt should contain %q", snippet)
+		}
 	}
-	if _, ok := files["scripts/ai-po.sh"]; ok {
-		t.Error("manual workflow should not render the PO launcher")
+
+	poScript := files["scripts/ai-po.sh"]
+	if !strings.Contains(poScript, "--mcp-config") {
+		t.Error("ai-po.sh should pass --mcp-config to claude")
+	}
+	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
+		t.Error("ai-po.sh should configure the agentinit mcp server")
 	}
 }
 
