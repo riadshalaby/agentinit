@@ -3,16 +3,26 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
 
-var version = "0.1.0"
+var readBuildInfo = debug.ReadBuildInfo
 
 var rootCmd = &cobra.Command{
 	Use:   "agentinit",
 	Short: "Scaffold file-based AI workflows for new projects",
 	Long:  "agentinit generates manual and auto AI workflow scaffolds with file-based coordination, shell scripts, and persistent role sessions.",
+}
+
+func version() string {
+	info, ok := readBuildInfo()
+	if !ok || info == nil || info.Main.Version == "" || info.Main.Version == "(devel)" {
+		return "(dev)"
+	}
+
+	return info.Main.Version
 }
 
 func Execute() {
@@ -23,5 +33,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Version = version
+	rootCmd.Version = version()
 }
