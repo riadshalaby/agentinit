@@ -24,10 +24,12 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/HANDOFF.template.md",
 		".ai/TEST_REPORT.template.md",
 		".ai/AGENTS.md",
+		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
+		"scripts/ai-po.sh",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-plan.sh",
@@ -164,6 +166,7 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "testproj")
 	scripts := []string{
+		"scripts/ai-po.sh",
 		"scripts/ai-launch.sh",
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",

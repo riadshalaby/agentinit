@@ -10,13 +10,8 @@ TODO: Add setup instructions.
 
 ## AI Workflow
 
-Selected workflow: `{{.Workflow}}`
-
-{{- if eq .Workflow "auto"}}
-This project uses the persistent planner/implementer/reviewer/tester workflow with file-based coordination, plus the auto-only PO orchestration layer.
-{{- else}}
-This project uses the persistent planner/implementer/reviewer/tester workflow with file-based coordination.
-{{- end}}
+This project includes the persistent planner/implementer/reviewer/tester workflow with file-based coordination, plus the PO orchestration layer.
+Use the role scripts directly for manual coordination, or run `scripts/ai-po.sh` to drive the same workflow automatically.
 
 ### Concepts
 
