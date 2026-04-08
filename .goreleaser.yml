@@ -1,0 +1,30 @@
+version: 2
+
+project_name: agentinit
+
+builds:
+  - id: agentinit
+    main: .
+    binary: agentinit
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    builds:
+      - agentinit
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: darwin
+        formats:
+          - zip
+
+changelog:
+  sort: asc
