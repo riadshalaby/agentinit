@@ -44,6 +44,9 @@ The interactive wizard can detect and install additional recommended tools (`gh`
 # Install
 go install github.com/riadshalaby/agentinit@latest
 
+# Enable the tracked git hooks for this repo
+git config core.hooksPath scripts/hooks
+
 # Scaffold a project with the interactive wizard
 agentinit init
 

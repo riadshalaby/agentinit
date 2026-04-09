@@ -84,6 +84,8 @@ main() {
     die "branch '$branch_name' already exists on origin"
   fi
 
+  git config core.hooksPath scripts/hooks >/dev/null 2>&1 || die "failed to configure git hooks path"
+
   git checkout main >/dev/null 2>&1 || die "failed to checkout main"
   git pull --ff-only origin main >/dev/null 2>&1 || die "failed to fast-forward local main from origin/main"
   git checkout -b "$branch_name" >/dev/null 2>&1 || die "failed to create branch '$branch_name'"
