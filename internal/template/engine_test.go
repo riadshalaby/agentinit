@@ -5,6 +5,19 @@ import (
 	"testing"
 )
 
+func assertUnifiedWorkflowArtifacts(t *testing.T, files map[string]string) {
+	t.Helper()
+
+	for _, path := range []string{
+		".ai/prompts/po.md",
+		"scripts/ai-po.sh",
+	} {
+		if _, ok := files[path]; !ok {
+			t.Errorf("missing unified workflow artifact: %s", path)
+		}
+	}
+}
+
 func TestRenderAllBaseOnly(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "myproject",
@@ -72,7 +85,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("README.md should not include a selected workflow line")
 	}
 	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("README.md should contain tester example in manual workflow")
+		t.Error("README.md should contain tester example in the unified scaffold")
 	}
 	for _, snippet := range []string{
 		"### Runtime modes",
@@ -175,7 +188,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("implementer prompt should describe status_cycle")
 	}
 	if !strings.Contains(implementerPrompt, "`test_failed`") {
-		t.Error("implementer prompt should mention test_failed in manual workflow")
+		t.Error("implementer prompt should mention test_failed in the unified scaffold")
 	}
 	if !strings.Contains(implementerPrompt, "Follow all project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.") {
 		t.Error("implementer prompt should reference AGENTS.md and .ai/AGENTS.md")
@@ -219,10 +232,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	launchScript := files["scripts/ai-launch.sh"]
 	if !strings.Contains(launchScript, "plan | implement | review | test") {
-		t.Error("ai-launch.sh should list the test role in manual workflow")
+		t.Error("ai-launch.sh should list the test role in the unified scaffold")
 	}
 	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should route the test role in manual workflow")
+		t.Error("ai-launch.sh should route the test role in the unified scaffold")
 	}
 	startCycleScript := files["scripts/ai-start-cycle.sh"]
 	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
@@ -250,6 +263,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
 		t.Error("ai-po.sh should configure the agentinit mcp server")
 	}
+
+	assertUnifiedWorkflowArtifacts(t, files)
 }
 
 func TestRenderAllGoOverlay(t *testing.T) {
@@ -268,6 +283,8 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderAll() error: %v", err)
 	}
+
+	assertUnifiedWorkflowArtifacts(t, files)
 
 	// Verify gitignore has Go extras.
 	gitignore := files[".gitignore"]
@@ -313,6 +330,8 @@ func TestRenderAllJavaOverlay(t *testing.T) {
 		t.Fatalf("RenderAll() error: %v", err)
 	}
 
+	assertUnifiedWorkflowArtifacts(t, files)
+
 	gitignore := files[".gitignore"]
 	if !strings.Contains(gitignore, "target/") {
 		t.Error(".gitignore should contain Java/Maven-specific entries")
@@ -340,6 +359,8 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderAll() error: %v", err)
 	}
+
+	assertUnifiedWorkflowArtifacts(t, files)
 
 	gitignore := files[".gitignore"]
 	if !strings.Contains(gitignore, "node_modules/") {

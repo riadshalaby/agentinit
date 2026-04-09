@@ -71,7 +71,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
 	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("generated README.md should contain tester examples in manual workflow")
+		t.Error("generated README.md should contain tester examples in the unified scaffold")
 	}
 	for _, snippet := range []string{
 		"### Runtime modes",
