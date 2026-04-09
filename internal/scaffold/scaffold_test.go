@@ -135,7 +135,11 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read .ai/AGENTS.md: %v", err)
 	}
 	workflowAgents := string(workflowAgentsBytes)
+	if !strings.HasPrefix(workflowAgents, "# AGENTS\n\n## Hard Rules\n") {
+		t.Error("generated .ai/AGENTS.md should start with a Hard Rules section")
+	}
 	for _, snippet := range []string{
+		"## Hard Rules",
 		"## Commit Conventions",
 		"## Runtime Modes",
 		"`scripts/ai-po.sh [agent-options...]`",
@@ -153,6 +157,18 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		if !strings.Contains(workflowAgents, snippet) {
 			t.Errorf("generated .ai/AGENTS.md should contain %q", snippet)
 		}
+	}
+	if strings.Count(workflowAgents, "Never include `Co-Authored-By` trailers in commit messages.") != 1 {
+		t.Error("generated .ai/AGENTS.md should mention the no-Co-Authored-By rule only once")
+	}
+	if strings.Count(workflowAgents, "For shell-based repository search, prefer `rg` over `grep`.") != 1 {
+		t.Error("generated .ai/AGENTS.md should mention the rg preference only once")
+	}
+	if strings.Count(workflowAgents, "For shell-based file discovery, prefer `fd` over `find`.") != 1 {
+		t.Error("generated .ai/AGENTS.md should mention the fd preference only once")
+	}
+	if strings.Count(workflowAgents, "For shell-based file previews, prefer `bat` over `cat`.") != 1 {
+		t.Error("generated .ai/AGENTS.md should mention the bat preference only once")
 	}
 
 	gitignoreBytes, err := os.ReadFile(filepath.Join(projectDir, ".gitignore"))
