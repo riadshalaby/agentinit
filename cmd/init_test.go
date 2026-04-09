@@ -70,7 +70,7 @@ func TestInitCommandRequiresProjectNameWhenNotInteractive(t *testing.T) {
 	}
 }
 
-func TestInitCommandUsesFlagPathWithArgument(t *testing.T) {
+func TestInitCommandUsesCLIArgumentsWithProjectName(t *testing.T) {
 	originalWizard := runWizard
 	originalScaffold := runScaffold
 	originalStdinStat := stdinStat
