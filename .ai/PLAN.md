@@ -59,6 +59,30 @@ Update all tests to match the unified scaffold: remove auto-vs-manual branching 
 - `internal/template/engine_test.go` — remove `TestRenderAllAutoWorkflow`; update `TestRenderAllBaseOnly` to assert PO files present
 - `internal/wizard/wizard_test.go` — remove workflow-related assertions
 
+### Phase 5 — T-005: Add commit-msg hook rejecting Co-Authored-By trailers
+
+Add a tracked `scripts/hooks/commit-msg` git hook that rejects any commit whose message contains a `Co-Authored-By` line. Document the install step so new clones pick it up. The `.claude/settings.json` setting (`includeCoAuthoredBy: false`) is already in place as a first line of defence; this hook is the enforcement backstop.
+
+**Files to create/change:**
+- `scripts/hooks/commit-msg` — new executable shell script; reads the commit message file (`$1`), exits non-zero with an error message if any line matches `^Co-Authored-By:` (case-insensitive)
+- `README.md` — add a one-line install step in the project setup section: `git config core.hooksPath scripts/hooks`
+- `scripts/ai-start-cycle.sh` — if it exists, prepend `git config core.hooksPath scripts/hooks` so every cycle automatically has the hook active
+
+### Phase 6 — T-006: Restructure AGENTS.md files with a Hard Rules block
+
+Move the most commonly violated, hardest-to-notice rules to a prominent **Hard Rules** section at the very top, above all role-specific content. This ensures every session sees them first regardless of context-window truncation. Apply the change to **both** the scaffold template (for new projects) and this project's own file (for the current repo).
+
+**Rules to promote:**
+1. Never include `Co-Authored-By` trailers in commit messages.
+2. For shell-based repository search, prefer `rg` over `grep`.
+3. For shell-based file discovery, prefer `fd` over `find`.
+4. For shell-based file previews, prefer `bat` over `cat`.
+
+**Files to change:**
+- `internal/template/templates/base/ai/AGENTS.md.tmpl` — add `## Hard Rules` section as the first `##` after `# AGENTS`; remove duplicates from their original locations in Tool Preferences / Commit Conventions
+- `.ai/AGENTS.md` (this project) — same restructure: add `## Hard Rules` as the first `##` after `# AGENTS`; remove duplicates from original locations
+- Update corresponding tests if they assert on section ordering or content
+
 ## Validation
 
 - `go fmt ./...`
