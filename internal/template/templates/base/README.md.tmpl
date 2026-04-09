@@ -11,6 +11,7 @@ TODO: Add setup instructions.
 ## AI Workflow
 
 This project includes the persistent planner/implementer/reviewer/tester workflow with file-based coordination, plus the PO orchestration layer.
+Manual and auto are two runtime modes for the same scaffold: they use the same generated files, task board, review gates, and test gates.
 
 ### Runtime modes
 
@@ -25,6 +26,7 @@ This project includes the persistent planner/implementer/reviewer/tester workflo
 
 | Role | Reads | Writes |
 |------|-------|--------|
+| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |
 | Planner | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | Implementer | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | Reviewer | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
