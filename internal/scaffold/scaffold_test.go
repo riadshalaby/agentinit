@@ -73,6 +73,18 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "tester> next_task T-001") {
 		t.Error("generated README.md should contain tester examples in manual workflow")
 	}
+	for _, snippet := range []string{
+		"### Runtime modes",
+		"Manual mode: start the planner, implementer, reviewer, and tester in separate terminals",
+		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
+		"### Start the PO orchestrator (auto mode)",
+		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
+		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
+	} {
+		if !strings.Contains(readme, snippet) {
+			t.Errorf("generated README.md should contain %q", snippet)
+		}
+	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
 	}
@@ -123,6 +135,14 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	workflowAgents := string(workflowAgentsBytes)
 	for _, snippet := range []string{
 		"## Commit Conventions",
+		"## Runtime Modes",
+		"`scripts/ai-po.sh [agent-options...]`",
+		"`start_session`",
+		"`send_command`",
+		"`list_sessions`",
+		"`stop_session`",
+		"In manual mode, no role autostarts another role.",
+		"In auto mode, the PO session may start or reconnect to the role sessions it coordinates.",
 		"`finish_cycle [TASK_ID]`",
 		"`scripts/ai-test.sh [agent] [agent-options...]`",
 		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",

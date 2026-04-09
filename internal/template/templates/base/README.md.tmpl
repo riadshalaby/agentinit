@@ -11,7 +11,11 @@ TODO: Add setup instructions.
 ## AI Workflow
 
 This project includes the persistent planner/implementer/reviewer/tester workflow with file-based coordination, plus the PO orchestration layer.
-Use the role scripts directly for manual coordination, or run `scripts/ai-po.sh` to drive the same workflow automatically.
+
+### Runtime modes
+
+- Manual mode: start the planner, implementer, reviewer, and tester in separate terminals, then drive each session yourself with the documented text commands.
+- Auto mode: run `scripts/ai-po.sh` to start the PO session, which uses MCP tools to coordinate the same planner, implementer, reviewer, and tester workflow for you.
 
 ### Concepts
 
@@ -43,7 +47,7 @@ in_planning → ready_for_implement → in_implementation → ready_for_review �
 scripts/ai-start-cycle.sh feature/<scope>
 ```
 
-### Start persistent role sessions
+### Start persistent role sessions (manual mode)
 
 ```bash
 scripts/ai-plan.sh          # terminal 1
@@ -53,6 +57,14 @@ scripts/ai-test.sh          # terminal 4
 ```
 
 Launch each role once, then keep those sessions open for the rest of the cycle.
+
+### Start the PO orchestrator (auto mode)
+
+```bash
+scripts/ai-po.sh
+```
+
+The PO session drives the same task board and role flow through the `agentinit` MCP server.
 
 ### Drive work inside the existing sessions
 
@@ -102,12 +114,14 @@ reviewer> finish_cycle
 | `.ai/PLAN.md` | Current plan | yes |
 | `.ai/TASKS.md` | Task board with status | yes |
 | `.ai/AGENTS.md` | Workflow-managed agent rules and session model | yes |
+| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |
 | `.ai/REVIEW.md` | Review findings | no (gitignored runtime artifact) |
 | `.ai/TEST_REPORT.md` | Test findings | no (gitignored runtime artifact) |
 | `.ai/HANDOFF.md` | Runtime handoff log | no |
 | `ROADMAP.md` | Cycle goals (edit before planning) | yes |
 | `AGENTS.md` | Project-specific agent rules and validation | yes |
 | `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |
+| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |
 
 ### Create a PR
 
