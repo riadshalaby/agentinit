@@ -55,13 +55,25 @@
     - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent: `codex`)
     - `scripts/ai-review.sh [agent] [agent-options...]` (default agent: `claude`)
     - `scripts/ai-test.sh [agent] [agent-options...]` (default agent: `claude`)
+    - `scripts/ai-po.sh [agent-options...]` for the PO orchestration session
 - Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.
 
+## Runtime Modes
+- Manual mode:
+  - you start planner, implementer, reviewer, and tester sessions yourself in separate terminals
+  - you drive task progress by sending the documented text commands directly to each session
+- Auto mode:
+  - you start the PO session with `scripts/ai-po.sh`
+  - the PO session uses the `agentinit` MCP server to start and coordinate planner, implementer, reviewer, and tester sessions for the same task flow
+- Both modes use the same `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review/test artifacts, and status transitions.
+
 ## Persistent Session Workflow
-- No role autostarts another role.
+- In manual mode, no role autostarts another role.
+- In auto mode, the PO session may start or reconnect to the role sessions it coordinates.
 - Start a new development cycle with `scripts/ai-start-cycle.sh <branch-name>`.
 - Start the planner, implementer, reviewer, and tester once, then keep those sessions open for the rest of the cycle.
+- When using auto mode, let the PO session manage those role sessions instead of driving them directly yourself.
 - Every role waits in `WAIT_FOR_USER_START` state until you explicitly tell it to begin.
 - After launch, steer the existing sessions with text commands instead of relaunching scripts for each step.
 - Agent choice is manual when you launch each role (`claude` or `codex`) and can vary by session.
@@ -84,6 +96,14 @@
 
 ## Session Commands
 Use these text commands inside the already-running role sessions.
+- PO session:
+  - launched with `scripts/ai-po.sh`
+  - uses MCP tools instead of text commands:
+    - `start_session`
+    - `send_command`
+    - `list_sessions`
+    - `stop_session`
+  - coordinates planner, implementer, reviewer, and tester based on `.ai/TASKS.md`
 - Planner session:
   - `start_plan`
     - read `ROADMAP.md` and current planning artifacts
