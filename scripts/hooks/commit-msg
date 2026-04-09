@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+message_file="${1:-}"
+
+if [[ -z "$message_file" || ! -f "$message_file" ]]; then
+  echo "commit-msg hook requires a valid commit message file path" >&2
+  exit 1
+fi
+
+if grep -Eiq '^[[:space:]]*Co-Authored-By:' "$message_file"; then
+  echo "commit rejected: remove all Co-Authored-By trailers from the commit message" >&2
+  exit 1
+fi
