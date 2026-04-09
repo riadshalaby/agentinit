@@ -74,10 +74,12 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Error("generated README.md should contain tester examples in the unified scaffold")
 	}
 	for _, snippet := range []string{
+		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
 		"Manual mode: start the planner, implementer, reviewer, and tester in separate terminals",
 		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
 	} {

@@ -1,23 +1,24 @@
 # agentinit
 
-Scaffold a file-based AI agent coordination framework for any codebase. Instead of ad-hoc prompting, `agentinit` generates either a manual workflow with planner, implementer, reviewer, and tester sessions, or an auto workflow that adds a PO orchestration layer on top of the same role set.
+Scaffold a file-based AI agent coordination framework for any codebase. Every scaffold includes the same PO, planner, implementer, reviewer, and tester artifacts. Manual and auto are runtime modes for using that shared scaffold, not scaffold-time choices.
 
 ## Concepts
 
 **Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
 
-**Roles** — a cycle always includes Planner, Implementer, Reviewer, and Tester sessions. The optional auto workflow adds a PO-driven orchestration layer on top of those persistent role sessions.
+**Roles** — a cycle always includes PO, Planner, Implementer, Reviewer, and Tester support. In manual mode you drive the role sessions yourself. In auto mode the PO session coordinates those same role sessions through MCP.
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
+| **PO** | Coordinates the role sessions in auto mode | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
 | **Tester** | Verifies the reviewed implementation and records test results | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
 
-**File-based coordination** — roles communicate exclusively through files in `.ai/`. No role calls another role directly. The user switches between terminal sessions to drive each role forward.
+**File-based coordination** — both runtime modes use the same `.ai/` files, status flow, review gates, and test gates. In manual mode the user switches between sessions directly. In auto mode the PO session drives those sessions through the MCP server.
 
-**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. Both workflows include testing; the auto workflow adds orchestration on top of the same task flow:
+**Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. Manual and auto both use this same task flow:
 
 ```
 in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
@@ -46,11 +47,8 @@ go install github.com/riadshalaby/agentinit@latest
 # Scaffold a project with the interactive wizard
 agentinit init
 
-# Or scaffold the default manual workflow non-interactively
+# Or scaffold non-interactively
 agentinit init myapp --type go
-
-# Or scaffold the auto workflow with PO orchestration
-agentinit init myapp-auto --type go --workflow auto
 
 # Enter the project and edit ROADMAP.md with your goals
 cd myapp
@@ -64,6 +62,9 @@ scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
 scripts/ai-test.sh          # terminal 4
+
+# Or start the PO orchestrator for auto mode
+scripts/ai-po.sh
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
@@ -90,7 +91,7 @@ When you want to update an existing project scaffold:
 ## Usage
 
 ```bash
-agentinit init [project-name] [--type go|java|node] [--workflow manual|auto] [--dir .] [--no-git]
+agentinit init [project-name] [--type go|java|node] [--dir .] [--no-git]
 ```
 
 `agentinit init` has two entry paths:
@@ -111,7 +112,6 @@ Wizard project settings:
 
 - `Project name`
 - `Project type`: `none`, `go`, `java`, `node`
-- `Workflow`: `manual` or `auto`
 - `Target directory`
 - `Initialize git?`
 
@@ -146,9 +146,6 @@ agentinit init
 # Scaffold a Go project without the wizard
 agentinit init myapp --type go
 
-# Scaffold an auto workflow with PO orchestration artifacts
-agentinit init myapp-auto --type go --workflow auto
-
 # Scaffold a Java project in a specific directory without the wizard
 agentinit init myservice --type java --dir ~/projects
 
@@ -156,20 +153,20 @@ agentinit init myservice --type java --dir ~/projects
 agentinit init mylib --type node --no-git
 ```
 
-## Workflows
+## Runtime Modes
 
-### Workflow Comparison
+Manual and auto are two ways to use the same scaffold. Both modes use the same generated scripts, prompts, `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review/test artifacts, and status transitions. The only difference is who drives the role sessions.
 
-| Workflow | Sessions you run | Coordination style | Best fit |
-|----------|------------------|--------------------|----------|
+### Runtime mode comparison
+
+| Mode | Sessions you run | Coordination style | Best fit |
+|------|------------------|--------------------|----------|
 | `manual` | planner, implementer, reviewer, tester | You switch terminals and issue each role command yourself | Maximum visibility and direct control over every handoff |
-| `auto` | PO plus the same role set | The PO reads `.ai/TASKS.md` and uses the MCP server to start sessions and send commands for the supported roles | Fewer manual role switches while keeping the file-based workflow and review gates |
+| `auto` | PO plus the same role set | The PO reads `.ai/TASKS.md` and uses the MCP server to start sessions and send commands for the supported roles | Fewer manual role switches while keeping the same review and test gates |
 
-### Manual Workflow (`--workflow manual`)
+### Manual mode
 
-`manual` is the default workflow. It scaffolds the core persistent workflow with Planner, Implementer, Reviewer, and Tester sessions. The user is the orchestrator: you decide which session to talk to next and advance the task state machine yourself.
-
-#### Step-by-step manual flow
+In manual mode, you are the coordinator. Start the planner, implementer, reviewer, and tester sessions yourself, then move between them as the task board advances.
 
 1. Scaffold the project, then edit `ROADMAP.md` with the change you want the cycle to deliver.
 2. Start a cycle:
@@ -187,24 +184,31 @@ scripts/ai-review.sh
 scripts/ai-test.sh
 ```
 
-4. In the planner session, run `start_plan`. That writes `.ai/PLAN.md`, updates `.ai/TASKS.md`, and moves planned work to `ready_for_implement`.
-5. In the implementer session, run `next_task` or `next_task T-001`. The implementer claims the task, writes code and tests, validates the change, commits it, and moves the task to `ready_for_review`.
-6. In the reviewer session, run `next_task`. The reviewer checks the implementation against `.ai/PLAN.md` and either sends the task to `ready_for_test` or returns it as `changes_requested`.
-7. In the tester session, run `next_task`. The tester validates the reviewed change and marks the task `done` or `test_failed`.
-8. Repeat the loop until all tasks are `done`, then run `reviewer> finish_cycle` and update the PR with `scripts/ai-pr.sh sync`.
+4. Drive the workflow through the session commands documented in the generated README and `.ai/AGENTS.md`.
 
-#### Manual handoff flow
+### Auto mode
 
-The user remains responsible for moving between sessions, but the handoffs stay deterministic because the files are the source of truth:
+In auto mode, the PO session coordinates the same planner, implementer, reviewer, and tester workflow for you through the `agentinit` MCP server.
 
-- planner writes `.ai/PLAN.md` and `.ai/TASKS.md`
-- implementer reads the plan, commits code, and moves the task to review
-- reviewer writes `.ai/REVIEW.md` and chooses review pass vs. rework
-- tester writes `.ai/TEST_REPORT.md` and chooses done vs. failed-test rework
+1. Scaffold the project and edit `ROADMAP.md`.
+2. Start a cycle:
 
-#### Session Commands
+```bash
+scripts/ai-start-cycle.sh feature/my-change
+```
 
-Launch each role once per cycle. All subsequent interaction happens through text commands in the already-running sessions.
+3. Launch the PO session:
+
+```bash
+scripts/ai-po.sh
+```
+
+4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `start_plan`, `next_task T-001`, or `rework_task T-001`.
+5. Keep `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` as the source of truth for progress and blockers.
+
+### Session commands
+
+Manual mode uses text commands in the role sessions. Auto mode uses the PO session plus MCP tools to send those commands on your behalf.
 
 **Planner**
 
@@ -235,37 +239,6 @@ Launch each role once per cycle. All subsequent interaction happens through text
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_test` task (or a specific one) |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
-
-### Auto Workflow (`--workflow auto`)
-
-`auto` adds a PO orchestration layer on top of the same file-based workflow. The generated project includes the normal planner/implementer/reviewer/tester scripts plus a PO launcher and prompt that use the `agentinit` MCP server for session orchestration.
-
-#### Step-by-step auto flow
-
-1. Scaffold the project with `--workflow auto`, then edit `ROADMAP.md`.
-2. Start a cycle exactly as you would in manual mode:
-
-```bash
-scripts/ai-start-cycle.sh feature/my-change
-```
-
-3. Launch the PO session:
-
-```bash
-scripts/ai-po.sh
-```
-
-4. The PO reads `.ai/TASKS.md`, starts supported role sessions through MCP when needed, and sends deterministic commands such as `start_plan`, `next_task T-001`, or `rework_task T-001`.
-5. The underlying role sessions still do the same work as in manual mode: planner writes the plan, implementer writes code and commits, reviewer approves or requests changes, and tester validates outcomes.
-6. Use the PO session as the coordinator, but keep the normal role files and task state machine as the source of truth. If a blocker appears, inspect `.ai/TASKS.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` directly.
-7. Run `scripts/ai-pr.sh sync` once the cycle is complete and the reviewer has closed it.
-
-#### What auto changes, and what it does not
-
-- It adds `scripts/ai-po.sh` and `.ai/prompts/po.md` to drive the workflow through MCP.
-- It does not replace `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/REVIEW.md`, or `.ai/TEST_REPORT.md`.
-- It does not remove the review/test gates.
-- It currently automates session control for `plan`, `implement`, and `review` via MCP. Keep the tester session available in the normal way for validation and failed-test follow-up.
 
 ### MCP Server
 
