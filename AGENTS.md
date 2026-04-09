@@ -29,4 +29,4 @@
 
 ## Agent Workflow References
 - For workflow rules, status flow, session commands, and tool preferences see `.ai/AGENTS.md`.
-- For role-specific instructions see `.ai/prompts/planner.md`, `.ai/prompts/implementer.md`, `.ai/prompts/reviewer.md`, and `.ai/prompts/tester.md`.
+- For role-specific instructions see `.ai/prompts/planner.md`, `.ai/prompts/implementer.md`, `.ai/prompts/reviewer.md`, `.ai/prompts/tester.md`, and `.ai/prompts/po.md`.
