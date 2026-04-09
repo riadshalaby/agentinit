@@ -83,6 +83,25 @@ Move the most commonly violated, hardest-to-notice rules to a prominent **Hard R
 - `.ai/AGENTS.md` (this project) — same restructure: add `## Hard Rules` as the first `##` after `# AGENTS`; remove duplicates from original locations
 - Update corresponding tests if they assert on section ordering or content
 
+### Phase 7 — T-007: Sync project files with updated templates
+
+The template changes from T-002 and T-003 were only applied to the scaffold templates (`*.tmpl`), not to this project's own tracked files. Sync the project files so the repo that builds agentinit also uses the unified scaffold conventions it generates.
+
+**Gaps to close:**
+
+1. **`AGENTS.md` (top-level)** — line 36 is missing the `po.md` reference. The template now unconditionally lists it.
+2. **`.ai/AGENTS.md`** — four sections diverge from the template:
+   - Missing `scripts/ai-po.sh` in the AI Operating Mode convenience wrappers list
+   - Missing the `## Runtime Modes` section (manual vs auto description)
+   - Persistent Session Workflow does not mention auto mode ("In auto mode, the PO session may start or reconnect...")
+   - Session Commands section is missing the PO session entry (MCP tools: `start_session`, `send_command`, `list_sessions`, `stop_session`)
+
+**Files to change:**
+- `AGENTS.md` — add `, and `.ai/prompts/po.md`` to the Agent Workflow References line
+- `.ai/AGENTS.md` — add `ai-po.sh` to convenience wrappers; add `## Runtime Modes` section; update Persistent Session Workflow with auto mode references; add PO session commands to Session Commands
+
+**Guidance:** Use the current template (`internal/template/templates/base/ai/AGENTS.md.tmpl`) as the source of truth for the content to add. Do not change the template itself — only update the project files.
+
 ## Validation
 
 - `go fmt ./...`
