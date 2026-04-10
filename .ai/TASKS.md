@@ -16,7 +16,7 @@ Status values:
 
 | Task ID | Scope | Planner Agent | Implementer Agent | Reviewer Agent | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| T-001 | Merge `.ai/AGENTS.md` into `AGENTS.md` with managed markers; update all references; delete `.ai/AGENTS.md` | claude | codex | claude | ready_for_review | Single `AGENTS.md` with markers; no file references `.ai/AGENTS.md`; all prompts point to `AGENTS.md` | rework ready | review |
+| T-001 | Merge `.ai/AGENTS.md` into `AGENTS.md` with managed markers; update all references; delete `.ai/AGENTS.md` | claude | codex | claude | ready_for_test | Single `AGENTS.md` with markers; no file references `.ai/AGENTS.md`; all prompts point to `AGENTS.md` | PASS_WITH_NOTES (R2) | test |
 | T-002 | Inline 5 critical rules into each role prompt and matching templates | claude | codex | claude | ready_for_implement | Each prompt has `## Critical Rules` section with 5 inlined rules; single `AGENTS.md` reference for full ruleset; `.tmpl` files match | n/a | implement |
 | T-003 | Rewrite `AGENTS.md.tmpl` with markers; delete `ai/AGENTS.md.tmpl`; add manifest generation to scaffold | claude | codex | claude | ready_for_implement | `agentinit init` produces merged `AGENTS.md`, no `.ai/AGENTS.md`, and `.ai/.manifest.json`; all tests pass | n/a | implement |
 | T-004 | Add `agentinit update` command with manifest-based and fallback file management | claude | codex | claude | ready_for_implement | `agentinit update` refreshes managed files, preserves user content, supports `--dry-run`, works with and without manifest; tests pass | n/a | implement |
