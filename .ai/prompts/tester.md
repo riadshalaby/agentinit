@@ -2,7 +2,6 @@
 
 You are in `test` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Wait for a tester command before taking action.
 - Supported tester commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_test` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_testing` when testing begins
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
