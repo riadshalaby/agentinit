@@ -187,7 +187,7 @@ scripts/ai-review.sh
 scripts/ai-test.sh
 ```
 
-4. Drive the workflow through the session commands documented in the generated README and `.ai/AGENTS.md`.
+4. Drive the workflow through the session commands documented in the generated README and `AGENTS.md`.
 
 ### Auto mode
 
