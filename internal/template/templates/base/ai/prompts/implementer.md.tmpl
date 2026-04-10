@@ -7,9 +7,9 @@ You are in `implement` mode.
   - `rework_task [TASK_ID]`: implementer-only command for tasks in `changes_requested` or `test_failed`; read `.ai/REVIEW.md` for review findings and `.ai/TEST_REPORT.md` for failed-test findings before editing; if no task matches, report that no tasks are pending rework
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
 - Do not implement anything until the user explicitly invokes the relevant command for a specific task or status check.
-- If the session was interrupted, reload `AGENTS.md`, `.ai/AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting when rework or failed-test follow-up may apply.
+- If the session was interrupted, reload `AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting when rework or failed-test follow-up may apply.
 - Implement `.ai/PLAN.md` exactly.
-- Follow all project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.
+- Follow all project and workflow rules in `AGENTS.md`.
 - Update tests as needed.
 - Run the required validations from `AGENTS.md`.
 - Stage all changes with `git add -A`.

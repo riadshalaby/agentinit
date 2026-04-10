@@ -37,7 +37,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
 		".ai/TEST_REPORT.template.md",
-		".ai/AGENTS.md",
 		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
@@ -108,10 +107,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("README.md should mark review and test reports as gitignored runtime artifacts")
 	}
 	for _, snippet := range []string{
-		"| `.ai/AGENTS.md` | Workflow-managed agent rules and session model | yes |",
-		"| `AGENTS.md` | Project-specific agent rules and validation | yes |",
+		"| `AGENTS.md` | Project-specific and workflow-managed agent rules | yes |",
 		"| `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |",
-		"Full workflow details and session recovery rules are in `.ai/AGENTS.md`.",
+		"Full workflow details and session recovery rules are in `AGENTS.md`.",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("README.md should contain %q", snippet)
@@ -134,68 +132,40 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"## Language Rules",
 		"## PR Policy",
 		"## Git Rules",
-		"## Agent Workflow References",
-		".ai/AGENTS.md",
-		".ai/prompts/planner.md",
-		".ai/prompts/implementer.md",
-		".ai/prompts/reviewer.md",
-		".ai/prompts/tester.md",
-		".ai/prompts/po.md",
+		"<!-- agentinit:managed:start -->",
+		"## Hard Rules",
+		"## Commit Conventions",
+		"## Runtime Modes",
+		"## Tool Preferences",
+		"### Example Commands",
+		"persistent session is interrupted or reopened",
+		"`scripts/ai-po.sh [agent-options...]`",
+		"`status_cycle [TASK_ID]`",
+		"When available, use `ast-grep` (`sg`)",
+		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
+		"<!-- agentinit:managed:end -->",
 	} {
 		if !strings.Contains(agents, snippet) {
 			t.Errorf("AGENTS.md should contain %q", snippet)
 		}
 	}
-
-	workflowAgents := files[".ai/AGENTS.md"]
-	if !strings.HasPrefix(workflowAgents, "# AGENTS\n\n## Hard Rules\n") {
-		t.Error(".ai/AGENTS.md should start with a Hard Rules section")
+	if _, ok := files[".ai/AGENTS.md"]; ok {
+		t.Error(".ai/AGENTS.md should not be rendered")
 	}
-	for _, snippet := range []string{
-		"## Hard Rules",
-		"## Commit Conventions",
-		"## Runtime Modes",
-		"`scripts/ai-po.sh [agent-options...]`",
-		"`start_session`",
-		"`send_command`",
-		"`list_sessions`",
-		"`stop_session`",
-		"In manual mode, no role autostarts another role.",
-		"In auto mode, the PO session may start or reconnect to the role sessions it coordinates.",
-		"`status_cycle [TASK_ID]`",
-		"`scripts/ai-test.sh [agent] [agent-options...]`",
-		"`in_review` -> `ready_for_test` -> `in_testing` -> `done`",
-		"persistent session is interrupted or reopened",
-		"move all newly planned tasks to `ready_for_implement`",
-		"## Tool Preferences",
-		"### Tool Selection",
-		"### Search Rules",
-		"### Example Commands",
-		"For shell-based repository search, prefer `rg` over `grep`",
-		"For shell-based file discovery, prefer `fd` over `find`",
-		"For shell-based file previews, prefer `bat` over `cat`",
-		"For shell-based JSON parsing or filtering, prefer `jq`",
-		"When available, use `ast-grep` (`sg`)",
-		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
-	} {
-		if !strings.Contains(workflowAgents, snippet) {
-			t.Errorf(".ai/AGENTS.md should contain %q", snippet)
-		}
+	if strings.Count(agents, "Never include `Co-Authored-By` trailers in commit messages.") != 1 {
+		t.Error("AGENTS.md should mention the no-Co-Authored-By rule only once")
 	}
-	if strings.Count(workflowAgents, "Never include `Co-Authored-By` trailers in commit messages.") != 1 {
-		t.Error(".ai/AGENTS.md should mention the no-Co-Authored-By rule only once")
+	if strings.Count(agents, "For shell-based repository search, prefer `rg` over `grep`.") != 1 {
+		t.Error("AGENTS.md should mention the rg preference only once")
 	}
-	if strings.Count(workflowAgents, "For shell-based repository search, prefer `rg` over `grep`.") != 1 {
-		t.Error(".ai/AGENTS.md should mention the rg preference only once")
+	if strings.Count(agents, "For shell-based file discovery, prefer `fd` over `find`.") != 1 {
+		t.Error("AGENTS.md should mention the fd preference only once")
 	}
-	if strings.Count(workflowAgents, "For shell-based file discovery, prefer `fd` over `find`.") != 1 {
-		t.Error(".ai/AGENTS.md should mention the fd preference only once")
+	if strings.Count(agents, "For shell-based file previews, prefer `bat` over `cat`.") != 1 {
+		t.Error("AGENTS.md should mention the bat preference only once")
 	}
-	if strings.Count(workflowAgents, "For shell-based file previews, prefer `bat` over `cat`.") != 1 {
-		t.Error(".ai/AGENTS.md should mention the bat preference only once")
-	}
-	if strings.Contains(workflowAgents, "move the selected first task to `ready_for_implement`") {
-		t.Error(".ai/AGENTS.md should not use the selected first task planner wording")
+	if strings.Contains(agents, "move the selected first task to `ready_for_implement`") {
+		t.Error("AGENTS.md should not use the selected first task planner wording")
 	}
 
 	implementerPrompt := files[".ai/prompts/implementer.md"]
@@ -208,8 +178,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`test_failed`") {
 		t.Error("implementer prompt should mention test_failed in the unified scaffold")
 	}
-	if !strings.Contains(implementerPrompt, "Follow all project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.") {
-		t.Error("implementer prompt should reference AGENTS.md and .ai/AGENTS.md")
+	if !strings.Contains(implementerPrompt, "Follow all project and workflow rules in `AGENTS.md`.") {
+		t.Error("implementer prompt should reference AGENTS.md")
 	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
@@ -225,24 +195,24 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(plannerPrompt, "move the selected first task to `ready_for_implement`") || strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for the selected task:") {
 		t.Error("planner prompt should not use the selected-task wording")
 	}
-	if !strings.Contains(plannerPrompt, "Read `AGENTS.md`, `.ai/AGENTS.md`, and `ROADMAP.md` first.") {
-		t.Error("planner prompt should read AGENTS.md and .ai/AGENTS.md first")
+	if !strings.Contains(plannerPrompt, "Read `AGENTS.md` and `ROADMAP.md` first.") {
+		t.Error("planner prompt should read AGENTS.md first")
 	}
 	if strings.Contains(plannerPrompt, "search-strategy.md") {
 		t.Error("planner prompt should not reference search-strategy.md")
 	}
 
 	reviewerPrompt := files[".ai/prompts/reviewer.md"]
-	if !strings.Contains(reviewerPrompt, "Validate compliance with project rules in `AGENTS.md` and workflow rules in `.ai/AGENTS.md`.") {
-		t.Error("reviewer prompt should reference AGENTS.md and .ai/AGENTS.md")
+	if !strings.Contains(reviewerPrompt, "Validate compliance with project and workflow rules in `AGENTS.md`.") {
+		t.Error("reviewer prompt should reference AGENTS.md")
 	}
 	if strings.Contains(reviewerPrompt, "search-strategy.md") {
 		t.Error("reviewer prompt should not reference search-strategy.md")
 	}
 
 	testerPrompt := files[".ai/prompts/tester.md"]
-	if !strings.Contains(testerPrompt, "reload `AGENTS.md`, `.ai/AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.") {
-		t.Error("tester prompt should reload AGENTS.md and .ai/AGENTS.md")
+	if !strings.Contains(testerPrompt, "reload `AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.") {
+		t.Error("tester prompt should reload AGENTS.md")
 	}
 	if strings.Contains(testerPrompt, "search-strategy.md") {
 		t.Error("tester prompt should not reference search-strategy.md")
