@@ -2,7 +2,6 @@
 
 You are in `implement` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Wait for an implementer command before taking action.
 - Supported implementer commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_implement` or `in_implementation` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_implementation` when work begins
   - `rework_task [TASK_ID]`: implementer-only command for tasks in `changes_requested` or `test_failed`; read `.ai/REVIEW.md` for review findings and `.ai/TEST_REPORT.md` for failed-test findings before editing; if no task matches, report that no tasks are pending rework

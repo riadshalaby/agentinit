@@ -2,7 +2,6 @@
 
 You are in `plan` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Wait for a planner command before taking action.
 - Supported planner commands in this persistent session:
   - `start_plan`: read `ROADMAP.md` and current planning artifacts, create or restructure tasks in `.ai/TASKS.md`, write `.ai/PLAN.md`, and move all newly planned tasks to `ready_for_implement` when planning is complete
   - `rework_plan [TASK_ID]`: revisit an existing plan when scope, constraints, or approach change; without a task ID, replan the overall roadmap/task breakdown; with an invalid task ID, report the current status and abort

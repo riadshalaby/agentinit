@@ -2,7 +2,6 @@
 
 You are in `review` mode.
 
-- Enter `WAIT_FOR_USER_START` immediately. Wait for a reviewer command before taking action.
 - Supported reviewer commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_review` or `in_review` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_review` when review begins
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
