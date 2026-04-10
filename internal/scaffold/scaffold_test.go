@@ -18,6 +18,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	projectDir := filepath.Join(dir, "testproj")
 
 	expectedFiles := []string{
+		".ai/.manifest.json",
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
@@ -59,6 +60,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	if len(result.KeyPaths) != 6 {
 		t.Fatalf("KeyPaths len = %d, want 6", len(result.KeyPaths))
+	}
+	if result.KeyPaths[2].Description != "project-specific and workflow-managed agent rules" {
+		t.Fatalf("AGENTS.md key path description = %q", result.KeyPaths[2].Description)
 	}
 
 	readmeBytes, err := os.ReadFile(filepath.Join(projectDir, "README.md"))
@@ -199,6 +203,37 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(projectDir, ".ai/AGENTS.md")); !os.IsNotExist(err) {
 		t.Error("generated .ai/AGENTS.md should not exist")
+	}
+	manifest, err := ReadManifest(projectDir)
+	if err != nil {
+		t.Fatalf("ReadManifest() error: %v", err)
+	}
+	if manifest.Version == "" {
+		t.Fatal("manifest version should not be empty")
+	}
+	if manifest.GeneratedAt == "" {
+		t.Fatal("manifest generated_at should not be empty")
+	}
+	if len(manifest.Files) == 0 {
+		t.Fatal("manifest should include managed files")
+	}
+	foundAgents := false
+	for _, file := range manifest.Files {
+		if file.Path == ".ai/AGENTS.md" {
+			t.Fatal("manifest should not include .ai/AGENTS.md")
+		}
+		if file.Path == "README.md" || file.Path == "CLAUDE.md" || file.Path == "ROADMAP.md" {
+			t.Fatalf("manifest should not include excluded file %s", file.Path)
+		}
+		if file.Path == "AGENTS.md" {
+			foundAgents = true
+			if file.Management != managementMarker {
+				t.Fatalf("AGENTS.md management = %q, want %q", file.Management, managementMarker)
+			}
+		}
+	}
+	if !foundAgents {
+		t.Fatal("manifest should include AGENTS.md")
 	}
 	if strings.Count(agents, "Never include `Co-Authored-By` trailers in commit messages.") != 1 {
 		t.Error("generated AGENTS.md should mention the no-Co-Authored-By rule only once")
