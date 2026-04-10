@@ -108,6 +108,74 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("generated CLAUDE.md = %q, want @AGENTS.md", claude)
 	}
 
+	for _, tc := range []struct {
+		path  string
+		rules []string
+	}{
+		{
+			path: ".ai/prompts/planner.md",
+			rules: []string{
+				"## Critical Rules",
+				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Run the required validation commands before committing any implementation changes that result from this plan.",
+				"Never modify code.",
+				"Files are the source of truth. If this session was interrupted, reload `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.",
+				"For the full ruleset see `AGENTS.md`.",
+			},
+		},
+		{
+			path: ".ai/prompts/implementer.md",
+			rules: []string{
+				"## Critical Rules",
+				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Run the required validation commands before committing.",
+				"Stage all changes with `git add -A`.",
+				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting.",
+				"For the full ruleset see `AGENTS.md`.",
+			},
+		},
+		{
+			path: ".ai/prompts/reviewer.md",
+			rules: []string{
+				"## Critical Rules",
+				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Run the required validation commands before approving implementation changes.",
+				"Never modify code.",
+				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
+				"For the full ruleset see `AGENTS.md`.",
+			},
+		},
+		{
+			path: ".ai/prompts/tester.md",
+			rules: []string{
+				"## Critical Rules",
+				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Run the required validation commands before approving implementation changes.",
+				"Never modify code.",
+				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
+				"For the full ruleset see `AGENTS.md`.",
+			},
+		},
+	} {
+		promptBytes, err := os.ReadFile(filepath.Join(projectDir, tc.path))
+		if err != nil {
+			t.Fatalf("read %s: %v", tc.path, err)
+		}
+		prompt := string(promptBytes)
+		for _, rule := range tc.rules {
+			if !strings.Contains(prompt, rule) {
+				t.Errorf("generated %s should contain %q", tc.path, rule)
+			}
+		}
+		if strings.Count(prompt, "AGENTS.md") != 1 {
+			t.Errorf("generated %s should reference AGENTS.md exactly once", tc.path)
+		}
+	}
+
 	agentsBytes, err := os.ReadFile(filepath.Join(projectDir, "AGENTS.md"))
 	if err != nil {
 		t.Fatalf("read AGENTS.md: %v", err)
