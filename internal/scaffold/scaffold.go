@@ -38,10 +38,14 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("render templates: %w", err)
 	}
+	manifest := GenerateManifest(files, currentVersion())
 
 	// Write files.
 	if err := WriteFiles(targetDir, files); err != nil {
 		return Result{}, fmt.Errorf("write files: %w", err)
+	}
+	if err := WriteManifest(targetDir, manifest); err != nil {
+		return Result{}, fmt.Errorf("write manifest: %w", err)
 	}
 
 	// Git init.

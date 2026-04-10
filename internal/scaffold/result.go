@@ -37,7 +37,7 @@ func defaultKeyPaths() []KeyPath {
 	return []KeyPath{
 		{Path: "README.md", Description: "project overview and setup"},
 		{Path: "CLAUDE.md", Description: "agent instruction entry point (imports AGENTS.md)"},
-		{Path: "AGENTS.md", Description: "project-specific agent rules"},
+		{Path: "AGENTS.md", Description: "project-specific and workflow-managed agent rules"},
 		{Path: "ROADMAP.md", Description: "project goals to edit first"},
 		{Path: ".ai/", Description: "planning, review, and handoff templates"},
 		{Path: "scripts/", Description: "launchers for plan, implement, review, and PR sync"},
