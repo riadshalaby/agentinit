@@ -18,6 +18,25 @@ func assertUnifiedWorkflowArtifacts(t *testing.T, files map[string]string) {
 	}
 }
 
+func assertPromptCriticalRules(t *testing.T, promptName, prompt string, rules []string) {
+	t.Helper()
+
+	if !strings.Contains(prompt, "## Critical Rules") {
+		t.Fatalf("%s should contain a Critical Rules section", promptName)
+	}
+	for _, rule := range rules {
+		if !strings.Contains(prompt, rule) {
+			t.Errorf("%s should contain %q", promptName, rule)
+		}
+	}
+	if !strings.Contains(prompt, "For the full ruleset see `AGENTS.md`.") {
+		t.Errorf("%s should point to AGENTS.md for the full ruleset", promptName)
+	}
+	if strings.Count(prompt, "AGENTS.md") != 1 {
+		t.Errorf("%s should reference AGENTS.md exactly once", promptName)
+	}
+}
+
 func TestRenderAllBaseOnly(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "myproject",
@@ -178,12 +197,16 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`test_failed`") {
 		t.Error("implementer prompt should mention test_failed in the unified scaffold")
 	}
-	if !strings.Contains(implementerPrompt, "Follow all project and workflow rules in `AGENTS.md`.") {
-		t.Error("implementer prompt should reference AGENTS.md")
-	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
 	}
+	assertPromptCriticalRules(t, "implementer prompt", implementerPrompt, []string{
+		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Run the required validation commands before committing.",
+		"Stage all changes with `git add -A`.",
+		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting.",
+	})
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
 	if !strings.Contains(plannerPrompt, "move all newly planned tasks to `ready_for_implement`") {
@@ -195,28 +218,40 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(plannerPrompt, "move the selected first task to `ready_for_implement`") || strings.Contains(plannerPrompt, "Update `.ai/TASKS.md` for the selected task:") {
 		t.Error("planner prompt should not use the selected-task wording")
 	}
-	if !strings.Contains(plannerPrompt, "Read `AGENTS.md` and `ROADMAP.md` first.") {
-		t.Error("planner prompt should read AGENTS.md first")
-	}
 	if strings.Contains(plannerPrompt, "search-strategy.md") {
 		t.Error("planner prompt should not reference search-strategy.md")
 	}
+	assertPromptCriticalRules(t, "planner prompt", plannerPrompt, []string{
+		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Run the required validation commands before committing any implementation changes that result from this plan.",
+		"Never modify code.",
+		"Files are the source of truth. If this session was interrupted, reload `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.",
+	})
 
 	reviewerPrompt := files[".ai/prompts/reviewer.md"]
-	if !strings.Contains(reviewerPrompt, "Validate compliance with project and workflow rules in `AGENTS.md`.") {
-		t.Error("reviewer prompt should reference AGENTS.md")
-	}
 	if strings.Contains(reviewerPrompt, "search-strategy.md") {
 		t.Error("reviewer prompt should not reference search-strategy.md")
 	}
+	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
+		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Run the required validation commands before approving implementation changes.",
+		"Never modify code.",
+		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
+	})
 
 	testerPrompt := files[".ai/prompts/tester.md"]
-	if !strings.Contains(testerPrompt, "reload `AGENTS.md`, `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.") {
-		t.Error("tester prompt should reload AGENTS.md")
-	}
 	if strings.Contains(testerPrompt, "search-strategy.md") {
 		t.Error("tester prompt should not reference search-strategy.md")
 	}
+	assertPromptCriticalRules(t, "tester prompt", testerPrompt, []string{
+		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
+		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Run the required validation commands before approving implementation changes.",
+		"Never modify code.",
+		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
+	})
 
 	launchScript := files["scripts/ai-launch.sh"]
 	if !strings.Contains(launchScript, "plan | implement | review | test") {
