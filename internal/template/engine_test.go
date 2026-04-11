@@ -132,8 +132,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("README.md should not contain legacy @ command aliases")
 	}
-	if !strings.Contains(readme, "no (gitignored runtime artifact)") {
-		t.Error("README.md should mark review and test reports as gitignored runtime artifacts")
+	for _, snippet := range []string{
+		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
+		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
+		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
+	} {
+		if !strings.Contains(readme, snippet) {
+			t.Errorf("README.md should contain %q", snippet)
+		}
 	}
 	for _, snippet := range []string{
 		"| `AGENTS.md` | Project-specific and workflow-managed agent rules | yes |",
@@ -252,6 +258,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(reviewerPrompt, "`ready_to_commit`") {
 		t.Error("reviewer prompt should mention ready_to_commit")
 	}
+	if !strings.Contains(reviewerPrompt, "appending or updating only the active task section, preserving prior task history") {
+		t.Error("reviewer prompt should preserve prior task history in REVIEW.md")
+	}
+	if !strings.Contains(reviewerPrompt, "stage and commit the cycle-close `.ai/` artifacts") {
+		t.Error("reviewer prompt should describe the cycle-close artifact commit")
+	}
 	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
 		"Never include `Co-Authored-By` trailers in commit messages.",
@@ -266,6 +278,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(testerPrompt, "set status to `ready_to_commit` when verification succeeds") {
 		t.Error("tester prompt should move passing tasks to ready_to_commit")
+	}
+	if !strings.Contains(testerPrompt, "appending or updating only the active task section, preserving prior task history") {
+		t.Error("tester prompt should preserve prior task history in TEST_REPORT.md")
 	}
 	assertPromptCriticalRules(t, "tester prompt", testerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
@@ -283,9 +298,31 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		t.Error("ai-launch.sh should route the test role in the unified scaffold")
 	}
 	startCycleScript := files["scripts/ai-start-cycle.sh"]
-	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
+	for _, snippet := range []string{
+		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
+		"cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md",
+		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
+		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
+	} {
 		if !strings.Contains(startCycleScript, snippet) {
 			t.Errorf("ai-start-cycle.sh should contain %q", snippet)
+		}
+	}
+	if strings.Contains(startCycleScript, "git rm --cached \"$runtime_artifact\"") {
+		t.Error("ai-start-cycle.sh should not untrack cycle log artifacts")
+	}
+
+	reviewTemplate := files[".ai/REVIEW.template.md"]
+	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1"} {
+		if !strings.Contains(reviewTemplate, snippet) {
+			t.Errorf(".ai/REVIEW.template.md should contain %q", snippet)
+		}
+	}
+
+	testReportTemplate := files[".ai/TEST_REPORT.template.md"]
+	for _, snippet := range []string{"# Test Report Log", "## Task: T-XXX", "### Test Round 1"} {
+		if !strings.Contains(testReportTemplate, snippet) {
+			t.Errorf(".ai/TEST_REPORT.template.md should contain %q", snippet)
 		}
 	}
 	poPrompt := files[".ai/prompts/po.md"]
@@ -367,9 +404,9 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	if !strings.Contains(gitignore, "vendor/") {
 		t.Error(".gitignore should contain Go-specific entries")
 	}
-	for _, entry := range []string{".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
-		if !strings.Contains(gitignore, entry) {
-			t.Errorf(".gitignore should contain %q", entry)
+	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+		if strings.Contains(gitignore, entry) {
+			t.Errorf(".gitignore should not contain %q", entry)
 		}
 	}
 

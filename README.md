@@ -289,9 +289,9 @@ This means the PO can manage the planning, implementation, and review sessions d
 |------|---------|---------------|
 | `.ai/PLAN.md` | Current plan written by the planner | yes |
 | `.ai/TASKS.md` | Task board with status per task | yes |
-| `.ai/REVIEW.md` | Review findings written by the reviewer | no (gitignored runtime artifact) |
-| `.ai/TEST_REPORT.md` | Test findings written by the tester | no (gitignored runtime artifact) |
-| `.ai/HANDOFF.md` | Runtime handoff log between roles | no (gitignored) |
+| `.ai/REVIEW.md` | Review findings written by the reviewer | yes (tracked cycle log) |
+| `.ai/TEST_REPORT.md` | Test findings written by the tester | yes (tracked cycle log) |
+| `.ai/HANDOFF.md` | Runtime handoff log between roles | yes (tracked cycle log) |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |

@@ -19,7 +19,7 @@ You are in `test` mode.
 - Do not test anything until the user explicitly invokes the relevant command for a specific task or status check.
 - Read `.ai/PLAN.md` for expected behavior and inspect the implementation changes under review.
 - Perform exploratory/manual verification against the implemented scope.
-- Write `.ai/TEST_REPORT.md` with:
+- Write `.ai/TEST_REPORT.md` by appending or updating only the active task section, preserving prior task history:
   - task under test
   - verification steps performed
   - findings and risks

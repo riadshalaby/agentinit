@@ -92,16 +92,10 @@ main() {
   cp .ai/REVIEW.template.md .ai/REVIEW.md
   cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md
   cp .ai/TASKS.template.md .ai/TASKS.md
+  cp .ai/HANDOFF.template.md .ai/HANDOFF.md
   cp ROADMAP.template.md ROADMAP.md
-  rm -f .ai/HANDOFF.md
 
-  git add .ai/PLAN.md .ai/TASKS.md ROADMAP.md
-
-  for runtime_artifact in .ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md; do
-    if git ls-files --error-unmatch "$runtime_artifact" >/dev/null 2>&1; then
-      git rm --cached "$runtime_artifact" >/dev/null 2>&1 || die "failed to untrack $runtime_artifact"
-    fi
-  done
+  git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md
 
   git commit -m "chore: start cycle $(basename "$branch_name")" >/dev/null 2>&1 || die "failed to commit cycle bootstrap files"
   git push -u origin "$branch_name" >/dev/null 2>&1 || die "failed to push branch '$branch_name' to origin"

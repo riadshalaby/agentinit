@@ -1,21 +1,23 @@
-# Test Report
+# Test Report Log
+
+Shared test log for the current cycle. Append a new task section when testing starts for a new task. Within a task, append a new test round instead of replacing prior history.
+
+## Task: T-XXX
+
+### Test Round 1
 
 Status: **pending**
 
-Task: **T-XXX**
-
-Test Round: **1**
-
 Tested: YYYY-MM-DD
 
-## Steps
+#### Steps
 - Pending test execution.
 
-## Findings
+#### Findings
 - None.
 
-## Risks
+#### Risks
 - None.
 
-## Verdict
+#### Verdict
 `PENDING`

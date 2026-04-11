@@ -108,7 +108,7 @@
 - After launch, steer the existing sessions with text commands instead of relaunching scripts for each step.
 - Agent choice is manual when you launch each role (`claude` or `codex`) and can vary by session.
 - Handoff log policy:
-  - runtime log: `.ai/HANDOFF.md` (gitignored)
+  - runtime log: `.ai/HANDOFF.md` (tracked cycle log)
   - tracked template: `.ai/HANDOFF.template.md`
 - Handoffs are file-based:
   - planner -> implementer uses `.ai/PLAN.md` + `.ai/TASKS.md` + `.ai/HANDOFF.md`
@@ -177,9 +177,8 @@ Use these text commands inside the already-running role sessions.
   - `finish_cycle [TASK_ID]`
     - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
     - if the completion condition is not met, report the blocking task states and abort
-    - if the final review changed `.ai/TASKS.md`, the reviewer may stage and commit only that file before closing the cycle
-    - do not stage `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, or any other file as part of reviewer-owned commits
-    - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
+  - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
+  - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
 - Tester session:
   - `next_task [TASK_ID]`
     - select the first task in `ready_for_test` when no task ID is supplied
@@ -194,8 +193,9 @@ Use these text commands inside the already-running role sessions.
 ## Commit Conventions
 - Commit behavior by role:
   - `plan` role never commits.
-  - `review` role may commit only when the staged set is limited to `.ai/TASKS.md`.
+  - `review` role may create the cycle-close commit for `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, and `.ai/PLAN.md`.
   - `implement` role must stage all changes and create a Conventional Commit after validations pass.
+  - runtime `.ai/` cycle logs are committed at cycle close, not in individual task commits.
 - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
 - Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
 
