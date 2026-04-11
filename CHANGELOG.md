@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.4.0](https://github.com/riadshalaby/agentinit/compare/v0.3.0...v0.4.0) (2026-04-11)
+
+
+### Features
+
+* **prompts:** inline critical workflow rules ([72ae946](https://github.com/riadshalaby/agentinit/commit/72ae946af72a9e7a43c0bc03d1d7a2277e16b0b4))
+* **scaffold:** generate manifest for managed files ([416474c](https://github.com/riadshalaby/agentinit/commit/416474ca20d99a67e8cc85303b7312ffedd4a837))
+* **update:** refresh managed scaffold files ([6d52ef6](https://github.com/riadshalaby/agentinit/commit/6d52ef697d2a46a38a68f8075b1be208afdefc58))
+* **workflow:** merge agent rules into AGENTS.md ([030e8f1](https://github.com/riadshalaby/agentinit/commit/030e8f17b56954357595df5bc197f27ff2cca832))
+
+
+### Bug Fixes
+
+* **ai:** removed old agents config and commands ([7bebe7d](https://github.com/riadshalaby/agentinit/commit/7bebe7d818c30301d855e5e98eecbc3615f045ef))
+* **workflow:** address scaffold merge regressions ([53e9301](https://github.com/riadshalaby/agentinit/commit/53e9301cdb68a9a44d2d99e592c192f3c984e9a3))
+
+
+### Miscellaneous Chores
+
+* **ai:** new claude settings ([24f9f5b](https://github.com/riadshalaby/agentinit/commit/24f9f5b592194333a0f7d7d96e8d87934817f244))
+* **ai:** roadmap for v0.4.0 ([c16db5e](https://github.com/riadshalaby/agentinit/commit/c16db5e33aa9472c602d1938bd5dc08162ae30c4))
+* **review:** T-001 PASS_WITH_NOTES — ready_for_test ([d073756](https://github.com/riadshalaby/agentinit/commit/d07375643af5133ee031dedb2659eb1a8db26c41))
+* **review:** T-001 PASS_WITH_NOTES R2 — ready_for_test ([c6deb0c](https://github.com/riadshalaby/agentinit/commit/c6deb0cca1b491c4f3464745f7696121330bcf92))
+* **review:** T-002 PASS_WITH_NOTES — ready_for_test ([4213480](https://github.com/riadshalaby/agentinit/commit/4213480978ee1dba3b622177563701cf242e697c))
+* **review:** T-003 PASS — ready_for_test ([5fbc956](https://github.com/riadshalaby/agentinit/commit/5fbc956dc1da70587c57e657de32411a9693ea7b))
+* **review:** T-004 PASS — ready_for_test ([4f740fd](https://github.com/riadshalaby/agentinit/commit/4f740fdeb7bc3fccb1a9410d5f6e61bb46692e74))
+* **review:** T-005 PASS — ready_for_test ([441db2b](https://github.com/riadshalaby/agentinit/commit/441db2bf13b2547bbc6f03c7f06f63c14f682afc))
+* start cycle mcp ([3c6ed8a](https://github.com/riadshalaby/agentinit/commit/3c6ed8ad39d47fa59a338c1a31c6c4a228d5efd0))
+* **workflow:** validate restructured scaffold cycle ([8ce3ec1](https://github.com/riadshalaby/agentinit/commit/8ce3ec178e80515843b1e714c1bb6f075016aa07))
+
 ## [0.3.0](https://github.com/riadshalaby/agentinit/compare/v0.2.0...v0.3.0) (2026-04-09)
 
 
