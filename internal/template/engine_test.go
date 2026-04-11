@@ -61,6 +61,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
+		".claude/settings.json",
+		".claude/settings.local.json",
 		"scripts/ai-po.sh",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
@@ -288,6 +290,21 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 
 	assertUnifiedWorkflowArtifacts(t, files)
+
+	settings := files[".claude/settings.json"]
+	if !strings.Contains(settings, "\"includeCoAuthoredBy\": false") {
+		t.Error(".claude/settings.json should disable co-authored-by trailers")
+	}
+
+	localSettings := files[".claude/settings.local.json"]
+	for _, entry := range []string{
+		"Bash(git add:*)",
+		"Bash(git commit:*)",
+	} {
+		if !strings.Contains(localSettings, entry) {
+			t.Errorf(".claude/settings.local.json should contain %q", entry)
+		}
+	}
 }
 
 func TestRenderAllGoOverlay(t *testing.T) {
@@ -333,6 +350,19 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	plan := files[".ai/PLAN.template.md"]
 	if !strings.Contains(plan, "go fmt ./...") {
 		t.Error("PLAN.template.md should contain go fmt command")
+	}
+
+	localSettings := files[".claude/settings.local.json"]
+	for _, entry := range []string{
+		"Bash(go fmt ./...:*)",
+		"Bash(go vet ./...:*)",
+		"Bash(go test ./...:*)",
+		"Bash(git add:*)",
+		"Bash(git commit:*)",
+	} {
+		if !strings.Contains(localSettings, entry) {
+			t.Errorf(".claude/settings.local.json should contain %q", entry)
+		}
 	}
 }
 
@@ -408,9 +438,18 @@ func TestDotfileMapping(t *testing.T) {
 	if _, ok := files[".gitattributes"]; !ok {
 		t.Error("gitattributes.tmpl should be mapped to .gitattributes")
 	}
+	if _, ok := files[".claude/settings.json"]; !ok {
+		t.Error("claude/settings.json.tmpl should be mapped to .claude/settings.json")
+	}
+	if _, ok := files[".claude/settings.local.json"]; !ok {
+		t.Error("claude/settings.local.json.tmpl should be mapped to .claude/settings.local.json")
+	}
 
 	// Make sure we don't have the unmapped versions.
 	if _, ok := files["gitignore"]; ok {
 		t.Error("should not have 'gitignore' without dot prefix")
+	}
+	if _, ok := files["claude/settings.json"]; ok {
+		t.Error("should not have 'claude/settings.json' without dot prefix")
 	}
 }
