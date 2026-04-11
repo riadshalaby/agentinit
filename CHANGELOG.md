@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/riadshalaby/agentinit/compare/v0.4.0...v0.5.0) (2026-04-11)
+
+
+### Features
+
+* **claude:** add scaffolded tool-access permissions by project type ([293b8be](https://github.com/riadshalaby/agentinit/commit/293b8be6a98a0ce4f5603f7add518f168ab3b776))
+* **claude:** scaffold Claude settings templates ([93580d3](https://github.com/riadshalaby/agentinit/commit/93580d38b2434bdd7e88b8b81df41b0cbfdecc9b))
+* **config:** scaffold per-role agent, model, and effort defaults in .ai/config.json ([674143b](https://github.com/riadshalaby/agentinit/commit/674143b639c0c9fc2eb4b2354c7851a259619783))
+* **workflow:** add a ready-to-commit stage to task flow ([a5b126e](https://github.com/riadshalaby/agentinit/commit/a5b126e1d7d1104e2ec6871668e0fccf2434fbfe))
+* **workflow:** track cycle review and test logs in git ([3847efe](https://github.com/riadshalaby/agentinit/commit/3847efe7e4f87ac7868835859f5f8d8a08a9be9d))
+
+
+### Bug Fixes
+
+* **release:** build release assets from release-please tags ([dd9e50c](https://github.com/riadshalaby/agentinit/commit/dd9e50cacd0d818d9278de798abff404649282f7))
+
+
+### Miscellaneous Chores
+
+* **ai:** roadmap for version 0.5.0 ([960ce0a](https://github.com/riadshalaby/agentinit/commit/960ce0aa7495fc54ab595246a47461bfe611bce8))
+* start cycle 0.5.0 ([f1eabc5](https://github.com/riadshalaby/agentinit/commit/f1eabc59c5859148833797d665d112684bcb0a22))
+
 ## [0.4.0](https://github.com/riadshalaby/agentinit/compare/v0.3.0...v0.4.0) (2026-04-11)
 
 
