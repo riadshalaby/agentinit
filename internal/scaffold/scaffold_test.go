@@ -97,6 +97,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			t.Errorf("generated README.md should contain %q", snippet)
 		}
 	}
+	for _, snippet := range []string{
+		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
+		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
+		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
+	} {
+		if !strings.Contains(readme, snippet) {
+			t.Errorf("generated README.md should contain %q", snippet)
+		}
+	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
 	}
@@ -194,6 +203,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"`ready_to_commit`",
+				"appending or updating only the active task section, preserving prior task history",
+				"stage and commit the cycle-close `.ai/` artifacts",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -207,6 +218,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"set status to `ready_to_commit` when verification succeeds",
+				"appending or updating only the active task section, preserving prior task history",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -303,9 +315,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read .gitignore: %v", err)
 	}
 	gitignore := string(gitignoreBytes)
-	for _, entry := range []string{".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
-		if !strings.Contains(gitignore, entry) {
-			t.Errorf("generated .gitignore should contain %s", entry)
+	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+		if strings.Contains(gitignore, entry) {
+			t.Errorf("generated .gitignore should not contain %s", entry)
 		}
 	}
 
@@ -314,9 +326,39 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read scripts/ai-start-cycle.sh: %v", err)
 	}
 	startCycle := string(startCycleBytes)
-	for _, snippet := range []string{".ai/HANDOFF.md .ai/REVIEW.md .ai/TEST_REPORT.md", "git rm --cached \"$runtime_artifact\""} {
+	for _, snippet := range []string{
+		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
+		"cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md",
+		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
+		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
+	} {
 		if !strings.Contains(startCycle, snippet) {
 			t.Errorf("generated ai-start-cycle.sh should contain %q", snippet)
+		}
+	}
+	if strings.Contains(startCycle, "git rm --cached \"$runtime_artifact\"") {
+		t.Error("generated ai-start-cycle.sh should not untrack cycle log artifacts")
+	}
+
+	reviewTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/REVIEW.template.md"))
+	if err != nil {
+		t.Fatalf("read .ai/REVIEW.template.md: %v", err)
+	}
+	reviewTemplate := string(reviewTemplateBytes)
+	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1"} {
+		if !strings.Contains(reviewTemplate, snippet) {
+			t.Errorf("generated .ai/REVIEW.template.md should contain %q", snippet)
+		}
+	}
+
+	testReportTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/TEST_REPORT.template.md"))
+	if err != nil {
+		t.Fatalf("read .ai/TEST_REPORT.template.md: %v", err)
+	}
+	testReportTemplate := string(testReportTemplateBytes)
+	for _, snippet := range []string{"# Test Report Log", "## Task: T-XXX", "### Test Round 1"} {
+		if !strings.Contains(testReportTemplate, snippet) {
+			t.Errorf("generated .ai/TEST_REPORT.template.md should contain %q", snippet)
 		}
 	}
 }

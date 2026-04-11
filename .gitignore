@@ -14,10 +14,6 @@ Thumbs.db
 .idea/
 *.iml
 
-# AI workflow runtime artifacts
-.ai/HANDOFF.md
-.ai/REVIEW.md
-.ai/TEST_REPORT.md
 # Go
 bin/
 *.exe
@@ -28,4 +24,3 @@ bin/
 *.test
 *.out
 vendor/
-
