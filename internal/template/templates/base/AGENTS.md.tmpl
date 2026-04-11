@@ -51,7 +51,7 @@
 - Tester Mode:
   - waits for explicit user start signal
   - writes `.ai/TEST_REPORT.md`
-  - updates `.ai/TASKS.md` status to `done` or `test_failed`
+  - updates `.ai/TASKS.md` status to `ready_to_commit` or `test_failed`
   - appends a handoff entry to `.ai/HANDOFF.md`
   - never edits code
 - Implement Mode:
@@ -64,6 +64,11 @@
   - updates `.ai/TASKS.md` status to `ready_for_review`
   - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
   - must not invent requirements
+- Implement Mode (`commit_task` after testing):
+  - only for tasks in `ready_to_commit`
+  - squashes WIP commits into one Conventional Commit with a release-note-ready subject
+  - updates `.ai/TASKS.md` status to `done`
+  - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
 - Implement Mode (rework after rejection):
   - reads `.ai/REVIEW.md` findings as a checklist
   - addresses every finding marked as required fix
@@ -113,7 +118,7 @@
   - planner -> implementer uses `.ai/PLAN.md` + `.ai/TASKS.md` + `.ai/HANDOFF.md`
   - implementer -> reviewer uses commit + `.ai/TASKS.md` + `.ai/HANDOFF.md`
 - Recommended status flow in `.ai/TASKS.md`:
-  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing` -> `done`
+  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing` -> `ready_to_commit` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
   - Test failure loop: `test_failed` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing`
 - If a persistent session is interrupted or reopened, the role must reload `AGENTS.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
@@ -154,6 +159,12 @@ Use these text commands inside the already-running role sessions.
     - target a task in `changes_requested` or `test_failed`
     - load `.ai/REVIEW.md` as the required-fix checklist for review rework, and `.ai/TEST_REPORT.md` when addressing a failed test run
     - if no task matches, report that no tasks are pending rework
+  - `commit_task [TASK_ID]`
+    - implementer only
+    - target a task in `ready_to_commit`
+    - squash WIP commits into a single Conventional Commit describing the user-visible outcome
+    - update the task to `done`
+    - if the supplied task is not ready to commit, report its current status and abort
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
     - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
@@ -178,6 +189,7 @@ Use these text commands inside the already-running role sessions.
     - select the first task in `ready_for_test` when no task ID is supplied
     - if the supplied task is not valid for tester work, report its current status and abort
     - when testing begins, update the task to `in_testing`
+    - when testing passes, move the task to `ready_to_commit`
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
     - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state

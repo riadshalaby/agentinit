@@ -78,6 +78,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "tester> next_task T-001") {
 		t.Error("generated README.md should contain tester examples in the unified scaffold")
 	}
+	if !strings.Contains(readme, "implementer> commit_task T-001") {
+		t.Error("generated README.md should contain commit_task examples in the unified scaffold")
+	}
 	for _, snippet := range []string{
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
@@ -87,6 +90,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
+		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done",
+		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("generated README.md should contain %q", snippet)
@@ -174,6 +179,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before committing.",
 				"Stage all changes with `git add -A`.",
+				"`commit_task [TASK_ID]`",
+				"`ready_to_commit`",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -186,6 +193,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
+				"`ready_to_commit`",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -198,6 +206,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
+				"set status to `ready_to_commit` when verification succeeds",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -227,6 +236,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"## Validation Commands",
 		"go fmt ./...",
 		"go test ./...",
+		"`ready_to_commit`",
+		"`commit_task [TASK_ID]`",
+		"`in_testing` -> `ready_to_commit` -> `done`",
 		"<!-- agentinit:managed:start -->",
 		"## Hard Rules",
 		"## Commit Conventions",

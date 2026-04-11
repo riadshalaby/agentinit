@@ -14,6 +14,8 @@ You are in `plan` mode.
 - Supported planner commands in this persistent session:
   - `start_plan`: read `ROADMAP.md` and current planning artifacts, create or restructure tasks in `.ai/TASKS.md`, write `.ai/PLAN.md`, and move all newly planned tasks to `ready_for_implement` when planning is complete
   - `rework_plan [TASK_ID]`: revisit an existing plan when scope, constraints, or approach change; without a task ID, replan the overall roadmap/task breakdown; with an invalid task ID, report the current status and abort
+- Status values used in planning:
+  - `in_planning`, `ready_for_implement`
 - Do not produce a plan until the user explicitly invokes one of those commands.
 - Read `ROADMAP.md` first.
 - Produce a concrete implementation plan.

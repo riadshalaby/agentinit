@@ -35,11 +35,11 @@ Manual and auto are two runtime modes for the same scaffold: they use the same g
 **Status flow:**
 
 ```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
-                                          ↑                                     |                              |
-                                          └──── changes_requested ◄─────────────┘                              |
-                                                ▲                                                               |
-                                                └──────────────────────────── test_failed ◄──────────────────────┘
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done
+                                          ↑                                     |                                              |
+                                          └──── changes_requested ◄─────────────┘                                              |
+                                                ▲                                                                               |
+                                                └──────────────────────────── test_failed ◄──────────────────────────────────────┘
 ```
 
 ### Start a new development cycle
@@ -75,6 +75,7 @@ planner> start_plan
 implementer> next_task T-001
 reviewer> next_task T-001
 tester> next_task T-001
+implementer> commit_task T-001
 implementer> rework_task T-001
 reviewer> finish_cycle
 ```
@@ -91,6 +92,7 @@ reviewer> finish_cycle
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task |
+| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
 | `rework_task [TASK_ID]` | Address `changes_requested` or `test_failed` findings |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 
