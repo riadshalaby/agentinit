@@ -2,8 +2,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-agent="${1:-claude}"
-if [[ $# -gt 0 ]]; then
+config_file="$SCRIPT_DIR/../.ai/config.json"
+default_agent="claude"
+if [[ -f "$config_file" ]] && command -v jq >/dev/null 2>&1; then
+  configured_agent="$(jq -r '.roles.review.agent // empty' "$config_file" 2>/dev/null || true)"
+  if [[ -n "$configured_agent" ]]; then
+    default_agent="$configured_agent"
+  fi
+fi
+
+agent="$default_agent"
+if [[ ${1:-} == "claude" || ${1:-} == "codex" ]]; then
+  agent="$1"
   shift
 fi
 

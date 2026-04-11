@@ -85,10 +85,10 @@
     - roles: `plan`, `implement`, `review`, `test`
     - agents: `claude`, `codex`
   - Convenience wrappers:
-    - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent: `claude`)
-    - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent: `codex`)
-    - `scripts/ai-review.sh [agent] [agent-options...]` (default agent: `claude`)
-    - `scripts/ai-test.sh [agent] [agent-options...]` (default agent: `claude`)
+    - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
+    - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
+    - `scripts/ai-review.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
+    - `scripts/ai-test.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `scripts/ai-po.sh [agent-options...]` for the PO orchestration session
 - Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.

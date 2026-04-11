@@ -19,6 +19,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 
 	expectedFiles := []string{
 		".ai/.manifest.json",
+		".ai/config.json",
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
@@ -101,10 +102,14 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
 		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
 		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
+		"| `.ai/config.json` | Per-role launch defaults | yes |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("generated README.md should contain %q", snippet)
 		}
+	}
+	if !strings.Contains(readme, "Wrapper scripts read default agent/model settings from `.ai/config.json`.") {
+		t.Error("generated README.md should mention wrapper defaults from .ai/config.json")
 	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
@@ -161,6 +166,29 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf("generated .claude/settings.local.json should contain %q", entry)
+		}
+	}
+
+	configBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/config.json"))
+	if err != nil {
+		t.Fatalf("read .ai/config.json: %v", err)
+	}
+	config := string(configBytes)
+	for _, snippet := range []string{
+		"\"plan\": {",
+		"\"agent\": \"claude\"",
+		"\"model\": \"opus\"",
+		"\"effort\": \"high\"",
+		"\"implement\": {",
+		"\"agent\": \"codex\"",
+		"\"model\": \"gpt-5.4\"",
+		"\"review\": {",
+		"\"model\": \"sonnet\"",
+		"\"effort\": \"medium\"",
+		"\"test\": {",
+	} {
+		if !strings.Contains(config, snippet) {
+			t.Errorf("generated .ai/config.json should contain %q", snippet)
 		}
 	}
 
@@ -284,7 +312,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		if file.Path == ".ai/AGENTS.md" {
 			t.Fatal("manifest should not include .ai/AGENTS.md")
 		}
-		if file.Path == "README.md" || file.Path == "CLAUDE.md" || file.Path == "ROADMAP.md" {
+		if file.Path == "README.md" || file.Path == "CLAUDE.md" || file.Path == "ROADMAP.md" || file.Path == ".ai/config.json" {
 			t.Fatalf("manifest should not include excluded file %s", file.Path)
 		}
 		if file.Path == "AGENTS.md" {
@@ -338,6 +366,60 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	if strings.Contains(startCycle, "git rm --cached \"$runtime_artifact\"") {
 		t.Error("generated ai-start-cycle.sh should not untrack cycle log artifacts")
+	}
+
+	launchBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-launch.sh"))
+	if err != nil {
+		t.Fatalf("read scripts/ai-launch.sh: %v", err)
+	}
+	launch := string(launchBytes)
+	for _, snippet := range []string{
+		"config_file=\".ai/config.json\"",
+		".roles[$role][$field] // empty",
+		"agent_args+=(--model \"$role_model\")",
+		"agent_args+=(--effort \"$role_effort\")",
+		"agent_args+=(-m \"$role_model\")",
+	} {
+		if !strings.Contains(launch, snippet) {
+			t.Errorf("generated ai-launch.sh should contain %q", snippet)
+		}
+	}
+
+	for _, tc := range []struct {
+		path    string
+		snippet string
+	}{
+		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
+		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
+		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
+		{"scripts/ai-test.sh", ".roles.test.agent // empty"},
+	} {
+		scriptBytes, err := os.ReadFile(filepath.Join(projectDir, tc.path))
+		if err != nil {
+			t.Fatalf("read %s: %v", tc.path, err)
+		}
+		script := string(scriptBytes)
+		if !strings.Contains(script, tc.snippet) {
+			t.Errorf("generated %s should contain %q", tc.path, tc.snippet)
+		}
+		if !strings.Contains(script, "if [[ ${1:-} == \"claude\" || ${1:-} == \"codex\" ]]; then") {
+			t.Errorf("generated %s should allow agent overrides without consuming CLI flags", tc.path)
+		}
+	}
+
+	poScriptBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-po.sh"))
+	if err != nil {
+		t.Fatalf("read scripts/ai-po.sh: %v", err)
+	}
+	poScript := string(poScriptBytes)
+	for _, snippet := range []string{
+		"config_file=\".ai/config.json\"",
+		"Use these default agents when calling `start_session`",
+		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
+	} {
+		if !strings.Contains(poScript, snippet) {
+			t.Errorf("generated ai-po.sh should contain %q", snippet)
+		}
 	}
 
 	reviewTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/REVIEW.template.md"))

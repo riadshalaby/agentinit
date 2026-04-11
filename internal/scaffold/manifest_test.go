@@ -22,6 +22,7 @@ func TestGenerateManifestClassifiesManagedFiles(t *testing.T) {
 		"README.md":                  "readme",
 		"CLAUDE.md":                  "claude",
 		"ROADMAP.md":                 "roadmap",
+		".ai/config.json":            "config",
 		"ROADMAP.template.md":        "template",
 		".ai/PLAN.template.md":       "plan template",
 		".ai/prompts/implementer.md": "prompt",

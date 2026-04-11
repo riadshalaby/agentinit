@@ -124,6 +124,7 @@ var manifestExcludedPaths = map[string]struct{}{
 	"ROADMAP.md":                  {},
 	"CLAUDE.md":                   {},
 	"README.md":                   {},
+	".ai/config.json":             {},
 	".ai/TASKS.template.md":       {},
 	".ai/PLAN.template.md":        {},
 	".ai/REVIEW.template.md":      {},

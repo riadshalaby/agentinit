@@ -66,6 +66,10 @@ scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
 scripts/ai-test.sh          # terminal 4
 
+# Wrappers read default agent/model settings from .ai/config.json.
+# To override, pass the agent first, then any CLI flags.
+# Example: scripts/ai-review.sh claude --model sonnet
+
 # Or start the PO orchestrator for auto mode
 scripts/ai-po.sh
 
@@ -292,6 +296,7 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes (tracked cycle log) |
 | `.ai/TEST_REPORT.md` | Test findings written by the tester | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | yes (tracked cycle log) |
+| `.ai/config.json` | Per-role agent, model, and effort defaults for launch scripts | yes |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |

@@ -60,6 +60,10 @@ scripts/ai-test.sh          # terminal 4
 
 Launch each role once, then keep those sessions open for the rest of the cycle.
 
+Wrapper scripts read default agent/model settings from `.ai/config.json`.
+To override, pass the agent first, then any CLI flags.
+Example: `scripts/ai-review.sh claude --model sonnet`
+
 ### Start the PO orchestrator (auto mode)
 
 ```bash
@@ -121,6 +125,7 @@ reviewer> finish_cycle
 | `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |
 | `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |
+| `.ai/config.json` | Per-role launch defaults | yes |
 | `ROADMAP.md` | Cycle goals (edit before planning) | yes |
 | `AGENTS.md` | Project-specific and workflow-managed agent rules | yes |
 | `CLAUDE.md` | Agent instruction entry point (`@AGENTS.md`) | yes |
