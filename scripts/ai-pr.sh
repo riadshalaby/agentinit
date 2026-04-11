@@ -171,8 +171,8 @@ $commit_list
 
 ## Test Plan
 
-- [ ] Tests pass locally (\`go test ./...\`)
-- [ ] Vet passes (\`go vet ./...\`)
+- [ ] go test
+- [ ] go vet
 EOF
 )"
 

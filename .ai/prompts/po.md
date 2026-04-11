@@ -18,7 +18,7 @@ You are the Product Owner (`po`) for this repository's automated workflow.
   1. planner
   2. implementer
   3. reviewer
-  4. tester
+  4. tester (when that role exists in the project workflow)
 - Follow the task status flow in `.ai/TASKS.md` and `AGENTS.md`.
 - Handle the normal loop:
   - `ready_for_implement` -> implementer `next_task`

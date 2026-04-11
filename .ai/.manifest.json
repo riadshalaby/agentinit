@@ -1,0 +1,74 @@
+{
+  "version": "(dev)",
+  "generated_at": "2026-04-11T09:11:00Z",
+  "files": [
+    {
+      "path": ".ai/prompts/implementer.md",
+      "management": "full"
+    },
+    {
+      "path": ".ai/prompts/planner.md",
+      "management": "full"
+    },
+    {
+      "path": ".ai/prompts/po.md",
+      "management": "full"
+    },
+    {
+      "path": ".ai/prompts/reviewer.md",
+      "management": "full"
+    },
+    {
+      "path": ".ai/prompts/tester.md",
+      "management": "full"
+    },
+    {
+      "path": ".gitattributes",
+      "management": "full"
+    },
+    {
+      "path": ".gitignore",
+      "management": "full"
+    },
+    {
+      "path": "AGENTS.md",
+      "management": "marker"
+    },
+    {
+      "path": "ROADMAP.template.md",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-implement.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-launch.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-plan.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-po.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-pr.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-review.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-start-cycle.sh",
+      "management": "full"
+    },
+    {
+      "path": "scripts/ai-test.sh",
+      "management": "full"
+    }
+  ]
+}
