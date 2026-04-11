@@ -104,6 +104,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "reviewer> finish_cycle") {
 		t.Error("README.md should contain finish_cycle example")
 	}
+	if !strings.Contains(readme, "implementer> commit_task T-001") {
+		t.Error("README.md should contain commit_task example")
+	}
 	if strings.Contains(readme, "Selected workflow:") {
 		t.Error("README.md should not include a selected workflow line")
 	}
@@ -119,6 +122,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
+		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done",
+		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("README.md should contain %q", snippet)
@@ -196,6 +201,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(implementerPrompt, "@rework") {
 		t.Error("implementer prompt should not contain legacy @rework syntax")
 	}
+	if !strings.Contains(implementerPrompt, "`commit_task [TASK_ID]`") {
+		t.Error("implementer prompt should describe commit_task")
+	}
+	if !strings.Contains(implementerPrompt, "`ready_to_commit`") {
+		t.Error("implementer prompt should mention ready_to_commit")
+	}
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
 	}
@@ -238,6 +249,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(reviewerPrompt, "search-strategy.md") {
 		t.Error("reviewer prompt should not reference search-strategy.md")
 	}
+	if !strings.Contains(reviewerPrompt, "`ready_to_commit`") {
+		t.Error("reviewer prompt should mention ready_to_commit")
+	}
 	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
 		"Never include `Co-Authored-By` trailers in commit messages.",
@@ -249,6 +263,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	testerPrompt := files[".ai/prompts/tester.md"]
 	if strings.Contains(testerPrompt, "search-strategy.md") {
 		t.Error("tester prompt should not reference search-strategy.md")
+	}
+	if !strings.Contains(testerPrompt, "set status to `ready_to_commit` when verification succeeds") {
+		t.Error("tester prompt should move passing tasks to ready_to_commit")
 	}
 	assertPromptCriticalRules(t, "tester prompt", testerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
@@ -277,6 +294,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`send_command`",
 		"`stop_session`",
 		"`list_sessions`",
+		"`ready_to_commit` -> implementer `commit_task`",
 		"`test_failed` -> back to `in_implementation`",
 	} {
 		if !strings.Contains(poPrompt, snippet) {
@@ -293,6 +311,17 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 
 	assertUnifiedWorkflowArtifacts(t, files)
+
+	tasksTemplate := files[".ai/TASKS.template.md"]
+	for _, snippet := range []string{
+		"`ready_to_commit`",
+		"implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`",
+		"tester moves tasks into `in_testing`, `ready_to_commit`, or `test_failed`",
+	} {
+		if !strings.Contains(tasksTemplate, snippet) {
+			t.Errorf("TASKS.template.md should contain %q", snippet)
+		}
+	}
 
 	settings := files[".claude/settings.json"]
 	if !strings.Contains(settings, "\"includeCoAuthoredBy\": false") {
@@ -351,6 +380,15 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	}
 	if !strings.Contains(agents, "go test ./...") {
 		t.Error("AGENTS.md should contain go test command")
+	}
+	for _, snippet := range []string{
+		"`ready_to_commit`",
+		"`commit_task [TASK_ID]`",
+		"`in_testing` -> `ready_to_commit` -> `done`",
+	} {
+		if !strings.Contains(agents, snippet) {
+			t.Errorf("AGENTS.md should contain %q", snippet)
+		}
 	}
 
 	// Verify PLAN.template.md has validation commands.

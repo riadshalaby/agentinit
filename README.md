@@ -21,11 +21,11 @@ Scaffold a file-based AI agent coordination framework for any codebase. Every sc
 **Status flow** — tasks move through a defined state machine tracked in `.ai/TASKS.md`. Manual and auto both use this same task flow:
 
 ```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → done
-                                          ↑                                     |                              |
-                                          └──── changes_requested ◄─────────────┘                              |
-                                                ▲                                                               |
-                                                └──────────────────────────── test_failed ◄──────────────────────┘
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done
+                                          ↑                                     |                                              |
+                                          └──── changes_requested ◄─────────────┘                                              |
+                                                ▲                                                                               |
+                                                └──────────────────────────── test_failed ◄──────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -74,6 +74,7 @@ planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
 tester>       next_task
+implementer>  commit_task
 reviewer>     finish_cycle
 
 # Create or update the PR
@@ -225,6 +226,7 @@ Manual mode uses text commands in the role sessions. Auto mode uses the PO sessi
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
+| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
 | `rework_task [TASK_ID]` | Address `changes_requested` or `test_failed` findings from `.ai/REVIEW.md` and `.ai/TEST_REPORT.md` |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 

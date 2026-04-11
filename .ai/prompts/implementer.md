@@ -14,11 +14,14 @@ You are in `implement` mode.
 - Supported implementer commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_implement` or `in_implementation` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_implementation` when work begins
   - `rework_task [TASK_ID]`: implementer-only command for tasks in `changes_requested` or `test_failed`; read `.ai/REVIEW.md` for review findings and `.ai/TEST_REPORT.md` for failed-test findings before editing; if no task matches, report that no tasks are pending rework
+  - `commit_task [TASK_ID]`: implementer-only command for tasks in `ready_to_commit`; squash any WIP commits for the task into a single Conventional Commit describing the user-visible outcome, then move the task to `done`; if the task is not ready_to_commit, report its current status and abort
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
+- Status values relevant to implementer work:
+  - `ready_for_implement`, `in_implementation`, `ready_for_review`, `changes_requested`, `test_failed`, `ready_to_commit`, `done`
 - Do not implement anything until the user explicitly invokes the relevant command for a specific task or status check.
 - Implement `.ai/PLAN.md` exactly.
 - Update tests as needed.
-- Create exactly one commit with a Conventional Commit message that matches the implemented scope.
+- Use `commit_task` to create the single final Conventional Commit for the task once it reaches `ready_to_commit`.
 - Update `.ai/TASKS.md` for the task:
   - set status to `ready_for_review`
   - set owner role to `review`

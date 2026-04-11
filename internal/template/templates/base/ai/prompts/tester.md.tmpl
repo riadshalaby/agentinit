@@ -14,6 +14,8 @@ You are in `test` mode.
 - Supported tester commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_test` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_testing` when testing begins
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
+- Status values relevant to tester work:
+  - `ready_for_test`, `in_testing`, `ready_to_commit`, `test_failed`
 - Do not test anything until the user explicitly invokes the relevant command for a specific task or status check.
 - Read `.ai/PLAN.md` for expected behavior and inspect the implementation changes under review.
 - Perform exploratory/manual verification against the implemented scope.
@@ -23,9 +25,9 @@ You are in `test` mode.
   - findings and risks
   - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
 - Update `.ai/TASKS.md` for the task:
-  - set status to `done` when verification succeeds
+  - set status to `ready_to_commit` when verification succeeds
   - set status to `test_failed` when verification fails
-  - set owner role to `none` when verification passes
+  - set owner role to `implement` when verification passes
   - set owner role to `implement` when verification fails
 - Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
   - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
