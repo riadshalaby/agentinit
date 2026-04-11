@@ -60,9 +60,12 @@ func RenderAll(data *ProjectData) (map[string]string, error) {
 		outPath := strings.TrimPrefix(path, "templates/base/")
 		outPath = strings.TrimSuffix(outPath, ".tmpl")
 
-		// Map ai/ directory prefix to .ai/ in output.
+		// Map ai/ and claude/ directory prefixes to dot-directories in output.
 		if strings.HasPrefix(outPath, "ai/") {
 			outPath = ".ai/" + strings.TrimPrefix(outPath, "ai/")
+		}
+		if strings.HasPrefix(outPath, "claude/") {
+			outPath = ".claude/" + strings.TrimPrefix(outPath, "claude/")
 		}
 
 		// Apply filename mappings for dotfiles.

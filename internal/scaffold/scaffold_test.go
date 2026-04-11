@@ -29,6 +29,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
 		".ai/prompts/tester.md",
+		".claude/settings.json",
+		".claude/settings.local.json",
 		"scripts/ai-po.sh",
 		"scripts/ai-launch.sh",
 		"scripts/ai-start-cycle.sh",
@@ -110,6 +112,31 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	claude := strings.TrimSpace(string(claudeBytes))
 	if claude != "@AGENTS.md" {
 		t.Fatalf("generated CLAUDE.md = %q, want @AGENTS.md", claude)
+	}
+
+	settingsBytes, err := os.ReadFile(filepath.Join(projectDir, ".claude/settings.json"))
+	if err != nil {
+		t.Fatalf("read .claude/settings.json: %v", err)
+	}
+	if !strings.Contains(string(settingsBytes), "\"includeCoAuthoredBy\": false") {
+		t.Error("generated .claude/settings.json should disable co-authored-by trailers")
+	}
+
+	localSettingsBytes, err := os.ReadFile(filepath.Join(projectDir, ".claude/settings.local.json"))
+	if err != nil {
+		t.Fatalf("read .claude/settings.local.json: %v", err)
+	}
+	localSettings := string(localSettingsBytes)
+	for _, entry := range []string{
+		"Bash(go fmt ./...:*)",
+		"Bash(go vet ./...:*)",
+		"Bash(go test ./...:*)",
+		"Bash(git add:*)",
+		"Bash(git commit:*)",
+	} {
+		if !strings.Contains(localSettings, entry) {
+			t.Errorf("generated .claude/settings.local.json should contain %q", entry)
+		}
 	}
 
 	for _, tc := range []struct {

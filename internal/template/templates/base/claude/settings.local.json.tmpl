@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+{{- range .ValidationCommands }}
+      "Bash({{ .Command }}:*)",
+{{- end }}
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
