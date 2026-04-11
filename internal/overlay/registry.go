@@ -9,6 +9,7 @@ import (
 // Overlay defines type-specific validation commands and PR test plan items.
 type Overlay struct {
 	Name               string
+	ToolPermissions    []string
 	ValidationCommands []template.ValidationCommand
 	PRTestPlanItems    []string
 }
@@ -23,11 +24,24 @@ func register(o Overlay) {
 // Returns an error if the name is non-empty and not found.
 func Get(name string) (Overlay, error) {
 	if name == "" {
-		return baseOverlay, nil
+		return cloneOverlay(baseOverlay), nil
 	}
 	o, ok := registry[name]
 	if !ok {
 		return Overlay{}, fmt.Errorf("unknown project type %q (available: go, java, node)", name)
 	}
-	return o, nil
+	result := cloneOverlay(o)
+	result.ToolPermissions = append(cloneStrings(baseOverlay.ToolPermissions), result.ToolPermissions...)
+	return result, nil
+}
+
+func cloneOverlay(o Overlay) Overlay {
+	o.ToolPermissions = cloneStrings(o.ToolPermissions)
+	o.ValidationCommands = append([]template.ValidationCommand(nil), o.ValidationCommands...)
+	o.PRTestPlanItems = cloneStrings(o.PRTestPlanItems)
+	return o
+}
+
+func cloneStrings(values []string) []string {
+	return append([]string(nil), values...)
 }

@@ -128,9 +128,20 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	localSettings := string(localSettingsBytes)
 	for _, entry := range []string{
+		"Bash(gh:*)",
+		"Bash(rg:*)",
+		"Bash(fd:*)",
+		"Bash(bat:*)",
+		"Bash(jq:*)",
+		"Bash(sg:*)",
+		"Bash(fzf:*)",
+		"Bash(tree-sitter:*)",
 		"Bash(go fmt ./...:*)",
 		"Bash(go vet ./...:*)",
 		"Bash(go test ./...:*)",
+		"Bash(go build:*)",
+		"Bash(go run:*)",
+		"Bash(go mod:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
 	} {
