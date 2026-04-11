@@ -96,6 +96,32 @@ func renderTemplate(tmplContent, name string, data any) (string, error) {
 			}
 			return strings.Join(lines, "\n")
 		},
+		"permissionRules": func(data *ProjectData) string {
+			seen := make(map[string]struct{})
+			commands := make([]string, 0, len(data.ToolPermissions)+len(data.ValidationCommands)+2)
+
+			add := func(command string) {
+				if _, ok := seen[command]; ok {
+					return
+				}
+				seen[command] = struct{}{}
+				commands = append(commands, command)
+			}
+
+			for _, command := range data.ToolPermissions {
+				add(command)
+			}
+			for _, validation := range data.ValidationCommands {
+				add(validation.Command)
+			}
+			add("git add")
+			add("git commit")
+			rules := make([]string, 0, len(commands))
+			for _, command := range commands {
+				rules = append(rules, fmt.Sprintf("\"Bash(%s:*)\"", command))
+			}
+			return strings.Join(rules, ",\n      ")
+		},
 	}
 
 	t, err := template.New(name).Funcs(funcMap).Parse(tmplContent)

@@ -12,6 +12,9 @@ func TestGetBase(t *testing.T) {
 	if len(o.ValidationCommands) != 0 {
 		t.Errorf("base overlay should have no validation commands, got %d", len(o.ValidationCommands))
 	}
+	if len(o.ToolPermissions) != 8 {
+		t.Errorf("base overlay should have 8 tool permissions, got %d", len(o.ToolPermissions))
+	}
 	if len(o.PRTestPlanItems) != 1 || o.PRTestPlanItems[0] != "All validations pass" {
 		t.Errorf("base overlay PRTestPlanItems = %v, want [All validations pass]", o.PRTestPlanItems)
 	}
@@ -25,8 +28,14 @@ func TestGetGo(t *testing.T) {
 	if len(o.ValidationCommands) != 3 {
 		t.Errorf("go overlay should have 3 validation commands, got %d", len(o.ValidationCommands))
 	}
+	if len(o.ToolPermissions) != 14 {
+		t.Errorf("go overlay should have 14 tool permissions including base tools, got %d", len(o.ToolPermissions))
+	}
 	if o.ValidationCommands[0].Command != "go fmt ./..." {
 		t.Errorf("first command = %q, want \"go fmt ./...\"", o.ValidationCommands[0].Command)
+	}
+	if o.ToolPermissions[0] != "gh" || o.ToolPermissions[8] != "go fmt" {
+		t.Errorf("go overlay tool permissions = %v, want base tools followed by go tools", o.ToolPermissions)
 	}
 }
 
@@ -38,6 +47,9 @@ func TestGetJava(t *testing.T) {
 	if len(o.ValidationCommands) != 3 {
 		t.Errorf("java overlay should have 3 validation commands, got %d", len(o.ValidationCommands))
 	}
+	if len(o.ToolPermissions) != 12 {
+		t.Errorf("java overlay should have 12 tool permissions including base tools, got %d", len(o.ToolPermissions))
+	}
 }
 
 func TestGetNode(t *testing.T) {
@@ -47,6 +59,12 @@ func TestGetNode(t *testing.T) {
 	}
 	if len(o.ValidationCommands) != 3 {
 		t.Errorf("node overlay should have 3 validation commands, got %d", len(o.ValidationCommands))
+	}
+	if len(o.ToolPermissions) != 13 {
+		t.Errorf("node overlay should have 13 tool permissions including base tools, got %d", len(o.ToolPermissions))
+	}
+	if o.ToolPermissions[8] != "npm" {
+		t.Errorf("node overlay tool permissions = %v, want base tools followed by node tools", o.ToolPermissions)
 	}
 }
 

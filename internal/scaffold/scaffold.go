@@ -29,6 +29,7 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	data := &template.ProjectData{
 		ProjectName:        name,
 		ProjectType:        projectType,
+		ToolPermissions:    ov.ToolPermissions,
 		ValidationCommands: ov.ValidationCommands,
 		PRTestPlanItems:    ov.PRTestPlanItems,
 	}

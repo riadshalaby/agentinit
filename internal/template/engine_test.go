@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+var baseToolPermissions = []string{"gh", "rg", "fd", "bat", "jq", "sg", "fzf", "tree-sitter"}
+
 func assertUnifiedWorkflowArtifacts(t *testing.T, files map[string]string) {
 	t.Helper()
 
@@ -41,6 +43,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "myproject",
 		ProjectType:     "",
+		ToolPermissions: append([]string(nil), baseToolPermissions...),
 		PRTestPlanItems: []string{"All validations pass"},
 	}
 
@@ -298,6 +301,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	localSettings := files[".claude/settings.local.json"]
 	for _, entry := range []string{
+		"Bash(gh:*)",
+		"Bash(tree-sitter:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
 	} {
@@ -311,6 +316,8 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "goapp",
 		ProjectType: "go",
+		ToolPermissions: append(append([]string(nil), baseToolPermissions...),
+			"go fmt", "go vet", "go test", "go build", "go run", "go mod"),
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "go fmt ./..."},
 			{Label: "Vet", Command: "go vet ./..."},
@@ -354,9 +361,20 @@ func TestRenderAllGoOverlay(t *testing.T) {
 
 	localSettings := files[".claude/settings.local.json"]
 	for _, entry := range []string{
+		"Bash(gh:*)",
+		"Bash(rg:*)",
+		"Bash(fd:*)",
+		"Bash(bat:*)",
+		"Bash(jq:*)",
+		"Bash(sg:*)",
+		"Bash(fzf:*)",
+		"Bash(tree-sitter:*)",
 		"Bash(go fmt ./...:*)",
 		"Bash(go vet ./...:*)",
 		"Bash(go test ./...:*)",
+		"Bash(go build:*)",
+		"Bash(go run:*)",
+		"Bash(go mod:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
 	} {
@@ -370,6 +388,8 @@ func TestRenderAllJavaOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "javaapp",
 		ProjectType: "java",
+		ToolPermissions: append(append([]string(nil), baseToolPermissions...),
+			"mvn", "gradle", "javac", "java"),
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "mvn -q spotless:apply"},
 			{Label: "Compile", Command: "mvn -q -DskipTests test-compile"},
@@ -400,6 +420,8 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 	data := &ProjectData{
 		ProjectName: "nodeapp",
 		ProjectType: "node",
+		ToolPermissions: append(append([]string(nil), baseToolPermissions...),
+			"npm", "npx", "node", "eslint", "prettier"),
 		ValidationCommands: []ValidationCommand{
 			{Label: "Lint", Command: "npm run lint"},
 			{Label: "Build", Command: "npm run build"},
@@ -418,6 +440,62 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 	gitignore := files[".gitignore"]
 	if !strings.Contains(gitignore, "node_modules/") {
 		t.Error(".gitignore should contain Node-specific entries")
+	}
+
+	localSettings := files[".claude/settings.local.json"]
+	for _, entry := range []string{
+		"Bash(gh:*)",
+		"Bash(tree-sitter:*)",
+		"Bash(npm:*)",
+		"Bash(npx:*)",
+		"Bash(node:*)",
+		"Bash(eslint:*)",
+		"Bash(prettier:*)",
+		"Bash(npm run lint:*)",
+		"Bash(npm run build:*)",
+		"Bash(npm test:*)",
+		"Bash(git add:*)",
+		"Bash(git commit:*)",
+	} {
+		if !strings.Contains(localSettings, entry) {
+			t.Errorf(".claude/settings.local.json should contain %q", entry)
+		}
+	}
+	for _, entry := range []string{
+		"Bash(go build:*)",
+		"Bash(go mod:*)",
+		"Bash(go test ./...:*)",
+	} {
+		if strings.Contains(localSettings, entry) {
+			t.Errorf(".claude/settings.local.json should not contain %q for node projects", entry)
+		}
+	}
+}
+
+func TestRenderAllDeduplicatesClaudePermissionRules(t *testing.T) {
+	data := &ProjectData{
+		ProjectName:     "dedupe",
+		ToolPermissions: []string{"gh", "go test ./...", "git add"},
+		ValidationCommands: []ValidationCommand{
+			{Label: "Test", Command: "go test ./..."},
+		},
+		PRTestPlanItems: []string{"go test"},
+	}
+
+	files, err := RenderAll(data)
+	if err != nil {
+		t.Fatalf("RenderAll() error: %v", err)
+	}
+
+	localSettings := files[".claude/settings.local.json"]
+	for _, entry := range []string{
+		"Bash(go test ./...:*)",
+		"Bash(git add:*)",
+		"Bash(git commit:*)",
+	} {
+		if strings.Count(localSettings, entry) != 1 {
+			t.Errorf(".claude/settings.local.json should contain %q exactly once, got %d", entry, strings.Count(localSettings, entry))
+		}
 	}
 }
 
