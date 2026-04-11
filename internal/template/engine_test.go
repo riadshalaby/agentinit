@@ -54,6 +54,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	// Check that key files exist.
 	expectedFiles := []string{
+		".ai/config.json",
 		".ai/PLAN.template.md",
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
@@ -136,10 +137,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
 		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
 		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
+		"| `.ai/config.json` | Per-role launch defaults | yes |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("README.md should contain %q", snippet)
 		}
+	}
+	if !strings.Contains(readme, "Wrapper scripts read default agent/model settings from `.ai/config.json`.") {
+		t.Error("README.md should mention wrapper defaults from .ai/config.json")
 	}
 	for _, snippet := range []string{
 		"| `AGENTS.md` | Project-specific and workflow-managed agent rules | yes |",
@@ -297,6 +302,17 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
 		t.Error("ai-launch.sh should route the test role in the unified scaffold")
 	}
+	for _, snippet := range []string{
+		"config_file=\".ai/config.json\"",
+		".roles[$role][$field] // empty",
+		"agent_args+=(--model \"$role_model\")",
+		"agent_args+=(--effort \"$role_effort\")",
+		"agent_args+=(-m \"$role_model\")",
+	} {
+		if !strings.Contains(launchScript, snippet) {
+			t.Errorf("ai-launch.sh should contain %q", snippet)
+		}
+	}
 	startCycleScript := files["scripts/ai-start-cycle.sh"]
 	for _, snippet := range []string{
 		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
@@ -346,6 +362,34 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
 		t.Error("ai-po.sh should configure the agentinit mcp server")
 	}
+	for _, snippet := range []string{
+		"config_file=\".ai/config.json\"",
+		"Use these default agents when calling `start_session`",
+		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
+	} {
+		if !strings.Contains(poScript, snippet) {
+			t.Errorf("ai-po.sh should contain %q", snippet)
+		}
+	}
+
+	config := files[".ai/config.json"]
+	for _, snippet := range []string{
+		"\"plan\": {",
+		"\"agent\": \"claude\"",
+		"\"model\": \"opus\"",
+		"\"effort\": \"high\"",
+		"\"implement\": {",
+		"\"agent\": \"codex\"",
+		"\"model\": \"gpt-5.4\"",
+		"\"review\": {",
+		"\"model\": \"sonnet\"",
+		"\"effort\": \"medium\"",
+		"\"test\": {",
+	} {
+		if !strings.Contains(config, snippet) {
+			t.Errorf(".ai/config.json should contain %q", snippet)
+		}
+	}
 
 	assertUnifiedWorkflowArtifacts(t, files)
 
@@ -374,6 +418,23 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
+		}
+	}
+
+	for _, tc := range []struct {
+		path    string
+		snippet string
+	}{
+		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
+		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
+		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
+		{"scripts/ai-test.sh", ".roles.test.agent // empty"},
+	} {
+		if !strings.Contains(files[tc.path], tc.snippet) {
+			t.Errorf("%s should contain %q", tc.path, tc.snippet)
+		}
+		if !strings.Contains(files[tc.path], "if [[ ${1:-} == \"claude\" || ${1:-} == \"codex\" ]]; then") {
+			t.Errorf("%s should allow agent overrides without consuming CLI flags", tc.path)
 		}
 	}
 }

@@ -81,10 +81,10 @@
     - roles: `plan`, `implement`, `review`, `test`
     - agents: `claude`, `codex`
   - Convenience wrappers:
-    - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent: `claude`)
-    - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent: `codex`)
-    - `scripts/ai-review.sh [agent] [agent-options...]` (default agent: `claude`)
-    - `scripts/ai-test.sh [agent] [agent-options...]` (default agent: `claude`)
+    - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
+    - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
+    - `scripts/ai-review.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
+    - `scripts/ai-test.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `scripts/ai-po.sh [agent-options...]` for the PO orchestration session
 - Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.
@@ -177,8 +177,8 @@ Use these text commands inside the already-running role sessions.
   - `finish_cycle [TASK_ID]`
     - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
     - if the completion condition is not met, report the blocking task states and abort
-  - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
-  - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
+    - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
+    - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
 - Tester session:
   - `next_task [TASK_ID]`
     - select the first task in `ready_for_test` when no task ID is supplied

@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
+config_file=".ai/config.json"
 
 usage() {
   cat <<'EOF'
@@ -32,6 +33,18 @@ fi
 role="$1"
 agent="$2"
 shift 2
+
+config_value() {
+  local role_name="$1"
+  local field_name="$2"
+  local value=""
+
+  if [[ -f "$config_file" ]] && command -v jq >/dev/null 2>&1; then
+    value="$(jq -r --arg role "$role_name" --arg field "$field_name" '.roles[$role][$field] // empty' "$config_file" 2>/dev/null || true)"
+  fi
+
+  printf '%s\n' "$value"
+}
 
 case "$role" in
   plan)
@@ -67,20 +80,33 @@ echo "Role: $role"
 echo "Prompt: $prompt_file"
 echo "Expected output: $expected_output"
 
+role_model="$(config_value "$role" "model")"
+role_effort="$(config_value "$role" "effort")"
+agent_args=()
+
 case "$agent" in
   claude)
+    if [[ -n "$role_model" ]]; then
+      agent_args+=(--model "$role_model")
+    fi
+    if [[ -n "$role_effort" ]]; then
+      agent_args+=(--effort "$role_effort")
+    fi
     exec claude \
       --permission-mode acceptEdits \
       --add-dir "$REPO_ROOT" \
-      "$@" --system-prompt-file "$prompt_file"
+      ${agent_args[@]+"${agent_args[@]}"} "$@" --system-prompt-file "$prompt_file"
     ;;
   codex)
+    if [[ -n "$role_model" ]]; then
+      agent_args+=(-m "$role_model")
+    fi
     prompt_text="$(cat "$prompt_file")"
     exec codex \
       --full-auto \
       --sandbox workspace-write \
       -c "sandbox_workspace_write.network_access=true" \
-      "$@" "$prompt_text"
+      ${agent_args[@]+"${agent_args[@]}"} "$@" "$prompt_text"
     ;;
   *)
     echo "Unsupported agent: $agent" >&2

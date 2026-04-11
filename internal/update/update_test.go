@@ -37,6 +37,12 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatalf("remove ai-po.sh: %v", err)
 	}
 
+	configPath := filepath.Join(projectDir, ".ai/config.json")
+	customConfig := "{\n  \"roles\": {\n    \"plan\": {\n      \"agent\": \"codex\"\n    }\n  }\n}\n"
+	if err := os.WriteFile(configPath, []byte(customConfig), 0o644); err != nil {
+		t.Fatalf("write .ai/config.json: %v", err)
+	}
+
 	result, err := Run(projectDir, false)
 	if err != nil {
 		t.Fatalf("Run() error = %v", err)
@@ -75,12 +81,25 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatalf("deleted managed script should be recreated: %v", err)
 	}
 
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read .ai/config.json: %v", err)
+	}
+	if string(configBytes) != customConfig {
+		t.Fatal("update should not overwrite an existing .ai/config.json")
+	}
+
 	manifest, err := scaffold.ReadManifest(projectDir)
 	if err != nil {
 		t.Fatalf("ReadManifest() error = %v", err)
 	}
 	if len(manifest.Files) == 0 {
 		t.Fatal("updated manifest should contain managed files")
+	}
+	for _, file := range manifest.Files {
+		if file.Path == ".ai/config.json" {
+			t.Fatal("manifest should not include .ai/config.json")
+		}
 	}
 }
 

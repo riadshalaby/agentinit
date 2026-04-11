@@ -1,6 +1,6 @@
 {
   "version": "(dev)",
-  "generated_at": "2026-04-11T09:11:00Z",
+  "generated_at": "2026-04-11T20:54:35Z",
   "files": [
     {
       "path": ".ai/prompts/implementer.md",
@@ -20,6 +20,14 @@
     },
     {
       "path": ".ai/prompts/tester.md",
+      "management": "full"
+    },
+    {
+      "path": ".claude/settings.json",
+      "management": "full"
+    },
+    {
+      "path": ".claude/settings.local.json",
       "management": "full"
     },
     {
