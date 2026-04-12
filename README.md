@@ -214,6 +214,8 @@ Manual mode uses text commands in the role sessions. Auto mode uses the PO sessi
 
 **Planner**
 
+Before `start_plan`, freeform conversation with the planner is the roadmap-refinement phase. Use it to sharpen scope, acceptance criteria, constraints, and trade-offs directly in `ROADMAP.md`. `start_plan` is the explicit handoff into formal planning.
+
 | Command | Description |
 |---------|-------------|
 | `start_plan` | Read `ROADMAP.md`, create/update `.ai/PLAN.md` and `.ai/TASKS.md`, move tasks to `ready_for_implement` |
