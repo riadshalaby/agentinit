@@ -74,7 +74,7 @@ planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
 implementer>  commit_task
-reviewer>     finish_cycle
+implementer>  finish_cycle
 
 # Create or update the PR
 scripts/ai-pr.sh sync
@@ -242,6 +242,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
 | `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 **Reviewer**
@@ -250,7 +251,6 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task (or a specific one) and run review plus verification |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 
 ### MCP Server
 

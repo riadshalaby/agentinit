@@ -73,6 +73,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
+	if !strings.Contains(readme, "implementer> finish_cycle") {
+		t.Error("generated README.md should contain finish_cycle examples in the unified scaffold")
+	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
 		t.Error("generated README.md should contain commit_task examples in the unified scaffold")
 	}
@@ -88,6 +91,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
+		"| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -212,8 +216,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before committing.",
 				"Stage all changes with `git add -A`.",
+				"`finish_cycle [TASK_ID]`",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
+				"stage and commit the cycle-close `.ai/` artifacts",
 				"Files are the source of truth. Re-read `.ai/TASKS.md` and `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -229,7 +235,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"`ready_to_commit`",
 				"Perform verification as part of review",
 				"appending or updating only the active task section, preserving prior task history",
-				"stage and commit the cycle-close `.ai/` artifacts",
 				"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
@@ -261,8 +266,11 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"go test ./...",
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
+		"`finish_cycle [TASK_ID]`",
+		"stage and commit the cycle-close `.ai/` artifacts",
 		"conversation with the planner is the roadmap-refinement phase",
 		"`start_plan` is the gate to formal planning",
+		"`review` role never commits.",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
 		"`in_review` -> `ready_to_commit` -> `done`",

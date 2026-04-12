@@ -14,9 +14,8 @@ You are in `review` mode.
 - Supported reviewer commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_review` or `in_review` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_review` when review begins
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
-  - `finish_cycle [TASK_ID]`: verify the requested task is `done`, or all tasks are `done` when no task ID is supplied; if the completion condition is not met, report the blocking task states and abort; stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed; then instruct the user to run `scripts/ai-pr.sh sync`
 - Status values relevant to reviewer work:
-  - `ready_for_review`, `in_review`, `changes_requested`, `ready_to_commit`, `done`
+  - `ready_for_review`, `in_review`, `changes_requested`, `ready_to_commit`
 - Do not review anything until the user explicitly invokes the relevant command for a specific task or cycle status.
 - Compare implementation changes against `.ai/PLAN.md`.
 - Perform verification as part of review, including automated checks, E2E checks, and exploratory/manual validation when the task calls for them.
@@ -37,7 +36,6 @@ You are in `review` mode.
   - set status to `changes_requested` when verdict is `FAIL`
   - set owner role to `implement` if review passes
   - set owner role to `implement` if changes are requested
-- Reviewer cycle-close commits may include `.ai/REVIEW.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, and `.ai/PLAN.md`.
 - Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
   - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
   - table with all applicable fields
