@@ -24,12 +24,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
-		".ai/TEST_REPORT.template.md",
 		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
-		".ai/prompts/tester.md",
 		".claude/settings.json",
 		".claude/settings.local.json",
 		"scripts/ai-po.sh",
@@ -38,7 +36,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"AGENTS.md",
 		"CLAUDE.md",
@@ -76,23 +73,21 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
-	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("generated README.md should contain tester examples in the unified scaffold")
-	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
 		t.Error("generated README.md should contain commit_task examples in the unified scaffold")
 	}
 	for _, snippet := range []string{
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
-		"Manual mode: start the planner, implementer, reviewer, and tester in separate terminals",
+		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
 		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
-		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done",
+		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
+		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("generated README.md should contain %q", snippet)
@@ -100,7 +95,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	for _, snippet := range []string{
 		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
-		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
 		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
 		"| `.ai/config.json` | Per-role launch defaults | yes |",
 	} {
@@ -185,7 +179,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"\"review\": {",
 		"\"model\": \"sonnet\"",
 		"\"effort\": \"medium\"",
-		"\"test\": {",
 	} {
 		if !strings.Contains(config, snippet) {
 			t.Errorf("generated .ai/config.json should contain %q", snippet)
@@ -218,7 +211,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Stage all changes with `git add -A`.",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
-				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting.",
+				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
 		},
@@ -231,23 +224,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"`ready_to_commit`",
+				"Perform verification as part of review",
 				"appending or updating only the active task section, preserving prior task history",
 				"stage and commit the cycle-close `.ai/` artifacts",
 				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
-				"For the full ruleset see `AGENTS.md`.",
-			},
-		},
-		{
-			path: ".ai/prompts/tester.md",
-			rules: []string{
-				"## Critical Rules",
-				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-				"Never include `Co-Authored-By` trailers in commit messages.",
-				"Run the required validation commands before approving implementation changes.",
-				"Never modify code.",
-				"set status to `ready_to_commit` when verification succeeds",
-				"appending or updating only the active task section, preserving prior task history",
-				"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
 		},
@@ -278,7 +258,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"go test ./...",
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`in_testing` -> `ready_to_commit` -> `done`",
+		"`in_review` -> `ready_to_commit` -> `done`",
 		"<!-- agentinit:managed:start -->",
 		"## Hard Rules",
 		"## Commit Conventions",
@@ -343,7 +323,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read .gitignore: %v", err)
 	}
 	gitignore := string(gitignoreBytes)
-	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md"} {
 		if strings.Contains(gitignore, entry) {
 			t.Errorf("generated .gitignore should not contain %s", entry)
 		}
@@ -356,9 +336,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	startCycle := string(startCycleBytes)
 	for _, snippet := range []string{
 		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
-		"cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md",
 		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
-		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
+		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
 	} {
 		if !strings.Contains(startCycle, snippet) {
 			t.Errorf("generated ai-start-cycle.sh should contain %q", snippet)
@@ -392,7 +371,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
 		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
 		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
-		{"scripts/ai-test.sh", ".roles.test.agent // empty"},
 	} {
 		scriptBytes, err := os.ReadFile(filepath.Join(projectDir, tc.path))
 		if err != nil {
@@ -427,20 +405,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read .ai/REVIEW.template.md: %v", err)
 	}
 	reviewTemplate := string(reviewTemplateBytes)
-	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1"} {
+	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1", "#### Verification"} {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf("generated .ai/REVIEW.template.md should contain %q", snippet)
-		}
-	}
-
-	testReportTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/TEST_REPORT.template.md"))
-	if err != nil {
-		t.Fatalf("read .ai/TEST_REPORT.template.md: %v", err)
-	}
-	testReportTemplate := string(testReportTemplateBytes)
-	for _, snippet := range []string{"# Test Report Log", "## Task: T-XXX", "### Test Round 1"} {
-		if !strings.Contains(testReportTemplate, snippet) {
-			t.Errorf("generated .ai/TEST_REPORT.template.md should contain %q", snippet)
 		}
 	}
 }
@@ -460,7 +427,6 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-test.sh",
 		"scripts/ai-start-cycle.sh",
 		"scripts/ai-pr.sh",
 	}

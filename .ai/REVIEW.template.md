@@ -13,6 +13,14 @@ Reviewed: YYYY-MM-DD
 #### Findings
 - Pending review.
 
+#### Verification
+##### Steps
+- Pending verification.
+##### Findings
+- None.
+##### Risks
+- None.
+
 #### Open Questions
 - None.
 
