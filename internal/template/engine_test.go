@@ -172,7 +172,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"## Runtime Modes",
 		"## Tool Preferences",
 		"### Example Commands",
-		"persistent session is interrupted or reopened",
+		"Every role must re-read `.ai/TASKS.md` before executing any command.",
+		"Role-specific files to reload as needed:",
 		"`scripts/ai-po.sh [agent-options...]`",
 		"`status_cycle [TASK_ID]`",
 		"When available, use `ast-grep` (`sg`)",
@@ -223,7 +224,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Never include `Co-Authored-By` trailers in commit messages.",
 		"Run the required validation commands before committing.",
 		"Stage all changes with `git add -A`.",
-		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
+		"Files are the source of truth. Re-read `.ai/TASKS.md` and `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 	})
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
@@ -244,7 +245,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Never include `Co-Authored-By` trailers in commit messages.",
 		"Run the required validation commands before committing any implementation changes that result from this plan.",
 		"Never modify code.",
-		"Files are the source of truth. If this session was interrupted, reload `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.",
+		"Files are the source of truth. Re-read `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before executing any command.",
 	})
 
 	reviewerPrompt := files[".ai/prompts/reviewer.md"]
@@ -268,7 +269,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Never include `Co-Authored-By` trailers in commit messages.",
 		"Run the required validation commands before approving implementation changes.",
 		"Never modify code.",
-		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
+		"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 	})
 
 	launchScript := files["scripts/ai-launch.sh"]

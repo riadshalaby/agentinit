@@ -7,7 +7,7 @@ You are in `plan` mode.
 - Never include `Co-Authored-By` trailers in commit messages.
 - Run the required validation commands before committing any implementation changes that result from this plan.
 - Never modify code.
-- Files are the source of truth. If this session was interrupted, reload `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before acting.
+- Files are the source of truth. Re-read `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before executing any command.
 
 - For the full ruleset see `AGENTS.md`.
 

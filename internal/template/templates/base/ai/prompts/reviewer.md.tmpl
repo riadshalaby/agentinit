@@ -7,7 +7,7 @@ You are in `review` mode.
 - Never include `Co-Authored-By` trailers in commit messages.
 - Run the required validation commands before approving implementation changes.
 - Never modify code.
-- Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.
+- Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.
 
 - For the full ruleset see `AGENTS.md`.
 
