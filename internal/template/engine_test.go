@@ -59,12 +59,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
-		".ai/TEST_REPORT.template.md",
 		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
 		".ai/prompts/reviewer.md",
-		".ai/prompts/tester.md",
 		".claude/settings.json",
 		".claude/settings.local.json",
 		"scripts/ai-po.sh",
@@ -73,7 +71,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"scripts/ai-plan.sh",
 		"scripts/ai-implement.sh",
 		"scripts/ai-review.sh",
-		"scripts/ai-test.sh",
 		"scripts/ai-pr.sh",
 		"AGENTS.md",
 		"CLAUDE.md",
@@ -111,20 +108,18 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(readme, "Selected workflow:") {
 		t.Error("README.md should not include a selected workflow line")
 	}
-	if !strings.Contains(readme, "tester> next_task T-001") {
-		t.Error("README.md should contain tester example in the unified scaffold")
-	}
 	for _, snippet := range []string{
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
-		"Manual mode: start the planner, implementer, reviewer, and tester in separate terminals",
+		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
 		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
-		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done",
+		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
+		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
 			t.Errorf("README.md should contain %q", snippet)
@@ -135,7 +130,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	for _, snippet := range []string{
 		"| `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |",
-		"| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |",
 		"| `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |",
 		"| `.ai/config.json` | Per-role launch defaults | yes |",
 	} {
@@ -221,9 +215,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
 	}
-	if !strings.Contains(implementerPrompt, "`test_failed`") {
-		t.Error("implementer prompt should mention test_failed in the unified scaffold")
-	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
 	}
@@ -232,7 +223,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Never include `Co-Authored-By` trailers in commit messages.",
 		"Run the required validation commands before committing.",
 		"Stage all changes with `git add -A`.",
-		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, and `.ai/TEST_REPORT.md` before acting.",
+		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
 	})
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
@@ -263,6 +254,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(reviewerPrompt, "`ready_to_commit`") {
 		t.Error("reviewer prompt should mention ready_to_commit")
 	}
+	if !strings.Contains(reviewerPrompt, "Perform verification as part of review") {
+		t.Error("reviewer prompt should describe verification responsibilities")
+	}
 	if !strings.Contains(reviewerPrompt, "appending or updating only the active task section, preserving prior task history") {
 		t.Error("reviewer prompt should preserve prior task history in REVIEW.md")
 	}
@@ -277,30 +271,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` before acting.",
 	})
 
-	testerPrompt := files[".ai/prompts/tester.md"]
-	if strings.Contains(testerPrompt, "search-strategy.md") {
-		t.Error("tester prompt should not reference search-strategy.md")
-	}
-	if !strings.Contains(testerPrompt, "set status to `ready_to_commit` when verification succeeds") {
-		t.Error("tester prompt should move passing tasks to ready_to_commit")
-	}
-	if !strings.Contains(testerPrompt, "appending or updating only the active task section, preserving prior task history") {
-		t.Error("tester prompt should preserve prior task history in TEST_REPORT.md")
-	}
-	assertPromptCriticalRules(t, "tester prompt", testerPrompt, []string{
-		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-		"Never include `Co-Authored-By` trailers in commit messages.",
-		"Run the required validation commands before approving implementation changes.",
-		"Never modify code.",
-		"Files are the source of truth. If this session was interrupted, reload `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/TEST_REPORT.md` before acting.",
-	})
-
 	launchScript := files["scripts/ai-launch.sh"]
-	if !strings.Contains(launchScript, "plan | implement | review | test") {
-		t.Error("ai-launch.sh should list the test role in the unified scaffold")
+	if !strings.Contains(launchScript, "plan | implement | review") {
+		t.Error("ai-launch.sh should list the supported roles")
 	}
-	if !strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should route the test role in the unified scaffold")
+	if strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
+		t.Error("ai-launch.sh should not route a removed test role")
 	}
 	for _, snippet := range []string{
 		"config_file=\".ai/config.json\"",
@@ -316,9 +292,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	startCycleScript := files["scripts/ai-start-cycle.sh"]
 	for _, snippet := range []string{
 		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
-		"cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md",
 		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
-		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
+		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
 	} {
 		if !strings.Contains(startCycleScript, snippet) {
 			t.Errorf("ai-start-cycle.sh should contain %q", snippet)
@@ -329,16 +304,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 
 	reviewTemplate := files[".ai/REVIEW.template.md"]
-	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1"} {
+	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1", "#### Verification"} {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf(".ai/REVIEW.template.md should contain %q", snippet)
-		}
-	}
-
-	testReportTemplate := files[".ai/TEST_REPORT.template.md"]
-	for _, snippet := range []string{"# Test Report Log", "## Task: T-XXX", "### Test Round 1"} {
-		if !strings.Contains(testReportTemplate, snippet) {
-			t.Errorf(".ai/TEST_REPORT.template.md should contain %q", snippet)
 		}
 	}
 	poPrompt := files[".ai/prompts/po.md"]
@@ -348,7 +316,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`stop_session`",
 		"`list_sessions`",
 		"`ready_to_commit` -> implementer `commit_task`",
-		"`test_failed` -> back to `in_implementation`",
+		"Reviewer owns both review and verification",
 	} {
 		if !strings.Contains(poPrompt, snippet) {
 			t.Errorf("PO prompt should contain %q", snippet)
@@ -384,7 +352,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"\"review\": {",
 		"\"model\": \"sonnet\"",
 		"\"effort\": \"medium\"",
-		"\"test\": {",
 	} {
 		if !strings.Contains(config, snippet) {
 			t.Errorf(".ai/config.json should contain %q", snippet)
@@ -397,7 +364,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`",
-		"tester moves tasks into `in_testing`, `ready_to_commit`, or `test_failed`",
+		"reviewer moves tasks into `in_review`, `ready_to_commit`, or `changes_requested`",
 	} {
 		if !strings.Contains(tasksTemplate, snippet) {
 			t.Errorf("TASKS.template.md should contain %q", snippet)
@@ -428,7 +395,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
 		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
 		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
-		{"scripts/ai-test.sh", ".roles.test.agent // empty"},
 	} {
 		if !strings.Contains(files[tc.path], tc.snippet) {
 			t.Errorf("%s should contain %q", tc.path, tc.snippet)
@@ -465,7 +431,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	if !strings.Contains(gitignore, "vendor/") {
 		t.Error(".gitignore should contain Go-specific entries")
 	}
-	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md", ".ai/TEST_REPORT.md"} {
+	for _, entry := range []string{".ai/HANDOFF.md", ".ai/REVIEW.md"} {
 		if strings.Contains(gitignore, entry) {
 			t.Errorf(".gitignore should not contain %q", entry)
 		}
@@ -482,7 +448,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`in_testing` -> `ready_to_commit` -> `done`",
+		"`in_review` -> `ready_to_commit` -> `done`",
 	} {
 		if !strings.Contains(agents, snippet) {
 			t.Errorf("AGENTS.md should contain %q", snippet)

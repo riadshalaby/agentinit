@@ -27,9 +27,9 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatalf("write AGENTS.md: %v", err)
 	}
 
-	testerPromptPath := filepath.Join(projectDir, ".ai/prompts/tester.md")
-	if err := os.WriteFile(testerPromptPath, []byte("outdated"), 0o644); err != nil {
-		t.Fatalf("write tester prompt: %v", err)
+	implementerPromptPath := filepath.Join(projectDir, ".ai/prompts/implementer.md")
+	if err := os.WriteFile(implementerPromptPath, []byte("outdated"), 0o644); err != nil {
+		t.Fatalf("write implementer prompt: %v", err)
 	}
 
 	deletedScriptPath := filepath.Join(projectDir, "scripts/ai-po.sh")
@@ -69,12 +69,12 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatal("updated AGENTS.md should restore managed section content")
 	}
 
-	restoredPromptBytes, err := os.ReadFile(testerPromptPath)
+	restoredPromptBytes, err := os.ReadFile(implementerPromptPath)
 	if err != nil {
-		t.Fatalf("read tester prompt: %v", err)
+		t.Fatalf("read implementer prompt: %v", err)
 	}
 	if !strings.Contains(string(restoredPromptBytes), "## Critical Rules") {
-		t.Fatal("tester prompt should be updated to current template content")
+		t.Fatal("implementer prompt should be updated to current template content")
 	}
 
 	if _, err := os.Stat(deletedScriptPath); err != nil {

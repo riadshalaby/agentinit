@@ -25,7 +25,6 @@ default_role_agent() {
     plan) echo "claude" ;;
     implement) echo "codex" ;;
     review) echo "claude" ;;
-    test) echo "codex" ;;
   esac
 }
 
@@ -65,7 +64,6 @@ EOF
   printf -- '- `plan`: `%s`\n' "$(config_role_agent plan)"
   printf -- '- `implement`: `%s`\n' "$(config_role_agent implement)"
   printf -- '- `review`: `%s`\n' "$(config_role_agent review)"
-  printf -- '- `test`: `%s`\n' "$(config_role_agent test)"
 } >"$po_prompt"
 
 claude \

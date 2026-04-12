@@ -45,14 +45,9 @@
 - Review Mode:
   - waits for explicit user start signal
   - writes `.ai/REVIEW.md`
-  - updates `.ai/TASKS.md` status to `ready_for_test` or `changes_requested`
+  - updates `.ai/TASKS.md` status to `ready_to_commit` or `changes_requested`
   - appends a handoff entry to `.ai/HANDOFF.md`
-  - never edits code
-- Tester Mode:
-  - waits for explicit user start signal
-  - writes `.ai/TEST_REPORT.md`
-  - updates `.ai/TASKS.md` status to `ready_to_commit` or `test_failed`
-  - appends a handoff entry to `.ai/HANDOFF.md`
+  - performs review plus verification, including E2E and exploratory checks when appropriate
   - never edits code
 - Implement Mode:
   - waits for explicit user start signal
@@ -64,7 +59,7 @@
   - updates `.ai/TASKS.md` status to `ready_for_review`
   - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
   - must not invent requirements
-- Implement Mode (`commit_task` after testing):
+- Implement Mode (`commit_task` after review):
   - only for tasks in `ready_to_commit`
   - squashes WIP commits into one Conventional Commit with a release-note-ready subject
   - updates `.ai/TASKS.md` status to `done`
@@ -82,31 +77,30 @@
   - Cycle bootstrap:
     - `scripts/ai-start-cycle.sh <branch-name>`
   - Generic launcher: `scripts/ai-launch.sh <role> <agent> [agent-options...]`
-    - roles: `plan`, `implement`, `review`, `test`
+    - roles: `plan`, `implement`, `review`
     - agents: `claude`, `codex`
   - Convenience wrappers:
     - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
     - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `scripts/ai-review.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
-    - `scripts/ai-test.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `scripts/ai-po.sh [agent-options...]` for the PO orchestration session
 - Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.
 
 ## Runtime Modes
 - Manual mode:
-  - you start planner, implementer, reviewer, and tester sessions yourself in separate terminals
+  - you start planner, implementer, and reviewer sessions yourself in separate terminals
   - you drive task progress by sending the documented text commands directly to each session
 - Auto mode:
   - you start the PO session with `scripts/ai-po.sh`
-  - the PO session uses the `agentinit` MCP server to start and coordinate planner, implementer, reviewer, and tester sessions for the same task flow
-- Both modes use the same `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review/test artifacts, and status transitions.
+  - the PO session uses the `agentinit` MCP server to start and coordinate planner, implementer, and reviewer sessions for the same task flow
+- Both modes use the same `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review artifacts, and status transitions.
 
 ## Persistent Session Workflow
 - In manual mode, no role autostarts another role.
 - In auto mode, the PO session may start or reconnect to the role sessions it coordinates.
 - Start a new development cycle with `scripts/ai-start-cycle.sh <branch-name>`.
-- Start the planner, implementer, reviewer, and tester once, then keep those sessions open for the rest of the cycle.
+- Start the planner, implementer, and reviewer once, then keep those sessions open for the rest of the cycle.
 - When using auto mode, let the PO session manage those role sessions instead of driving them directly yourself.
 - Every role waits in `WAIT_FOR_USER_START` state until you explicitly tell it to begin.
 - After launch, steer the existing sessions with text commands instead of relaunching scripts for each step.
@@ -118,14 +112,12 @@
   - planner -> implementer uses `.ai/PLAN.md` + `.ai/TASKS.md` + `.ai/HANDOFF.md`
   - implementer -> reviewer uses commit + `.ai/TASKS.md` + `.ai/HANDOFF.md`
 - Recommended status flow in `.ai/TASKS.md`:
-  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing` -> `ready_to_commit` -> `done`
+  - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_to_commit` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
-  - Test failure loop: `test_failed` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_for_test` -> `in_testing`
 - If a persistent session is interrupted or reopened, the role must reload `AGENTS.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
   - planner: `ROADMAP.md`, `.ai/PLAN.md`
-  - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking review findings, `.ai/TEST_REPORT.md` when addressing failed testing
+  - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking review findings
   - reviewer: `.ai/PLAN.md`, `.ai/REVIEW.md`
-  - tester: `.ai/PLAN.md`, `.ai/TEST_REPORT.md`
 - Files are the source of truth. No role should rely on hidden session memory when file state disagrees.
 
 ## Session Commands
@@ -137,7 +129,7 @@ Use these text commands inside the already-running role sessions.
     - `send_command`
     - `list_sessions`
     - `stop_session`
-  - coordinates planner, implementer, reviewer, and tester based on `.ai/TASKS.md`
+  - coordinates planner, implementer, and reviewer based on `.ai/TASKS.md`
 - Planner session:
   - `start_plan`
     - read `ROADMAP.md` and current planning artifacts
@@ -156,8 +148,8 @@ Use these text commands inside the already-running role sessions.
     - when work begins, update the task to `in_implementation`
   - `rework_task [TASK_ID]`
     - implementer only
-    - target a task in `changes_requested` or `test_failed`
-    - load `.ai/REVIEW.md` as the required-fix checklist for review rework, and `.ai/TEST_REPORT.md` when addressing a failed test run
+    - target a task in `changes_requested`
+    - load `.ai/REVIEW.md` as the required-fix checklist for review rework
     - if no task matches, report that no tasks are pending rework
   - `commit_task [TASK_ID]`
     - implementer only
@@ -174,6 +166,7 @@ Use these text commands inside the already-running role sessions.
     - select the first task in `ready_for_review` or `in_review` when no task ID is supplied
     - if the supplied task is not valid for reviewer work, report its current status and abort
     - when review begins, update the task to `in_review`
+    - when review and verification pass, move the task to `ready_to_commit`
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
     - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
@@ -181,23 +174,13 @@ Use these text commands inside the already-running role sessions.
   - `finish_cycle [TASK_ID]`
     - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
     - if the completion condition is not met, report the blocking task states and abort
-    - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
+    - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
     - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
-- Tester session:
-  - `next_task [TASK_ID]`
-    - select the first task in `ready_for_test` when no task ID is supplied
-    - if the supplied task is not valid for tester work, report its current status and abort
-    - when testing begins, update the task to `in_testing`
-    - when testing passes, move the task to `ready_to_commit`
-  - `status_cycle [TASK_ID]`
-    - return deterministic task status, current owner role, and next recommended action
-    - when no task ID is supplied, summarize tasks relevant to the caller and the overall board state
-    - if no task matches the caller's role, say so explicitly and summarize the board
 
 ## Commit Conventions
 - Commit behavior by role:
   - `plan` role never commits.
-  - `review` role may create the cycle-close commit for `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, and `.ai/PLAN.md`.
+  - `review` role may create the cycle-close commit for `.ai/REVIEW.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, and `.ai/PLAN.md`.
   - `implement` role must stage all changes and create a Conventional Commit after validations pass.
   - runtime `.ai/` cycle logs are committed at cycle close, not in individual task commits.
 - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.

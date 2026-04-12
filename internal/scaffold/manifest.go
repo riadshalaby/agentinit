@@ -121,13 +121,12 @@ func normalizeManifestVersion(version string) string {
 }
 
 var manifestExcludedPaths = map[string]struct{}{
-	"ROADMAP.md":                  {},
-	"CLAUDE.md":                   {},
-	"README.md":                   {},
-	".ai/config.json":             {},
-	".ai/TASKS.template.md":       {},
-	".ai/PLAN.template.md":        {},
-	".ai/REVIEW.template.md":      {},
-	".ai/TEST_REPORT.template.md": {},
-	".ai/HANDOFF.template.md":     {},
+	"ROADMAP.md":              {},
+	"CLAUDE.md":               {},
+	"README.md":               {},
+	".ai/config.json":         {},
+	".ai/TASKS.template.md":   {},
+	".ai/PLAN.template.md":    {},
+	".ai/REVIEW.template.md":  {},
+	".ai/HANDOFF.template.md": {},
 }

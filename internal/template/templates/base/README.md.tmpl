@@ -10,13 +10,13 @@ TODO: Add setup instructions.
 
 ## AI Workflow
 
-This project includes the persistent planner/implementer/reviewer/tester workflow with file-based coordination, plus the PO orchestration layer.
-Manual and auto are two runtime modes for the same scaffold: they use the same generated files, task board, review gates, and test gates.
+This project includes the persistent planner/implementer/reviewer workflow with file-based coordination, plus the PO orchestration layer.
+Manual and auto are two runtime modes for the same scaffold: they use the same generated files, task board, and review gate. Fewer role sessions means less coordination overhead and lower token cost.
 
 ### Runtime modes
 
-- Manual mode: start the planner, implementer, reviewer, and tester in separate terminals, then drive each session yourself with the documented text commands.
-- Auto mode: run `scripts/ai-po.sh` to start the PO session, which uses MCP tools to coordinate the same planner, implementer, reviewer, and tester workflow for you.
+- Manual mode: start the planner, implementer, and reviewer in separate terminals, then drive each session yourself with the documented text commands.
+- Auto mode: run `scripts/ai-po.sh` to start the PO session, which uses MCP tools to coordinate the same planner, implementer, and reviewer workflow for you.
 
 ### Concepts
 
@@ -26,20 +26,17 @@ Manual and auto are two runtime modes for the same scaffold: they use the same g
 
 | Role | Reads | Writes |
 |------|-------|--------|
-| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TEST_REPORT.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |
+| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |
 | Planner | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | Implementer | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | Reviewer | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
-| Tester | `.ai/PLAN.md`, commits | `.ai/TEST_REPORT.md`, `.ai/TASKS.md` |
 
 **Status flow:**
 
-```
-in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_for_test → in_testing → ready_to_commit → done
-                                          ↑                                     |                                              |
-                                          └──── changes_requested ◄─────────────┘                                              |
-                                                ▲                                                                               |
-                                                └──────────────────────────── test_failed ◄──────────────────────────────────────┘
+```text
+in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done
+                                          ↑                                     |
+                                          └──── changes_requested ◄─────────────┘
 ```
 
 ### Start a new development cycle
@@ -55,7 +52,6 @@ scripts/ai-start-cycle.sh feature/<scope>
 scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
-scripts/ai-test.sh          # terminal 4
 ```
 
 Launch each role once, then keep those sessions open for the rest of the cycle.
@@ -78,7 +74,6 @@ The PO session drives the same task board and role flow through the `agentinit` 
 planner> start_plan
 implementer> next_task T-001
 reviewer> next_task T-001
-tester> next_task T-001
 implementer> commit_task T-001
 implementer> rework_task T-001
 reviewer> finish_cycle
@@ -97,23 +92,16 @@ reviewer> finish_cycle
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task |
 | `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
-| `rework_task [TASK_ID]` | Address `changes_requested` or `test_failed` findings |
+| `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 
 **Reviewer commands:**
 
 | Command | Description |
 |---------|-------------|
-| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task |
+| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 | `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
-
-**Tester commands:**
-
-| Command | Description |
-|---------|-------------|
-| `next_task [TASK_ID]` | Pick up the next `ready_for_test` task |
-| `status_cycle [TASK_ID]` | Show task status and recommended next action |
 
 ### File map
 
@@ -123,7 +111,6 @@ reviewer> finish_cycle
 | `.ai/TASKS.md` | Task board with status | yes |
 | `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |
 | `.ai/REVIEW.md` | Review findings | yes (tracked cycle log) |
-| `.ai/TEST_REPORT.md` | Test findings | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log | yes (tracked cycle log) |
 | `.ai/config.json` | Per-role launch defaults | yes |
 | `ROADMAP.md` | Cycle goals (edit before planning) | yes |

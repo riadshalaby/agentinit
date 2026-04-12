@@ -13,10 +13,6 @@
       "agent": "claude",
       "model": "sonnet",
       "effort": "medium"
-    },
-    "test": {
-      "agent": "codex",
-      "model": "gpt-5.4"
     }
   }
 }

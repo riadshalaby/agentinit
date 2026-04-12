@@ -13,7 +13,6 @@ var fallbackKnownPaths = []string{
 	".ai/prompts/planner.md",
 	".ai/prompts/po.md",
 	".ai/prompts/reviewer.md",
-	".ai/prompts/tester.md",
 	".gitattributes",
 	".gitignore",
 	"AGENTS.md",
@@ -25,7 +24,6 @@ var fallbackKnownPaths = []string{
 	"scripts/ai-pr.sh",
 	"scripts/ai-review.sh",
 	"scripts/ai-start-cycle.sh",
-	"scripts/ai-test.sh",
 }
 
 func DiscoverManagedFiles(targetDir string) scaffold.Manifest {

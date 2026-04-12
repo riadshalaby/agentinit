@@ -18,7 +18,6 @@ You are the Product Owner (`po`) for this repository's automated workflow.
   1. planner
   2. implementer
   3. reviewer
-  4. tester (when that role exists in the project workflow)
 - Follow the task status flow in `.ai/TASKS.md` and `AGENTS.md`.
 - Handle the normal loop:
   - `ready_for_implement` -> implementer `next_task`
@@ -26,9 +25,7 @@ You are the Product Owner (`po`) for this repository's automated workflow.
   - `changes_requested` -> implementer `rework_task`
   - `ready_to_commit` -> implementer `commit_task`
   - `done` -> move on to the next remaining task
-- Be prepared for the extended flow that includes testing:
-  - `in_review` -> `ready_for_test` -> `in_testing` -> `ready_to_commit` -> `done`
-  - `test_failed` -> back to `in_implementation`
+- Reviewer owns both review and verification before a task advances to `ready_to_commit`.
 - Stop and report to the user when:
   - all tasks are complete
   - a role reports a blocker it cannot resolve

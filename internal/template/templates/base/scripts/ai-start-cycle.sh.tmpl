@@ -90,12 +90,11 @@ main() {
 
   cp .ai/PLAN.template.md .ai/PLAN.md
   cp .ai/REVIEW.template.md .ai/REVIEW.md
-  cp .ai/TEST_REPORT.template.md .ai/TEST_REPORT.md
   cp .ai/TASKS.template.md .ai/TASKS.md
   cp .ai/HANDOFF.template.md .ai/HANDOFF.md
   cp ROADMAP.template.md ROADMAP.md
 
-  git add .ai/PLAN.md .ai/REVIEW.md .ai/TEST_REPORT.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md
+  git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md
 
   git commit -m "chore: start cycle $(basename "$branch_name")" >/dev/null 2>&1 || die "failed to commit cycle bootstrap files"
   git push -u origin "$branch_name" >/dev/null 2>&1 || die "failed to push branch '$branch_name' to origin"

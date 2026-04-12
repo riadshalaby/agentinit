@@ -12,7 +12,7 @@ Usage:
   scripts/ai-launch.sh <role> <agent> [agent-options...]
 
 Roles:
-  plan | implement | review | test
+  plan | implement | review
 
 Agents:
   claude | codex
@@ -21,7 +21,6 @@ Examples:
   scripts/ai-launch.sh plan claude
   scripts/ai-launch.sh review codex
   scripts/ai-launch.sh implement codex -m gpt-5
-  scripts/ai-launch.sh test claude
 EOF
 }
 
@@ -58,10 +57,6 @@ case "$role" in
   review)
     prompt_file=".ai/prompts/reviewer.md"
     expected_output=".ai/REVIEW.md"
-    ;;
-  test)
-    prompt_file=".ai/prompts/tester.md"
-    expected_output=".ai/TEST_REPORT.md"
     ;;
   *)
     echo "Unsupported role: $role" >&2
