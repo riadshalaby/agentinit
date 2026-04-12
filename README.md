@@ -84,9 +84,23 @@ scripts/ai-pr.sh sync
 
 `agentinit init` is a create-only scaffold command. It writes into a new target directory and does not merge into an existing project.
 
-If the target directory already exists, `agentinit init` stops with an error such as `directory <path> already exists`. That includes projects that already have an `.ai/` directory from a previous scaffold. There is currently no in-place "refresh the workflow files" mode.
+If the target directory already exists, `agentinit init` stops with an error such as `directory <path> already exists`. That includes projects that already have an `.ai/` directory from a previous scaffold.
 
-When you want to update an existing project scaffold:
+To refresh an existing project scaffold in place, use:
+
+```bash
+agentinit update
+```
+
+`agentinit update` refreshes managed workflow files, removes retired managed files tracked in the manifest, and applies supported migrations to excluded workflow files such as `.ai/config.json` and `.ai/TASKS.template.md` while preserving user-managed content outside the generated surface.
+
+When you need a preview first, use:
+
+```bash
+agentinit update --dry-run
+```
+
+Manual copy-over still works when you want to adopt changes selectively:
 
 - Generate a fresh scaffold in a temporary directory and copy over the tracked workflow files you actually want to adopt.
 - Or update the existing `.ai/`, `scripts/`, and documentation files manually in the current repository.

@@ -1,6 +1,7 @@
 package update
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -177,4 +178,183 @@ func TestRunFallsBackWithoutManifestAndPrependsManagedBlock(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(projectDir, manifestPath)); err != nil {
 		t.Fatalf("fallback update should create a manifest: %v", err)
 	}
+}
+
+func TestRunDeletesRemovedManagedFiles(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	legacyPromptPath := filepath.Join(projectDir, ".ai/prompts/tester.md")
+	if err := os.WriteFile(legacyPromptPath, []byte("legacy tester prompt"), 0o644); err != nil {
+		t.Fatalf("write legacy tester prompt: %v", err)
+	}
+	legacyScriptPath := filepath.Join(projectDir, "scripts/ai-test.sh")
+	if err := os.WriteFile(legacyScriptPath, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatalf("write legacy ai-test.sh: %v", err)
+	}
+
+	manifest, err := scaffold.ReadManifest(projectDir)
+	if err != nil {
+		t.Fatalf("ReadManifest() error = %v", err)
+	}
+	manifest.Files = append(manifest.Files,
+		scaffold.ManifestFile{Path: ".ai/prompts/tester.md", Management: "full"},
+		scaffold.ManifestFile{Path: "scripts/ai-test.sh", Management: "full"},
+	)
+	if err := scaffold.WriteManifest(projectDir, manifest); err != nil {
+		t.Fatalf("WriteManifest() error = %v", err)
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if _, err := os.Stat(legacyPromptPath); !os.IsNotExist(err) {
+		t.Fatalf("legacy tester prompt should be deleted, stat err = %v", err)
+	}
+	if _, err := os.Stat(legacyScriptPath); !os.IsNotExist(err) {
+		t.Fatalf("legacy ai-test.sh should be deleted, stat err = %v", err)
+	}
+	assertHasChange(t, result.Changes, ".ai/prompts/tester.md", actionDelete)
+	assertHasChange(t, result.Changes, "scripts/ai-test.sh", actionDelete)
+}
+
+func TestRunMigratesObsoleteTaskStates(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	tasksTemplatePath := filepath.Join(projectDir, ".ai/TASKS.template.md")
+	legacyTasks := strings.Join([]string{
+		"# TASKS",
+		"",
+		"Status values:",
+		"- `in_planning`",
+		"- `ready_for_implement`",
+		"- `in_implementation`",
+		"- `ready_for_review`",
+		"- `in_review`",
+		"- `ready_for_test`",
+		"- `in_testing`",
+		"- `ready_to_commit`",
+		"- `test_failed`",
+		"- `changes_requested`",
+		"- `done`",
+		"",
+		"Command expectations:",
+		"- planner moves tasks into `in_planning` and `ready_for_implement`",
+		"- implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`, and resumes work from `changes_requested`, `test_failed`, and `ready_to_commit`",
+		"- reviewer moves tasks into `in_review`, `ready_for_test`, or `changes_requested`",
+		"- tester moves tasks into `in_testing`, `ready_to_commit`, or `test_failed`",
+		"",
+	}, "\n")
+	if err := os.WriteFile(tasksTemplatePath, []byte(legacyTasks), 0o644); err != nil {
+		t.Fatalf("write legacy tasks template: %v", err)
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	updatedTasksBytes, err := os.ReadFile(tasksTemplatePath)
+	if err != nil {
+		t.Fatalf("read updated tasks template: %v", err)
+	}
+	updatedTasks := string(updatedTasksBytes)
+	for _, removed := range []string{"ready_for_test", "in_testing", "test_failed", "tester moves tasks"} {
+		if strings.Contains(updatedTasks, removed) {
+			t.Fatalf("updated tasks template should not contain %q", removed)
+		}
+	}
+	for _, expected := range []string{
+		"- implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`, and resumes work from `changes_requested` and `ready_to_commit`",
+		"- reviewer moves tasks into `in_review`, `ready_to_commit`, or `changes_requested`",
+	} {
+		if !strings.Contains(updatedTasks, expected) {
+			t.Fatalf("updated tasks template should contain %q", expected)
+		}
+	}
+	assertHasChange(t, result.Changes, ".ai/TASKS.template.md", actionUpdate)
+}
+
+func TestRunMigratesConfigTestRole(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	configPath := filepath.Join(projectDir, ".ai/config.json")
+	legacyConfig := "{\n  \"metadata\": {\n    \"custom\": true\n  },\n  \"roles\": {\n    \"plan\": {\n      \"agent\": \"claude\"\n    },\n    \"test\": {\n      \"agent\": \"codex\",\n      \"model\": \"gpt-5.4-mini\"\n    },\n    \"review\": {\n      \"agent\": \"claude\"\n    }\n  }\n}\n"
+	if err := os.WriteFile(configPath, []byte(legacyConfig), 0o644); err != nil {
+		t.Fatalf("write legacy config: %v", err)
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read migrated config: %v", err)
+	}
+	var config map[string]any
+	if err := json.Unmarshal(configBytes, &config); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	roles, ok := config["roles"].(map[string]any)
+	if !ok {
+		t.Fatal("roles should remain an object")
+	}
+	if _, ok := roles["test"]; ok {
+		t.Fatal("test role should be removed from .ai/config.json")
+	}
+	if _, ok := roles["plan"]; !ok {
+		t.Fatal("plan role should be preserved in .ai/config.json")
+	}
+	if _, ok := config["metadata"]; !ok {
+		t.Fatal("other top-level config keys should be preserved")
+	}
+	assertHasChange(t, result.Changes, ".ai/config.json", actionUpdate)
+}
+
+func TestRunDeletesOrphanedTestReportTemplate(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	testReportPath := filepath.Join(projectDir, ".ai/TEST_REPORT.template.md")
+	if err := os.WriteFile(testReportPath, []byte("# Test Report\n"), 0o644); err != nil {
+		t.Fatalf("write legacy test report template: %v", err)
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if _, err := os.Stat(testReportPath); !os.IsNotExist(err) {
+		t.Fatalf("legacy test report template should be deleted, stat err = %v", err)
+	}
+	assertHasChange(t, result.Changes, ".ai/TEST_REPORT.template.md", actionDelete)
+}
+
+func assertHasChange(t *testing.T, changes []Change, path, action string) {
+	t.Helper()
+	for _, change := range changes {
+		if change.Path == path && change.Action == action {
+			return
+		}
+	}
+	t.Fatalf("expected change %s (%s), got %#v", path, action, changes)
 }

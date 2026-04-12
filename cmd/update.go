@@ -41,12 +41,8 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 
-		prefix := "Updated"
-		if updateDryRun {
-			prefix = "Would update"
-		}
 		for _, change := range result.Changes {
-			if _, err := fmt.Fprintf(cliOutput, "%s %s (%s)\n", prefix, change.Path, change.Action); err != nil {
+			if _, err := fmt.Fprintf(cliOutput, "%s %s (%s)\n", changeVerb(change.Action, updateDryRun), change.Path, change.Action); err != nil {
 				return err
 			}
 		}
@@ -58,4 +54,24 @@ func init() {
 	updateCmd.Flags().StringVar(&updateTargetDir, "dir", "", "Target directory to update (default: current directory)")
 	updateCmd.Flags().BoolVar(&updateDryRun, "dry-run", false, "Show what would change without writing files")
 	rootCmd.AddCommand(updateCmd)
+}
+
+func changeVerb(action string, dryRun bool) string {
+	switch action {
+	case "create":
+		if dryRun {
+			return "Would create"
+		}
+		return "Created"
+	case "delete":
+		if dryRun {
+			return "Would delete"
+		}
+		return "Deleted"
+	default:
+		if dryRun {
+			return "Would update"
+		}
+		return "Updated"
+	}
 }

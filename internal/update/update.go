@@ -30,6 +30,12 @@ type Change struct {
 	Action string
 }
 
+const (
+	actionCreate = "create"
+	actionUpdate = "update"
+	actionDelete = "delete"
+)
+
 func Run(targetDir string, dryRun bool) (Result, error) {
 	if targetDir == "" {
 		return Result{}, fmt.Errorf("target directory is required")
@@ -103,6 +109,18 @@ func Run(targetDir string, dryRun bool) (Result, error) {
 		}
 	}
 
+	deletionChanges, err := deleteRemovedManagedFiles(targetDir, currentByPath, desiredByPath, dryRun)
+	if err != nil {
+		return Result{}, err
+	}
+	changes = append(changes, deletionChanges...)
+
+	migrationChanges, err := migrateExcludedFiles(targetDir, dryRun)
+	if err != nil {
+		return Result{}, err
+	}
+	changes = append(changes, migrationChanges...)
+
 	manifestChanged, manifestAction, err := manifestNeedsWrite(targetDir, desiredManifest)
 	if err != nil {
 		return Result{}, err
@@ -169,7 +187,7 @@ func reconcileFile(targetDir, relPath, management, renderedContent string) (stri
 
 	exists := err == nil
 	if !exists {
-		return renderedContent, "create", true, nil
+		return renderedContent, actionCreate, true, nil
 	}
 
 	existing := string(existingBytes)
@@ -186,12 +204,12 @@ func reconcileFile(targetDir, relPath, management, renderedContent string) (stri
 		if updated == existing {
 			return updated, "", false, nil
 		}
-		return updated, "update", true, nil
+		return updated, actionUpdate, true, nil
 	default:
 		if renderedContent == existing {
 			return existing, "", false, nil
 		}
-		return renderedContent, "update", true, nil
+		return renderedContent, actionUpdate, true, nil
 	}
 }
 
@@ -221,7 +239,7 @@ func manifestNeedsWrite(targetDir string, manifest scaffold.Manifest) (bool, str
 	existing, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return true, "create", nil
+			return true, actionCreate, nil
 		}
 		return false, "", fmt.Errorf("read %s: %w", path, err)
 	}
@@ -229,7 +247,7 @@ func manifestNeedsWrite(targetDir string, manifest scaffold.Manifest) (bool, str
 	if bytes.Equal(existing, desired) {
 		return false, "", nil
 	}
-	return true, "update", nil
+	return true, actionUpdate, nil
 }
 
 func marshalManifest(manifest scaffold.Manifest) ([]byte, error) {
@@ -246,4 +264,170 @@ func currentVersion() string {
 		return "(dev)"
 	}
 	return info.Main.Version
+}
+
+func deleteRemovedManagedFiles(targetDir string, currentByPath, desiredByPath map[string]string, dryRun bool) ([]Change, error) {
+	paths := make([]string, 0, len(currentByPath))
+	for relPath := range currentByPath {
+		if _, ok := desiredByPath[relPath]; ok {
+			continue
+		}
+		paths = append(paths, relPath)
+	}
+	sort.Strings(paths)
+
+	changes := make([]Change, 0, len(paths))
+	for _, relPath := range paths {
+		absPath := filepath.Join(targetDir, relPath)
+		if !fileExists(absPath) {
+			continue
+		}
+
+		changes = append(changes, Change{Path: relPath, Action: actionDelete})
+		if dryRun {
+			continue
+		}
+		if err := os.Remove(absPath); err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("delete %s: %w", absPath, err)
+		}
+	}
+
+	return changes, nil
+}
+
+func migrateExcludedFiles(targetDir string, dryRun bool) ([]Change, error) {
+	var changes []Change
+
+	tasksTemplateChanges, err := migrateTasksTemplate(targetDir, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	changes = append(changes, tasksTemplateChanges...)
+
+	configChanges, err := migrateConfig(targetDir, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	changes = append(changes, configChanges...)
+
+	testReportChanges, err := deleteIfExists(targetDir, ".ai/TEST_REPORT.template.md", dryRun)
+	if err != nil {
+		return nil, err
+	}
+	changes = append(changes, testReportChanges...)
+
+	return changes, nil
+}
+
+func migrateTasksTemplate(targetDir string, dryRun bool) ([]Change, error) {
+	const relPath = ".ai/TASKS.template.md"
+
+	_, changed, err := rewriteFileIfNeeded(targetDir, relPath, func(existing string) (string, bool, error) {
+		updated := existing
+		replacements := []struct {
+			old string
+			new string
+		}{
+			{"- `ready_for_test`\n", ""},
+			{"- `in_testing`\n", ""},
+			{"- `test_failed`\n", ""},
+			{"- implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`, and resumes work from `changes_requested`, `test_failed`, and `ready_to_commit`\n", "- implementer moves tasks into `in_implementation`, `ready_for_review`, and `done`, and resumes work from `changes_requested` and `ready_to_commit`\n"},
+			{"- reviewer moves tasks into `in_review`, `ready_for_test`, or `changes_requested`\n", "- reviewer moves tasks into `in_review`, `ready_to_commit`, or `changes_requested`\n"},
+			{"- tester moves tasks into `in_testing`, `ready_to_commit`, or `test_failed`\n", ""},
+		}
+		for _, replacement := range replacements {
+			updated = strings.ReplaceAll(updated, replacement.old, replacement.new)
+		}
+		return updated, updated != existing, nil
+	}, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	if !changed {
+		return nil, nil
+	}
+	return []Change{{Path: relPath, Action: actionUpdate}}, nil
+}
+
+func migrateConfig(targetDir string, dryRun bool) ([]Change, error) {
+	const relPath = ".ai/config.json"
+
+	_, changed, err := rewriteFileIfNeeded(targetDir, relPath, func(existing string) (string, bool, error) {
+		var doc map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(existing), &doc); err != nil {
+			return "", false, fmt.Errorf("parse %s: %w", relPath, err)
+		}
+
+		rolesRaw, ok := doc["roles"]
+		if !ok {
+			return existing, false, nil
+		}
+
+		var roles map[string]json.RawMessage
+		if err := json.Unmarshal(rolesRaw, &roles); err != nil {
+			return "", false, fmt.Errorf("parse %s roles: %w", relPath, err)
+		}
+		if _, ok := roles["test"]; !ok {
+			return existing, false, nil
+		}
+
+		delete(roles, "test")
+		updatedRoles, err := json.MarshalIndent(roles, "  ", "  ")
+		if err != nil {
+			return "", false, fmt.Errorf("marshal %s roles: %w", relPath, err)
+		}
+		doc["roles"] = updatedRoles
+
+		updatedDoc, err := json.MarshalIndent(doc, "", "  ")
+		if err != nil {
+			return "", false, fmt.Errorf("marshal %s: %w", relPath, err)
+		}
+		return string(append(updatedDoc, '\n')), true, nil
+	}, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	if !changed {
+		return nil, nil
+	}
+	return []Change{{Path: relPath, Action: actionUpdate}}, nil
+}
+
+func rewriteFileIfNeeded(targetDir, relPath string, rewrite func(existing string) (string, bool, error), dryRun bool) (string, bool, error) {
+	absPath := filepath.Join(targetDir, relPath)
+	existingBytes, err := os.ReadFile(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("read %s: %w", absPath, err)
+	}
+
+	updated, changed, err := rewrite(string(existingBytes))
+	if err != nil {
+		return "", false, err
+	}
+	if !changed {
+		return updated, false, nil
+	}
+	if dryRun {
+		return updated, true, nil
+	}
+	if err := writeFile(targetDir, relPath, updated); err != nil {
+		return "", false, err
+	}
+	return updated, true, nil
+}
+
+func deleteIfExists(targetDir, relPath string, dryRun bool) ([]Change, error) {
+	absPath := filepath.Join(targetDir, relPath)
+	if !fileExists(absPath) {
+		return nil, nil
+	}
+	if !dryRun {
+		if err := os.Remove(absPath); err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("delete %s: %w", absPath, err)
+		}
+	}
+	return []Change{{Path: relPath, Action: actionDelete}}, nil
 }

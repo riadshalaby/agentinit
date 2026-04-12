@@ -35,6 +35,7 @@ func TestUpdateCommandUsesFlagsAndPrintsChanges(t *testing.T) {
 			Changes: []updater.Change{
 				{Path: "AGENTS.md", Action: "update"},
 				{Path: ".ai/.manifest.json", Action: "create"},
+				{Path: ".ai/prompts/tester.md", Action: "delete"},
 			},
 		}, nil
 	}
@@ -47,7 +48,10 @@ func TestUpdateCommandUsesFlagsAndPrintsChanges(t *testing.T) {
 	if !bytes.Contains([]byte(got), []byte("Would update AGENTS.md (update)")) {
 		t.Fatalf("output = %q", got)
 	}
-	if !bytes.Contains([]byte(got), []byte("Would update .ai/.manifest.json (create)")) {
+	if !bytes.Contains([]byte(got), []byte("Would create .ai/.manifest.json (create)")) {
+		t.Fatalf("output = %q", got)
+	}
+	if !bytes.Contains([]byte(got), []byte("Would delete .ai/prompts/tester.md (delete)")) {
 		t.Fatalf("output = %q", got)
 	}
 }
