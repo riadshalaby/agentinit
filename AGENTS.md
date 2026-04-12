@@ -114,7 +114,8 @@
 - Recommended status flow in `.ai/TASKS.md`:
   - `in_planning` -> `ready_for_implement` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `ready_to_commit` -> `done`
   - Rework loop: `changes_requested` -> `in_implementation` -> `ready_for_review` -> `in_review` -> `done`
-- If a persistent session is interrupted or reopened, the role must reload `AGENTS.md`, `.ai/TASKS.md`, and any role-specific file it relies on before acting:
+- Every role must re-read `.ai/TASKS.md` before executing any command. Additional files depend on the role and command — see each role's prompt for specifics.
+- Role-specific files to reload as needed:
   - planner: `ROADMAP.md`, `.ai/PLAN.md`
   - implementer: `.ai/PLAN.md`, `.ai/REVIEW.md` when reworking review findings
   - reviewer: `.ai/PLAN.md`, `.ai/REVIEW.md`
