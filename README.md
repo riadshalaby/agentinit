@@ -317,6 +317,6 @@ No type = generic scaffold without validation commands.
 
 Proudly created by
 
-![logo.png](logo.png)
+![LFJ Labs, Built by Agents, Directed by Humans](logo-white-small.png)
 
-Built by Agents, Directed by Humans
+
