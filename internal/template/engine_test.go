@@ -99,7 +99,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("README.md should contain persistent-session planner example")
 	}
-	if !strings.Contains(readme, "reviewer> finish_cycle") {
+	if !strings.Contains(readme, "implementer> finish_cycle") {
 		t.Error("README.md should contain finish_cycle example")
 	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
@@ -119,6 +119,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
+		"| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -172,6 +173,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"## Runtime Modes",
 		"## Tool Preferences",
 		"### Example Commands",
+		"`review` role never commits.",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
 		"`scripts/ai-po.sh [agent-options...]`",
@@ -210,11 +212,17 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`commit_task [TASK_ID]`") {
 		t.Error("implementer prompt should describe commit_task")
 	}
+	if !strings.Contains(implementerPrompt, "`finish_cycle [TASK_ID]`") {
+		t.Error("implementer prompt should describe finish_cycle")
+	}
 	if !strings.Contains(implementerPrompt, "`ready_to_commit`") {
 		t.Error("implementer prompt should mention ready_to_commit")
 	}
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
+	}
+	if !strings.Contains(implementerPrompt, "stage and commit the cycle-close `.ai/` artifacts") {
+		t.Error("implementer prompt should describe the cycle-close artifact commit")
 	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
@@ -260,9 +268,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(reviewerPrompt, "appending or updating only the active task section, preserving prior task history") {
 		t.Error("reviewer prompt should preserve prior task history in REVIEW.md")
-	}
-	if !strings.Contains(reviewerPrompt, "stage and commit the cycle-close `.ai/` artifacts") {
-		t.Error("reviewer prompt should describe the cycle-close artifact commit")
 	}
 	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
@@ -449,7 +454,10 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
+		"`finish_cycle [TASK_ID]`",
+		"stage and commit the cycle-close `.ai/` artifacts",
 		"`in_review` -> `ready_to_commit` -> `done`",
+		"`review` role never commits.",
 	} {
 		if !strings.Contains(agents, snippet) {
 			t.Errorf("AGENTS.md should contain %q", snippet)

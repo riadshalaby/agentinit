@@ -76,7 +76,7 @@ implementer> next_task T-001
 reviewer> next_task T-001
 implementer> commit_task T-001
 implementer> rework_task T-001
-reviewer> finish_cycle
+implementer> finish_cycle
 ```
 
 **Planner commands:**
@@ -95,6 +95,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task |
 | `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
+| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 
 **Reviewer commands:**
@@ -103,7 +104,6 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
 
 ### File map
 
