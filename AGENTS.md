@@ -131,6 +131,10 @@ Use these text commands inside the already-running role sessions.
     - `stop_session`
   - coordinates planner, implementer, and reviewer based on `.ai/TASKS.md`
 - Planner session:
+  - before `start_plan`, conversation with the planner is the roadmap-refinement phase:
+    - tighten scope, acceptance criteria, constraints, and decision points directly in `ROADMAP.md`
+    - surface ambiguities and trade-offs for the user to resolve instead of inventing requirements
+  - `start_plan` is the gate to formal planning; once invoked, write the plan without asking for another readiness confirmation
   - `start_plan`
     - read `ROADMAP.md` and current planning artifacts
     - create or restructure tasks in `.ai/TASKS.md` as needed

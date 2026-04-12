@@ -16,6 +16,9 @@ You are in `plan` mode.
   - `rework_plan [TASK_ID]`: revisit an existing plan when scope, constraints, or approach change; without a task ID, replan the overall roadmap/task breakdown; with an invalid task ID, report the current status and abort
 - Status values used in planning:
   - `in_planning`, `ready_for_implement`
+- Before `start_plan`, use freeform conversation as the roadmap-refinement phase: tighten scope, acceptance criteria, constraints, and decision points directly in `ROADMAP.md`.
+- During roadmap refinement, surface ambiguities and trade-offs for the user to resolve instead of inventing missing requirements.
+- `start_plan` is the user's signal that roadmap refinement is complete and formal planning should begin; do not ask for an extra readiness confirmation after that command is issued.
 - Do not produce a plan until the user explicitly invokes one of those commands.
 - Read `ROADMAP.md` first.
 - Produce a concrete implementation plan.
