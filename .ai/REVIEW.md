@@ -195,3 +195,37 @@ Reviewed: 2026-04-13
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-005 — Fix jsonResult structured response
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+No findings. The change is a single-line fix that exactly matches the plan, and the test helper clearly verifies the dual-content contract.
+
+#### Verification
+
+##### Steps
+- Read plan section for T-005 in `.ai/PLAN.md`.
+- Read full diff of `internal/mcp/tools.go` and `internal/mcp/server_test.go` for commit `6b37beb`.
+- Verified plan requirements:
+  - `jsonResult` now uses `append([]mcpproto.Content{mcpproto.NewTextContent(fallbackText)}, result.Content...)` instead of overwriting ✅ — matches plan verbatim.
+  - `assertStructuredToolResult` helper added: checks `StructuredContent != nil`, `len(Content) >= 2`, text in `Content[0]`, JSON substrings in `Content[1]` ✅
+  - Assertions applied to `send_command`, `get_output`, and `list_sessions` tool results ✅
+- Ran `go fmt ./... && go vet ./... && go test -count=1 ./...` → all packages pass.
+
+##### Findings
+- None.
+
+##### Risks
+- None. The change is minimal and additive; no existing behaviour is removed.
+
+#### Verdict
+`PASS`

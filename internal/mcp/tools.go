@@ -131,6 +131,6 @@ func jsonResult(data any, fallbackText string) (*mcpproto.CallToolResult, error)
 	if err != nil {
 		return nil, err
 	}
-	result.Content = []mcpproto.Content{mcpproto.NewTextContent(fallbackText)}
+	result.Content = append([]mcpproto.Content{mcpproto.NewTextContent(fallbackText)}, result.Content...)
 	return result, nil
 }
