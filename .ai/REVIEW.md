@@ -47,3 +47,49 @@ Reviewed: 2026-04-13
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002 — Workflow: commit `.ai/` artifacts with task, pin version at cycle close
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | nit | `AGENTS.md:199` vs `implementer.md:18` | `AGENTS.md` Commit Conventions uses `Release-As: x.y.z` as a placeholder example; `implementer.md` (and its template) uses `Release-As: VERSION`. Cosmetically inconsistent, but both convey the same intent without ambiguity. | No |
+
+#### Verification
+
+##### Steps
+- Read plan section for T-002 in `.ai/PLAN.md`.
+- Read commit `b7db9e5` diff (stat and per-file diff).
+- Verified `commit_task` wording in all three required files:
+  - `AGENTS.md` (lines 165–171) ✅
+  - `.ai/prompts/implementer.md` (line 17) ✅
+  - `internal/template/templates/base/ai/prompts/implementer.md.tmpl` (line 17) ✅
+- Verified `finish_cycle [VERSION]` wording and `Release-As:` footer instruction in all three files ✅
+- Verified `AGENTS.md` Commit Conventions no longer defers `.ai/` artifacts to cycle close — line 198 says they travel with the task commit ✅
+- Verified `internal/template/templates/base/AGENTS.md.tmpl` updated in sync (appropriate extension beyond plan scope per Documentation Rules) ✅
+- Verified `README.md` tables updated (`commit_task`, `finish_cycle` descriptions and example invocation) ✅
+- Verified `ROADMAP.md` updated to describe Priority 4 as this task ✅
+- Verified snapshot assertions in `internal/scaffold/scaffold_test.go` and `internal/template/engine_test.go` updated to match new wording ✅
+- Ran `go fmt ./...` → clean.
+- Ran `go vet ./...` → clean.
+- Ran `go test -count=1 ./internal/scaffold/... ./internal/template/...` → both pass.
+- Ran `go test ./...` → all packages pass.
+
+##### Findings
+- All three acceptance criteria files are internally consistent and match the plan.
+- No Go code changed; tests pass. The extra files touched (README.md, ROADMAP.md, AGENTS.md.tmpl, test snapshots) are all required by the Documentation Rules and snapshot test coverage.
+
+##### Risks
+- None. This is a docs-only change; no runtime behaviour is affected.
+
+#### Verdict
+`PASS`

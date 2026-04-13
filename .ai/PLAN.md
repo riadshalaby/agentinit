@@ -14,14 +14,16 @@ Goal: deliver a working auto mode where the PO drives the post-planning loop (im
 ## Task Dependency Order
 
 ```
-T-001 (logging) → T-002 (async model) → T-005 (PO prompt)
-                → T-003 (SIGKILL)
-                → T-004 (jsonResult)
+T-001 (logging) → T-003 (async model) → T-006 (PO prompt)
+                → T-004 (SIGKILL)
+                → T-005 (jsonResult)
+T-002 (workflow docs) — independent
 ```
 
 T-001 is foundational (logging helps debug all subsequent work).  
-T-002 is the core change. T-003 and T-004 are independent of T-002 but benefit from T-001.  
-T-005 depends on T-002 (references the new `get_output` tool).
+T-002 is independent — docs/prompts only, no code.  
+T-003 is the core MCP change. T-004 and T-005 are independent of T-003 but benefit from T-001.  
+T-006 depends on T-003 (references the new `get_output` tool).
 
 ---
 
@@ -70,7 +72,44 @@ Add a structured file logger to the MCP server that writes to `.ai/mcp-server.lo
 
 ---
 
-## T-002 — Async send + get_output model
+## T-002 — Workflow: commit `.ai/` artifacts with task, pin version at cycle close
+
+### Objective
+Keep the git history self-contained per task and let the implementer tag the release version at cycle close without manual steps.
+
+### Implementation
+
+1. **`AGENTS.md` — Commit Conventions section**
+   - Replace the bullet:
+     > `runtime .ai/ cycle logs are committed at cycle close, not in individual task commits.`
+   - With:
+     > `.ai/` artifact changes produced by a task are staged and committed as part of that task's Conventional Commit (via `commit_task`). `finish_cycle` commits any remaining dirty `.ai/` artifacts as the cycle-close commit and always includes a `Release-As: x.y.z` footer.
+   - Update the `commit_task` bullet under `Session Commands → Implementer session`:
+     - Add: "stage all `.ai/` artifact changes (TASKS.md, HANDOFF.md, PLAN.md, ROADMAP.md, etc.) as part of the squash"
+   - Update the `finish_cycle` bullet under `Session Commands → Implementer session`:
+     - Add: "if a version argument is provided (e.g. `finish_cycle 0.7.0`), add `Release-As: x.y.z` to the commit body; if no version is provided, ask the user for it before committing"
+   - Update `Implement Mode (commit_task after review)` in the AI Workflow Rules:
+     - Add: "stages `.ai/` artifact changes and includes them in the squashed commit"
+   - Update `Implement Mode` (normal) in the AI Workflow Rules to remove any implication that `.ai/` artifacts are deferred.
+
+2. **`.ai/prompts/implementer.md` — `commit_task` and `finish_cycle` descriptions**
+   - Update the `commit_task` one-liner to read:
+     > `commit_task [TASK_ID]`: implementer-only command for tasks in `ready_to_commit`; stage all `.ai/` artifact changes (TASKS.md, HANDOFF.md, PLAN.md, ROADMAP.md, etc.) and squash all WIP commits plus those staged changes into a single Conventional Commit describing the user-visible outcome, then move the task to `done`; if the task is not ready_to_commit, report its current status and abort
+   - Update the `finish_cycle` one-liner to read:
+     > `finish_cycle [VERSION]`: verify all tasks are `done`; if not, report blocking states and abort; stage and commit any remaining `.ai/` artifact changes with a `chore(ai): close cycle` subject and a `Release-As: VERSION` footer; if VERSION is not supplied, ask the user for it before committing; then instruct the user to run `scripts/ai-pr.sh sync`
+
+3. **`internal/template/templates/base/ai/prompts/implementer.md.tmpl`**
+   - Apply the exact same changes as step 2 (this file is the scaffold template for new projects; it must stay in sync with the live prompt).
+
+### Acceptance Criteria
+- `commit_task` description in all three files instructs the implementer to include `.ai/` artifact changes in the squashed commit.
+- `finish_cycle` description in all three files instructs the implementer to add `Release-As: x.y.z` and to ask for the version if not supplied.
+- `AGENTS.md` Commit Conventions no longer states that `.ai/` logs are deferred to cycle close.
+- No code changes; `go fmt ./... && go vet ./... && go test ./...` still pass (no Go files touched).
+
+---
+
+## T-003 — Async send + get_output model
 
 ### Objective
 Replace the synchronous `send_command` (which blocks waiting for output and times out after 2s) with an async model: `send_command` writes to stdin and returns immediately; a new `get_output` tool polls for accumulated output with a configurable timeout.
@@ -154,7 +193,7 @@ Replace the synchronous `send_command` (which blocks waiting for output and time
 
 ---
 
-## T-003 — Stop session SIGKILL escalation
+## T-004 — Stop session SIGKILL escalation
 
 ### Objective
 Ensure `StopSession` always terminates the child process, even if SIGTERM is ignored.
@@ -167,6 +206,7 @@ Ensure `StopSession` always terminates the child process, even if SIGTERM is ign
    - Wait again briefly (500ms) for process exit after SIGKILL.
    - Log each escalation step (uses logger from T-001).
 
+
 2. **Test updates (`session_test.go`)**
    - Add `TestStopSessionSIGKILLEscalation`: use a test helper process that traps SIGTERM and ignores it; verify `StopSession` eventually kills it.
 
@@ -176,7 +216,7 @@ Ensure `StopSession` always terminates the child process, even if SIGTERM is ign
 
 ---
 
-## T-004 — Fix jsonResult structured response
+## T-005 — Fix jsonResult structured response
 
 ### Objective
 `jsonResult` in `tools.go` currently calls `mcpproto.NewToolResultJSON(data)` but then overwrites `result.Content` with plain text, discarding the structured JSON. Fix it to return both.
@@ -209,7 +249,7 @@ Ensure `StopSession` always terminates the child process, even if SIGTERM is ign
 
 ---
 
-## T-005 — PO prompt run-mode control
+## T-006 — PO prompt run-mode control
 
 ### Objective
 Update the PO prompt to support single-task and all-tasks run modes using the new async `send_command` + `get_output` polling pattern.
