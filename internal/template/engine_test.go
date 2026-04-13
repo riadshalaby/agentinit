@@ -177,6 +177,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
 		"`scripts/ai-po.sh [agent-options...]`",
+		"`scripts/ai-po.sh [agent]`",
+		"`work_task [TASK_ID]`",
+		"`work_all`",
 		"`status_cycle [TASK_ID]`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
@@ -317,6 +320,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	poPrompt := files[".ai/prompts/po.md"]
 	for _, snippet := range []string{
+		"## Commands",
+		"`work_task [TASK_ID]`",
+		"`work_all`",
 		"`start_session`",
 		"`send_command`",
 		"`stop_session`",
@@ -327,6 +333,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		if !strings.Contains(poPrompt, snippet) {
 			t.Errorf("PO prompt should contain %q", snippet)
 		}
+	}
+	if strings.Contains(poPrompt, "## Run Modes") {
+		t.Error("PO prompt should not contain the legacy Run Modes section")
 	}
 
 	poScript := files["scripts/ai-po.sh"]

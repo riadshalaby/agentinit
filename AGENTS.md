@@ -126,15 +126,17 @@
 ## Session Commands
 Use these text commands inside the already-running role sessions.
 - PO session:
-  - launched with `scripts/ai-po.sh`
-  - uses MCP tools instead of text commands:
-    - `start_session`
-    - `send_command`
-    - `get_output`
-    - `list_sessions`
-    - `stop_session`
-  - coordinates the post-planning implementer/reviewer loop based on `.ai/TASKS.md`
-  - never starts a planner session; if no tasks are in `ready_for_implement` or later, it tells the user to run the planner first
+  - launched with `scripts/ai-po.sh [agent]` (default agent: `claude`)
+  - uses MCP tools internally (`start_session`, `send_command`, `get_output`, `list_sessions`, `stop_session`) to coordinate role sessions
+  - never starts a planner session; if no tasks are in `ready_for_implement` or later, tells the user to run the planner first
+  - `work_task [TASK_ID]`
+    - no task ID: pick the first task that is not `done`, regardless of status (supports in-flight recovery)
+    - with task ID: target that specific task
+    - drive through full implement -> review -> commit cycle, then stop and report
+    - if no eligible task exists, report that the board has no work remaining
+  - `work_all`
+    - run `work_task` repeatedly until all tasks are `done` or a blocker requires human intervention
+    - stop at the first blocker and report
 - Planner session:
   - before `start_plan`, conversation with the planner is the roadmap-refinement phase:
     - tighten scope, acceptance criteria, constraints, and decision points directly in `ROADMAP.md`
