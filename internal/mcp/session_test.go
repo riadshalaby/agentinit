@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,7 +14,7 @@ import (
 )
 
 func TestSessionManagerLifecycle(t *testing.T) {
-	manager := newSessionManager(testLauncher(t))
+	manager := newSessionManager(testLauncher(t), testLogger())
 
 	info, err := manager.StartSession(context.Background(), "plan", "codex")
 	if err != nil {
@@ -50,7 +52,7 @@ func TestSessionManagerLifecycle(t *testing.T) {
 }
 
 func TestSessionManagerRejectsSecondRunningSessionForRole(t *testing.T) {
-	manager := newSessionManager(testLauncher(t))
+	manager := newSessionManager(testLauncher(t), testLogger())
 
 	if _, err := manager.StartSession(context.Background(), "review", "claude"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
@@ -65,7 +67,7 @@ func TestSessionManagerRejectsSecondRunningSessionForRole(t *testing.T) {
 }
 
 func TestSessionManagerValidatesRoleAndAgent(t *testing.T) {
-	manager := newSessionManager(testLauncher(t))
+	manager := newSessionManager(testLauncher(t), testLogger())
 
 	if _, err := manager.StartSession(context.Background(), "po", "codex"); err == nil {
 		t.Fatal("expected invalid role error")
@@ -83,6 +85,10 @@ func testLauncher(t *testing.T) launcherFunc {
 		cmd.Env = append(os.Environ(), "GO_WANT_HELPER_SESSION=1")
 		return cmd, nil
 	}
+}
+
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
 func TestHelperSessionProcess(t *testing.T) {

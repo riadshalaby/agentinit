@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,12 +58,14 @@ type Session struct {
 	updateCh chan struct{}
 	done     chan struct{}
 	waitErr  error
+	logger   *slog.Logger
 }
 
 type SessionManager struct {
 	mu       sync.Mutex
 	sessions map[string]*Session
 	launch   launcherFunc
+	logger   *slog.Logger
 }
 
 type launcherFunc func(ctx context.Context, role, agent string) (*exec.Cmd, error)
@@ -86,14 +89,19 @@ type CommandResult struct {
 	SessionID string `json:"session_id"`
 }
 
-func NewSessionManager() *SessionManager {
-	return newSessionManager(defaultLauncher)
+func NewSessionManager(logger *slog.Logger) *SessionManager {
+	return newSessionManager(defaultLauncher, logger)
 }
 
-func newSessionManager(launch launcherFunc) *SessionManager {
+func newSessionManager(launch launcherFunc, logger *slog.Logger) *SessionManager {
+	if logger == nil {
+		logger = newDiscardLogger()
+	}
+
 	return &SessionManager{
 		sessions: make(map[string]*Session),
 		launch:   launch,
+		logger:   logger,
 	}
 }
 
@@ -122,9 +130,11 @@ func defaultLauncher(ctx context.Context, role, agent string) (*exec.Cmd, error)
 
 func (m *SessionManager) StartSession(_ context.Context, role, agent string) (SessionInfo, error) {
 	if err := validateRole(role); err != nil {
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, err
 	}
 	if err := validateAgent(agent); err != nil {
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, err
 	}
 
@@ -132,7 +142,9 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 	if existing, ok := m.sessions[role]; ok {
 		if existing.Status == SessionStatusRunning {
 			m.mu.Unlock()
-			return SessionInfo{}, fmt.Errorf("session for role %q is already running", role)
+			err := fmt.Errorf("session for role %q is already running", role)
+			m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
+			return SessionInfo{}, err
 		}
 		delete(m.sessions, role)
 	}
@@ -140,16 +152,19 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 
 	cmd, err := m.launch(context.Background(), role, agent)
 	if err != nil {
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, err
 	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, fmt.Errorf("open stdin pipe: %w", err)
 	}
 
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, fmt.Errorf("create stdout pipe: %w", err)
 	}
 	cmd.Stdout = stdoutWriter
@@ -159,11 +174,13 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 		stdin.Close()
 		stdoutReader.Close()
 		stdoutWriter.Close()
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, fmt.Errorf("start session process: %w", err)
 	}
 	if err := stdoutWriter.Close(); err != nil {
 		stdin.Close()
 		stdoutReader.Close()
+		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, fmt.Errorf("close stdout writer: %w", err)
 	}
 
@@ -178,6 +195,7 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 		stdout:   stdoutReader,
 		updateCh: make(chan struct{}, 1),
 		done:     make(chan struct{}),
+		logger:   m.logger,
 	}
 
 	m.mu.Lock()
@@ -187,6 +205,8 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 	go session.captureOutput()
 	go session.waitForExit()
 
+	m.logger.Info("session started", "role", role, "agent", agent, "pid", session.PID, "session_id", session.ID)
+
 	return session.info(), nil
 }
 
@@ -195,13 +215,17 @@ func (m *SessionManager) StopSession(role string) (SessionInfo, error) {
 	session, ok := m.sessions[role]
 	if !ok {
 		m.mu.Unlock()
-		return SessionInfo{}, fmt.Errorf("no session for role %q", role)
+		err := fmt.Errorf("no session for role %q", role)
+		m.logger.Error("stop session failed", "role", role, "error", err)
+		return SessionInfo{}, err
 	}
 	delete(m.sessions, role)
 	m.mu.Unlock()
 
 	if session.Status == SessionStatusRunning && session.cmd.Process != nil {
+		m.logger.Info("sending session signal", "role", role, "session_id", session.ID, "signal", "SIGTERM")
 		if err := session.cmd.Process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			m.logger.Error("stop session failed", "role", role, "session_id", session.ID, "error", err)
 			return SessionInfo{}, fmt.Errorf("stop session %q: %w", role, err)
 		}
 	}
@@ -217,7 +241,9 @@ func (m *SessionManager) StopSession(role string) (SessionInfo, error) {
 	}
 	session.outputMu.Unlock()
 
-	return session.info(), nil
+	info := session.info()
+	m.logger.Info("session stopped", "role", role, "session_id", info.SessionID, "status", info.Status)
+	return info, nil
 }
 
 func (m *SessionManager) SendCommand(ctx context.Context, role, command string) (CommandResult, error) {
@@ -225,23 +251,31 @@ func (m *SessionManager) SendCommand(ctx context.Context, role, command string) 
 	session, ok := m.sessions[role]
 	m.mu.Unlock()
 	if !ok {
-		return CommandResult{}, fmt.Errorf("no session for role %q", role)
+		err := fmt.Errorf("no session for role %q", role)
+		m.logger.Error("send command failed", "role", role, "command", command, "error", err)
+		return CommandResult{}, err
 	}
 	if session.Status != SessionStatusRunning {
-		return CommandResult{}, fmt.Errorf("session for role %q is not running", role)
-	}
-
-	output, err := session.send(ctx, command)
-	if err != nil {
+		err := fmt.Errorf("session for role %q is not running", role)
+		m.logger.Error("send command failed", "role", role, "command", command, "session_id", session.ID, "error", err)
 		return CommandResult{}, err
 	}
 
-	return CommandResult{
+	m.logger.Info("sending command", "role", role, "command", command, "session_id", session.ID)
+	output, err := session.send(ctx, command)
+	if err != nil {
+		m.logger.Error("send command failed", "role", role, "command", command, "session_id", session.ID, "error", err)
+		return CommandResult{}, err
+	}
+
+	result := CommandResult{
 		Role:      role,
 		Command:   command,
 		Output:    output,
 		SessionID: session.ID,
-	}, nil
+	}
+	m.logger.Info("command completed", "role", role, "command", command, "session_id", session.ID, "output_bytes", len(output))
+	return result, nil
 }
 
 func (m *SessionManager) ListSessions() SessionList {
@@ -278,6 +312,7 @@ func (s *Session) captureOutput() {
 			s.outputMu.Lock()
 			s.output.Write(buf[:n])
 			s.outputMu.Unlock()
+			s.logger.Debug("session output received", "role", s.Role, "session_id", s.ID, "bytes", n)
 
 			select {
 			case s.updateCh <- struct{}{}:
@@ -304,9 +339,15 @@ func (s *Session) waitForExit() {
 			s.Status = SessionStatusExited
 		}
 	}
+	status := s.Status
 	s.outputMu.Unlock()
 
 	_ = s.stdin.Close()
+	if err != nil {
+		s.logger.Error("session exited", "role", s.Role, "session_id", s.ID, "status", status, "error", err)
+	} else {
+		s.logger.Info("session exited", "role", s.Role, "session_id", s.ID, "status", status)
+	}
 	close(s.done)
 }
 
