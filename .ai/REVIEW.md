@@ -229,3 +229,43 @@ No findings. The change is a single-line fix that exactly matches the plan, and 
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-006 — PO prompt run-mode control
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+No findings. The prompt is well-structured, concise, and meets every acceptance criterion with no ambiguity.
+
+#### Verification
+
+##### Steps
+- Read plan section for T-006 in `.ai/PLAN.md`.
+- Read commit `9fbfd55` diff for `AGENTS.md` and `README.md`.
+- Read full content of `.ai/prompts/po.md` and `internal/template/templates/base/ai/prompts/po.md.tmpl`.
+- Verified all four acceptance criteria against `po.md`:
+  - **Both run modes documented**: `## Run Modes` section covers single-task (line 20) and all-tasks (line 23) with trigger examples; default ask-if-unclear (line 26) ✅
+  - **`send_command` + `get_output` polling**: `## Interaction Pattern` documents the 7-step loop with `get_output(role, timeout_seconds=120)` (lines 49-55), repeat-on-incomplete (line 54), and completion-detection guidance (lines 57-60) ✅
+  - **Planner session forbidden**: line 6 explicitly forbids it; line 41 redirects user to planner if no tasks are in `ready_for_implement` or later ✅
+  - **Re-read TASKS.md before every MCP call**: preamble (line 5), Interaction Pattern step 1 (line 49), step 7 (line 55), and Operating Rules (line 74) ✅
+- Verified error handling: stuck session after 3 × 120s polls (line 65), unexpected exit (line 66), board/output disagreement (line 67) ✅
+- Verified `po.md.tmpl` is byte-for-byte identical to `po.md` ✅
+- Verified `AGENTS.md` updated: auto mode description clarified to "post-planning loop", PO session description adds planner-never-started rule ✅
+- Verified `README.md` updated: auto mode description and step 4 both drop planner references, add `commit_task` example ✅
+- Ran `go fmt ./... && go vet ./... && go test -count=1 ./...` → all packages pass.
+
+##### Findings
+- None.
+
+##### Risks
+- None. Docs-only change; no runtime behaviour affected.
+
+#### Verdict
+`PASS`

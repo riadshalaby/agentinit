@@ -6,7 +6,7 @@ Scaffold a file-based AI agent coordination framework for any codebase. Every sc
 
 **Cycle** — a unit of work on a feature branch. You start a cycle, plan the work, implement it, review it, and create a PR. One cycle = one branch = one PR.
 
-**Roles** — a cycle always includes PO, Planner, Implementer, and Reviewer support. In manual mode you drive the role sessions yourself. In auto mode the PO session coordinates those same role sessions through MCP.
+**Roles** — a cycle always includes PO, Planner, Implementer, and Reviewer support. In manual mode you drive the role sessions yourself. In auto mode the PO session coordinates the post-planning implementer/reviewer loop through MCP.
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
@@ -204,7 +204,7 @@ scripts/ai-review.sh
 
 ### Auto mode
 
-In auto mode, the PO session coordinates the same planner, implementer, and reviewer workflow for you through the `agentinit` MCP server.
+In auto mode, the PO session coordinates the post-planning implementer/reviewer workflow for you through the `agentinit` MCP server.
 
 1. Scaffold the project and edit `ROADMAP.md`.
 2. Start a cycle:
@@ -219,7 +219,7 @@ scripts/ai-start-cycle.sh feature/my-change
 scripts/ai-po.sh
 ```
 
-4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `start_plan`, `next_task T-001`, or `rework_task T-001`.
+4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `next_task T-001`, `rework_task T-001`, or `commit_task T-001`. If no tasks are in `ready_for_implement` or later, run the planner first.
 5. Keep `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` as the source of truth for progress and blockers.
 
 ### Session commands

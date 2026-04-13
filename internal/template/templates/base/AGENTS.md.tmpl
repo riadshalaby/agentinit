@@ -99,7 +99,7 @@
   - you drive task progress by sending the documented text commands directly to each session
 - Auto mode:
   - you start the PO session with `scripts/ai-po.sh`
-  - the PO session uses the `agentinit` MCP server to start and coordinate planner, implementer, and reviewer sessions for the same task flow
+  - the PO session uses the `agentinit` MCP server to run the post-planning loop by coordinating implementer and reviewer sessions for the same task flow
 - Both modes use the same `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review artifacts, and status transitions.
 
 ## Persistent Session Workflow
@@ -137,7 +137,8 @@ Use these text commands inside the already-running role sessions.
     - `get_output`
     - `list_sessions`
     - `stop_session`
-  - coordinates planner, implementer, and reviewer based on `.ai/TASKS.md`
+  - coordinates the post-planning implementer/reviewer loop based on `.ai/TASKS.md`
+  - never starts a planner session; if no tasks are in `ready_for_implement` or later, it tells the user to run the planner first
 - Planner session:
   - before `start_plan`, conversation with the planner is the roadmap-refinement phase:
     - tighten scope, acceptance criteria, constraints, and decision points directly in `ROADMAP.md`

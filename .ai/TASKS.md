@@ -25,4 +25,4 @@ Command expectations:
 | T-003 | Async send + get_output model | done | `send_command` returns ack (no output); `get_output` polls with configurable timeout; context propagation fixed; broken-pipe updates status; `go test ./...` passes | `go fmt ./...`, `go vet ./...`, `go test ./...` | none |
 | T-004 | Stop session SIGKILL escalation | done | `StopSession` sends SIGKILL after SIGTERM grace period; `go test ./...` passes | `go fmt ./...`, `go vet ./...`, `go test ./...` | none |
 | T-005 | Fix jsonResult structured response | done | Tool results contain both text and structured JSON content; `go test ./...` passes | `go fmt ./...`, `go vet ./...`, `go test ./...` | none |
-| T-006 | PO prompt run-mode control | ready_for_implement | PO prompt documents single-task and all-tasks modes; uses send_command + get_output pattern; forbids planner sessions | n/a | implement |
+| T-006 | PO prompt run-mode control | done | PO prompt documents single-task and all-tasks modes; uses send_command + get_output pattern; forbids planner sessions | `go fmt ./...`, `go vet ./...`, `go test ./...` | none |
