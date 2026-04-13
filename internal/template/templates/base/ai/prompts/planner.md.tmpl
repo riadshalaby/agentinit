@@ -28,7 +28,6 @@ You are in `plan` mode.
 - Update `.ai/TASKS.md` for all newly planned tasks:
   - set status to `ready_for_implement`
   - set owner role to `implement`
-  - set chosen implementer agent if provided by the user
 - Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
   - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
   - table with all applicable fields

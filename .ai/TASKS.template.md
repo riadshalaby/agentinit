@@ -18,6 +18,6 @@ Command expectations:
 - reviewer moves tasks into `in_review`, `ready_to_commit`, or `changes_requested`
 - `status_cycle` should report deterministic task status, current owner role, and next recommended action based on this board
 
-| Task ID | Scope | Planner Agent | Implementer Agent | Reviewer Agent | Status | Acceptance Criteria | Evidence | Next Role |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| T-001 | replace with task scope | claude | codex | claude | in_planning | replace with measurable acceptance criteria | n/a | planner |
+| Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
+| --- | --- | --- | --- | --- | --- |
+| T-001 | replace with task scope | in_planning | replace with measurable acceptance criteria | n/a | planner |
