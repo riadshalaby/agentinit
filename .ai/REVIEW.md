@@ -93,3 +93,60 @@ Reviewed: 2026-04-13
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003 — Async send + get_output model
+
+### Review Round 1
+
+Status: **PASS_WITH_NOTES**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `internal/mcp/session.go:505-509` | `outputLen()` is dead code — defined but never called after the `send()` → `writeCommand()`/`readOutput()` refactoring. `readOutput` now calls `commandOffset()` instead. Should be removed to avoid confusion. | No |
+| 2 | nit | `internal/mcp/session.go:21-23` | `startupReadTimeout` and `startupQuietTimeout` constants and `captureStartupOutput()` are undocumented in the plan. They are correct and necessary (preventing startup banners from leaking into the first `get_output` response) but were an out-of-plan addition. | No |
+| 3 | nit | `internal/mcp/session.go:137` | `defaultLauncher` switches from `exec.CommandContext` to `exec.Command` plus a manual `ctx.Err()` pre-flight check. Intentional (sessions should outlive caller context), but the reason is not commented. | No |
+
+#### Verification
+
+##### Steps
+- Read plan section for T-003 in `.ai/PLAN.md`.
+- Read implementation: `internal/mcp/session.go`, `internal/mcp/tools.go`, `internal/mcp/server_test.go`, `internal/mcp/session_test.go`.
+- Verified all plan acceptance criteria:
+  - `CommandResult` no longer has an `Output` field ✅ (line 86-90)
+  - `send_command` tool returns `"sent command to {role}"` ack only ✅
+  - `readOutput` returns `output, nil` on `responseTimer.C` (empty = no error) ✅ (lines 489-491)
+  - `get_output` tool defaults `timeout_seconds` to 30 when ≤0 ✅ (lines 100-103)
+  - `StartSession` passes caller `ctx` to `m.launch(ctx, role, agent)` ✅ (line 164)
+  - `writeCommand` sets `Status = SessionStatusExited` and returns wrapped error on broken pipe ✅ (lines 441-444)
+  - `outputIdleTimeout` constant is 5s ✅ (line 20)
+  - `outputResponseTimeout` constant removed ✅
+  - `errSessionOutputTimeout` sentinel removed ✅
+  - `OutputResult` struct added ✅ (lines 92-97)
+  - `get_output` tool registered as 5th tool ✅
+  - `TestNewServerRegistersSessionTools` asserts 5 tools ✅
+  - `TestSessionManagerLifecycle` uses `SendCommand` then `GetOutput` flow ✅
+  - `TestStartSessionUsesCallerContext` added and passes ✅
+  - `TestGetOutputTimeout` verifies empty output (not error) on timeout ✅
+  - `TestWriteCommandBrokenPipe` verifies `SessionStatusExited` on stdin failure ✅
+  - `TestServerSessionToolsLifecycle` includes `get_output` call ✅
+- Verified `outputLen()` is dead code via Grep — only defined, never called.
+- Ran `go test -count=1 -v ./internal/mcp/...` → 10/10 tests pass.
+- Ran `go fmt ./... && go vet ./... && go test ./...` → all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+- `captureStartupOutput()` correctly sets `lastCommandOffset` past the startup banner before any command is sent — correct behavior for the async model.
+- `hasBufferedOutput()` correctly allows `GetOutput` to drain remaining output from exited sessions.
+- `outputLen()` (line 505) is a residual from the old `send()` method and is never called; it should be cleaned up in a follow-on commit.
+
+##### Risks
+- None material. The dead `outputLen()` method is noise but not a correctness issue.
+
+#### Verdict
+`PASS_WITH_NOTES`

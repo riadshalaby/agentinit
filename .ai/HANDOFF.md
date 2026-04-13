@@ -118,7 +118,46 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Finalized T-002 by squashing the workflow docs change together with the task board, review log, and handoff artifacts into one release-ready task commit. |
 | Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `README.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
 | Validation | Not rerun during `commit_task`; reviewed validations for the task remained current from the accepted implementation and review pass. |
-| Commit | `<pending>` |
+| Commit | `72304e9 docs(workflow): document task-scoped .ai artifact commits` |
+| Next Role | none |
+
+---
+
+### T-003 — implement — 2026-04-13T06:33:03Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Reworked MCP session interaction to async send plus polling output retrieval and updated the MCP docs to describe the new tool model. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/session.go`, `internal/mcp/session_test.go`, `internal/mcp/tools.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `c19225b feat(mcp): poll session output with get_output` |
+| Next Role | review |
+
+---
+
+### T-003 — review — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-003: async send/poll model fully implemented; all acceptance criteria met; 10 tests pass; one dead `outputLen()` method flagged as minor note (no required fix). |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-13T06:50:41Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-003 by folding the accepted async MCP send/poll change together with the review log, task board state, and handoff artifacts into one task commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/session.go`, `internal/mcp/session_test.go`, `internal/mcp/tools.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `<pending> feat(mcp): poll session output with get_output` |
 | Next Role | none |
 
 ---

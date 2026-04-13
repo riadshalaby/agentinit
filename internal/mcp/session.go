@@ -17,13 +17,13 @@ import (
 )
 
 const (
-	outputIdleTimeout     = 150 * time.Millisecond
-	outputResponseTimeout = 2 * time.Second
+	outputIdleTimeout   = 5 * time.Second
+	startupReadTimeout  = 200 * time.Millisecond
+	startupQuietTimeout = 20 * time.Millisecond
 )
 
 var (
-	errSessionOutputTimeout = errors.New("timed out waiting for session output")
-	validRoles              = map[string]struct{}{
+	validRoles = map[string]struct{}{
 		"plan":      {},
 		"implement": {},
 		"review":    {},
@@ -53,12 +53,13 @@ type Session struct {
 	stdin  io.WriteCloser
 	stdout io.ReadCloser
 
-	outputMu sync.Mutex
-	output   bytes.Buffer
-	updateCh chan struct{}
-	done     chan struct{}
-	waitErr  error
-	logger   *slog.Logger
+	outputMu          sync.Mutex
+	output            bytes.Buffer
+	lastCommandOffset int
+	updateCh          chan struct{}
+	done              chan struct{}
+	waitErr           error
+	logger            *slog.Logger
 }
 
 type SessionManager struct {
@@ -85,8 +86,14 @@ type SessionInfo struct {
 type CommandResult struct {
 	Role      string `json:"role"`
 	Command   string `json:"command"`
-	Output    string `json:"output"`
 	SessionID string `json:"session_id"`
+}
+
+type OutputResult struct {
+	Role      string        `json:"role"`
+	Output    string        `json:"output"`
+	SessionID string        `json:"session_id"`
+	Status    SessionStatus `json:"status"`
 }
 
 func NewSessionManager(logger *slog.Logger) *SessionManager {
@@ -123,12 +130,16 @@ func defaultLauncher(ctx context.Context, role, agent string) (*exec.Cmd, error)
 		return nil, fmt.Errorf("locate launcher script: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, scriptPath, role, agent)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(scriptPath, role, agent)
 	cmd.Dir = cwd
 	return cmd, nil
 }
 
-func (m *SessionManager) StartSession(_ context.Context, role, agent string) (SessionInfo, error) {
+func (m *SessionManager) StartSession(ctx context.Context, role, agent string) (SessionInfo, error) {
 	if err := validateRole(role); err != nil {
 		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, err
@@ -150,7 +161,7 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 	}
 	m.mu.Unlock()
 
-	cmd, err := m.launch(context.Background(), role, agent)
+	cmd, err := m.launch(ctx, role, agent)
 	if err != nil {
 		m.logger.Error("start session failed", "role", role, "agent", agent, "error", err)
 		return SessionInfo{}, err
@@ -204,6 +215,7 @@ func (m *SessionManager) StartSession(_ context.Context, role, agent string) (Se
 
 	go session.captureOutput()
 	go session.waitForExit()
+	session.captureStartupOutput()
 
 	m.logger.Info("session started", "role", role, "agent", agent, "pid", session.PID, "session_id", session.ID)
 
@@ -232,7 +244,7 @@ func (m *SessionManager) StopSession(role string) (SessionInfo, error) {
 
 	select {
 	case <-session.done:
-	case <-time.After(outputResponseTimeout):
+	case <-time.After(2 * time.Second):
 	}
 
 	session.outputMu.Lock()
@@ -262,8 +274,7 @@ func (m *SessionManager) SendCommand(ctx context.Context, role, command string) 
 	}
 
 	m.logger.Info("sending command", "role", role, "command", command, "session_id", session.ID)
-	output, err := session.send(ctx, command)
-	if err != nil {
+	if err := session.writeCommand(command); err != nil {
 		m.logger.Error("send command failed", "role", role, "command", command, "session_id", session.ID, "error", err)
 		return CommandResult{}, err
 	}
@@ -271,10 +282,41 @@ func (m *SessionManager) SendCommand(ctx context.Context, role, command string) 
 	result := CommandResult{
 		Role:      role,
 		Command:   command,
-		Output:    output,
 		SessionID: session.ID,
 	}
-	m.logger.Info("command completed", "role", role, "command", command, "session_id", session.ID, "output_bytes", len(output))
+	m.logger.Info("command queued", "role", role, "command", command, "session_id", session.ID)
+	return result, nil
+}
+
+func (m *SessionManager) GetOutput(ctx context.Context, role string, timeout time.Duration) (OutputResult, error) {
+	m.mu.Lock()
+	session, ok := m.sessions[role]
+	m.mu.Unlock()
+	if !ok {
+		err := fmt.Errorf("no session for role %q", role)
+		m.logger.Error("get output failed", "role", role, "error", err)
+		return OutputResult{}, err
+	}
+	if session.Status != SessionStatusRunning && !session.hasBufferedOutput() {
+		err := fmt.Errorf("session for role %q is not running", role)
+		m.logger.Error("get output failed", "role", role, "session_id", session.ID, "error", err)
+		return OutputResult{}, err
+	}
+
+	output, err := session.readOutput(ctx, timeout)
+	if err != nil {
+		m.logger.Error("get output failed", "role", role, "session_id", session.ID, "error", err)
+		return OutputResult{}, err
+	}
+
+	info := session.info()
+	result := OutputResult{
+		Role:      role,
+		Output:    output,
+		SessionID: session.ID,
+		Status:    info.Status,
+	}
+	m.logger.Info("output retrieved", "role", role, "session_id", session.ID, "status", result.Status, "output_bytes", len(output))
 	return result, nil
 }
 
@@ -351,16 +393,9 @@ func (s *Session) waitForExit() {
 	close(s.done)
 }
 
-func (s *Session) send(ctx context.Context, command string) (string, error) {
-	command = strings.TrimSpace(command)
-	if command == "" {
-		return "", fmt.Errorf("command must not be empty")
-	}
-
-	startOffset := s.outputLen()
-	if _, err := io.WriteString(s.stdin, command+"\n"); err != nil {
-		return "", fmt.Errorf("write command: %w", err)
-	}
+func (s *Session) captureStartupOutput() {
+	timer := time.NewTimer(startupReadTimeout)
+	defer timer.Stop()
 
 	quietTimer := time.NewTimer(time.Hour)
 	if !quietTimer.Stop() {
@@ -368,10 +403,65 @@ func (s *Session) send(ctx context.Context, command string) (string, error) {
 	}
 	defer quietTimer.Stop()
 
-	responseTimer := time.NewTimer(outputResponseTimeout)
+	for {
+		select {
+		case <-s.updateCh:
+			if !quietTimer.Stop() {
+				select {
+				case <-quietTimer.C:
+				default:
+				}
+			}
+			quietTimer.Reset(startupQuietTimeout)
+		case <-quietTimer.C:
+			s.outputMu.Lock()
+			s.lastCommandOffset = s.output.Len()
+			s.outputMu.Unlock()
+			return
+		case <-timer.C:
+			s.outputMu.Lock()
+			s.lastCommandOffset = s.output.Len()
+			s.outputMu.Unlock()
+			return
+		}
+	}
+}
+
+func (s *Session) writeCommand(command string) error {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return fmt.Errorf("command must not be empty")
+	}
+
+	s.outputMu.Lock()
+	s.lastCommandOffset = s.output.Len()
+	s.outputMu.Unlock()
+
+	if _, err := io.WriteString(s.stdin, command+"\n"); err != nil {
+		s.outputMu.Lock()
+		s.Status = SessionStatusExited
+		s.outputMu.Unlock()
+		return fmt.Errorf("write command: %w", err)
+	}
+	return nil
+}
+
+func (s *Session) readOutput(ctx context.Context, timeout time.Duration) (string, error) {
+	startOffset := s.commandOffset()
+
+	quietTimer := time.NewTimer(time.Hour)
+	if !quietTimer.Stop() {
+		<-quietTimer.C
+	}
+	defer quietTimer.Stop()
+
+	responseTimer := time.NewTimer(timeout)
 	defer responseTimer.Stop()
 
-	sawOutput := false
+	sawOutput := s.outputSince(startOffset) != ""
+	if sawOutput {
+		quietTimer.Reset(outputIdleTimeout)
+	}
 
 	for {
 		select {
@@ -398,10 +488,7 @@ func (s *Session) send(ctx context.Context, command string) (string, error) {
 			}
 		case <-responseTimer.C:
 			output := s.outputSince(startOffset)
-			if output != "" {
-				return output, nil
-			}
-			return "", errSessionOutputTimeout
+			return output, nil
 		case <-s.done:
 			output := s.outputSince(startOffset)
 			if output != "" {
@@ -419,6 +506,18 @@ func (s *Session) outputLen() int {
 	s.outputMu.Lock()
 	defer s.outputMu.Unlock()
 	return s.output.Len()
+}
+
+func (s *Session) commandOffset() int {
+	s.outputMu.Lock()
+	defer s.outputMu.Unlock()
+	return s.lastCommandOffset
+}
+
+func (s *Session) hasBufferedOutput() bool {
+	s.outputMu.Lock()
+	defer s.outputMu.Unlock()
+	return s.lastCommandOffset < s.output.Len()
 }
 
 func (s *Session) outputSince(offset int) string {
