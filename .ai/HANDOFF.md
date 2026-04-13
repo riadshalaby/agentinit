@@ -235,7 +235,46 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Finalized T-005 by folding the accepted MCP tool-result fix together with the review log, task board state, and handoff artifacts into one task commit. |
 | Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/tools.go` |
 | Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
-| Commit | `<pending> fix(mcp): preserve structured JSON tool results` |
+| Commit | `70fb52c fix(mcp): preserve structured JSON tool results` |
+| Next Role | none |
+
+---
+
+### T-006 — implement — 2026-04-13T09:32:35Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Reworked the PO auto-mode guidance into a post-planning orchestrator with explicit single-task and all-tasks run modes, send/poll coordination steps, and matching workflow documentation updates. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `9fbfd55 docs(po): clarify post-planning auto-mode run control` |
+| Next Role | review |
+
+---
+
+### T-006 — review — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-006: all four acceptance criteria met cleanly; polling loop documented; planner restriction explicit; template in sync; AGENTS.md and README.md updated correctly; all tests pass. |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-006 — implement — 2026-04-13T12:53:46Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-006 by folding the accepted PO auto-mode prompt rewrite together with the review log, task board state, and handoff artifacts into one task commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `<pending> docs(po): clarify post-planning auto-mode run control` |
 | Next Role | none |
 
 ---

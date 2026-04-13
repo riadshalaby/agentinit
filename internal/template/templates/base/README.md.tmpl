@@ -16,7 +16,7 @@ Manual and auto are two runtime modes for the same scaffold: they use the same g
 ### Runtime modes
 
 - Manual mode: start the planner, implementer, and reviewer in separate terminals, then drive each session yourself with the documented text commands.
-- Auto mode: run `scripts/ai-po.sh` to start the PO session, which uses MCP tools to coordinate the same planner, implementer, and reviewer workflow for you.
+- Auto mode: run `scripts/ai-po.sh` to start the PO session, which uses MCP tools to coordinate the post-planning implementer/reviewer workflow for you.
 
 ### Concepts
 
@@ -66,7 +66,8 @@ Example: `scripts/ai-review.sh claude --model sonnet`
 scripts/ai-po.sh
 ```
 
-The PO session drives the same task board and role flow through the `agentinit` MCP server.
+The PO session drives the post-planning task board flow through the `agentinit` MCP server.
+If no tasks are in `ready_for_implement` or later, run the planner first.
 The MCP server appends structured debug logs to `.ai/mcp-server.log`, and the scaffold gitignore excludes that file.
 
 ### Drive work inside the existing sessions
