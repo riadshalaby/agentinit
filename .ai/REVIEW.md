@@ -40,3 +40,44 @@ No required fixes.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+1. **nit** — `AGENTS.md` (live, line 135) and `AGENTS.md.tmpl` use lowercase `drive through full implement -> review -> commit cycle` while `po.md` / `po.md.tmpl` use uppercase `Drive the task through…`. Cosmetic-only; not a required fix.
+
+No required fixes.
+
+#### Verification
+##### Steps
+- `go fmt ./...` — PASS (no output)
+- `go vet ./...` — PASS (no output)
+- `go test ./...` — PASS (all packages, including `internal/scaffold` and `internal/template` which cover the template assertions)
+- Confirmed `po.md.tmpl` and live `.ai/prompts/po.md` are identical (diff returned empty).
+- Confirmed `AGENTS.md.tmpl` PO session section matches the plan's specified wording exactly.
+- Confirmed live `AGENTS.md` PO session section matches both the template and the plan.
+- Confirmed no `## Run Modes` section present in either `po.md` or `po.md.tmpl`.
+- Reviewed `scaffold_test.go` diff: adds `## Commands`, `work_task`, `work_all` presence checks plus `## Run Modes` absence check for both `po.md` and `AGENTS.md` outputs.
+- Reviewed `engine_test.go` diff: mirrors the same assertions for the template rendering layer.
+
+##### Findings
+- All acceptance criteria met: `work_task`/`work_all` are explicit commands with no natural-language trigger text; `AGENTS.md` PO entry is structured to match the style of other role entries; template update means `agentinit update` propagates the new po.md content.
+- Test coverage is solid: both the template rendering layer and the scaffold output layer assert the new content and the absence of the legacy section.
+
+##### Risks
+- None material.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

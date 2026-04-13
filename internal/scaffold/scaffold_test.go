@@ -255,6 +255,20 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		}
 	}
 
+	poPromptBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/prompts/po.md"))
+	if err != nil {
+		t.Fatalf("read .ai/prompts/po.md: %v", err)
+	}
+	poPrompt := string(poPromptBytes)
+	for _, snippet := range []string{"## Commands", "`work_task [TASK_ID]`", "`work_all`"} {
+		if !strings.Contains(poPrompt, snippet) {
+			t.Errorf("generated .ai/prompts/po.md should contain %q", snippet)
+		}
+	}
+	if strings.Contains(poPrompt, "## Run Modes") {
+		t.Error("generated .ai/prompts/po.md should not contain the legacy Run Modes section")
+	}
+
 	agentsBytes, err := os.ReadFile(filepath.Join(projectDir, "AGENTS.md"))
 	if err != nil {
 		t.Fatalf("read AGENTS.md: %v", err)
@@ -268,6 +282,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"`commit_task [TASK_ID]`",
 		"`finish_cycle [VERSION]`",
 		"Release-As: x.y.z",
+		"`scripts/ai-po.sh [agent]`",
+		"`work_task [TASK_ID]`",
+		"`work_all`",
 		"conversation with the planner is the roadmap-refinement phase",
 		"`start_plan` is the gate to formal planning",
 		"`review` role never commits.",

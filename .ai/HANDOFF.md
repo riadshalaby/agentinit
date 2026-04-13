@@ -83,3 +83,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-13T20:35:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed PO session command changes; template, live file, and AGENTS.md all match the plan; all tests pass |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-13T20:26:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Replaced PO run-mode wording with explicit `work_task` and `work_all` commands in the live prompt, scaffold templates, and generated-content assertions |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/prompts/po.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-13T20:42:10Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-002 into the final task commit after review approval |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `e0ae240 docs(po): define explicit work_task and work_all commands` |
+| Next Role | none |
+
+---
