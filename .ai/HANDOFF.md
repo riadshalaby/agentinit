@@ -157,7 +157,46 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Finalized T-003 by folding the accepted async MCP send/poll change together with the review log, task board state, and handoff artifacts into one task commit. |
 | Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/session.go`, `internal/mcp/session_test.go`, `internal/mcp/tools.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
 | Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
-| Commit | `<pending> feat(mcp): poll session output with get_output` |
+| Commit | `1b77eb6 feat(mcp): poll session output with get_output` |
+| Next Role | none |
+
+---
+
+### T-004 — implement — 2026-04-13T06:58:23Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added SIGKILL escalation for hung `stop_session` requests, preserved stopped status for deliberate terminations, and documented the forced-stop behavior in the MCP README. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/session.go`, `internal/mcp/session_test.go` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `56d8d8d fix(mcp): force-stop hung sessions with SIGKILL` |
+| Next Role | review |
+
+---
+
+### T-004 — review — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-004: SIGKILL escalation correct, `stopping` flag cleanly preserves `SessionStatusStopped` after forced kill, test proves the escalation path; minor regression in error-path map cleanup noted (no required fix). |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-13T07:43:37Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-004 by folding the forced-stop MCP change together with the accepted review log, task board state, and handoff artifacts into one task commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/session.go`, `internal/mcp/session_test.go` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `<pending> fix(mcp): force-stop hung sessions with SIGKILL` |
 | Next Role | none |
 
 ---
