@@ -274,7 +274,7 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Finalized T-006 by folding the accepted PO auto-mode prompt rewrite together with the review log, task board state, and handoff artifacts into one task commit. |
 | Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
 | Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
-| Commit | `<pending> docs(po): clarify post-planning auto-mode run control` |
+| Commit | `80aca87 docs(po): clarify post-planning auto-mode run control` |
 | Next Role | none |
 
 ---
