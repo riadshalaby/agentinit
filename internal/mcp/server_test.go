@@ -133,10 +133,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if sendResult.IsError {
 		t.Fatalf("CallTool(send_command) result = %+v", sendResult)
 	}
-	output := mcpproto.GetTextFromContent(sendResult.Content[0])
-	if !containsAll(output, "sent command to implement") {
-		t.Fatalf("CallTool(send_command) output = %q", output)
-	}
+	assertStructuredToolResult(t, sendResult, "sent command to implement", `"role":"implement"`, `"command":"next_task T-003"`)
 
 	getOutputResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{
@@ -153,10 +150,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if getOutputResult.IsError {
 		t.Fatalf("CallTool(get_output) result = %+v", getOutputResult)
 	}
-	getOutputText := mcpproto.GetTextFromContent(getOutputResult.Content[0])
-	if !containsAll(getOutputText, "response:next_task T-003") {
-		t.Fatalf("CallTool(get_output) output = %q", getOutputText)
-	}
+	assertStructuredToolResult(t, getOutputResult, "response:next_task T-003", `"role":"implement"`, `"output":"response:next_task T-003\n"`)
 
 	listResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{Name: "list_sessions"},
@@ -167,9 +161,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if listResult.IsError {
 		t.Fatalf("CallTool(list_sessions) result = %+v", listResult)
 	}
-	if got := mcpproto.GetTextFromContent(listResult.Content[0]); !containsAll(got, "implement", "codex") {
-		t.Fatalf("CallTool(list_sessions) output = %q", got)
-	}
+	assertStructuredToolResult(t, listResult, "implement", `"role":"implement"`, `"agent":"codex"`)
 
 	duplicateResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{
@@ -210,4 +202,25 @@ func containsAll(text string, substrings ...string) bool {
 		}
 	}
 	return true
+}
+
+func assertStructuredToolResult(t *testing.T, result *mcpproto.CallToolResult, textSubstring string, jsonSubstrings ...string) {
+	t.Helper()
+
+	if result.StructuredContent == nil {
+		t.Fatal("tool result missing structured content")
+	}
+	if len(result.Content) < 2 {
+		t.Fatalf("tool result content length = %d, want at least 2", len(result.Content))
+	}
+
+	text := mcpproto.GetTextFromContent(result.Content[0])
+	if !containsAll(text, textSubstring) {
+		t.Fatalf("tool result text = %q", text)
+	}
+
+	jsonFallback := mcpproto.GetTextFromContent(result.Content[1])
+	if !containsAll(jsonFallback, jsonSubstrings...) {
+		t.Fatalf("tool result JSON fallback = %q", jsonFallback)
+	}
 }

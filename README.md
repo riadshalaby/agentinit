@@ -278,6 +278,8 @@ The server currently exposes five tools for the PO session:
 | `list_sessions` | Show tracked sessions and their status |
 | `stop_session` | Stop a running session, escalating from `SIGTERM` to `SIGKILL` after a grace period |
 
+Tool responses include both a readable text summary and structured JSON in `structuredContent`, so MCP clients can consume either form.
+
 Current MCP role coverage:
 
 - `plan`

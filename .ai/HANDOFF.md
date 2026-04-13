@@ -196,7 +196,46 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Finalized T-004 by folding the forced-stop MCP change together with the accepted review log, task board state, and handoff artifacts into one task commit. |
 | Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/session.go`, `internal/mcp/session_test.go` |
 | Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
-| Commit | `<pending> fix(mcp): force-stop hung sessions with SIGKILL` |
+| Commit | `3863577 fix(mcp): force-stop hung sessions with SIGKILL` |
+| Next Role | none |
+
+---
+
+### T-005 — implement — 2026-04-13T08:03:29Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Fixed MCP tool results to return both the human text summary and the preserved structured JSON payload, and documented the dual-format response contract. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/tools.go` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `6b37beb fix(mcp): preserve structured JSON tool results` |
+| Next Role | review |
+
+---
+
+### T-005 — review — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-005: single-line fix matches plan verbatim; `assertStructuredToolResult` helper verifies dual-content contract across three tools; all tests pass cleanly. |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-005 — implement — 2026-04-13T09:05:07Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-005 by folding the accepted MCP tool-result fix together with the review log, task board state, and handoff artifacts into one task commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `README.md`, `internal/mcp/server_test.go`, `internal/mcp/tools.go` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `<pending> fix(mcp): preserve structured JSON tool results` |
 | Next Role | none |
 
 ---
