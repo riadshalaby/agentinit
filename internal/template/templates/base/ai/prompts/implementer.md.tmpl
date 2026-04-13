@@ -26,7 +26,6 @@ You are in `implement` mode.
 - Update `.ai/TASKS.md` for the task:
   - set status to `ready_for_review`
   - set owner role to `review`
-  - set chosen reviewer agent if provided by the user
 - Append one entry to `.ai/HANDOFF.md` using the exact format from `.ai/HANDOFF.template.md`:
   - heading: `### <TASK_ID> — <role> — <UTC timestamp>`
   - table with all applicable fields

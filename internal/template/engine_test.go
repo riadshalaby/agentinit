@@ -350,8 +350,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	for _, snippet := range []string{
 		"\"plan\": {",
 		"\"agent\": \"claude\"",
-		"\"model\": \"opus\"",
-		"\"effort\": \"high\"",
+		"\"model\": \"sonnet\"",
+		"\"effort\": \"medium\"",
 		"\"implement\": {",
 		"\"agent\": \"codex\"",
 		"\"model\": \"gpt-5.4\"",
