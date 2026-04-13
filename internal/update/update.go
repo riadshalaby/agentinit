@@ -56,6 +56,7 @@ func Run(targetDir string, dryRun bool) (Result, error) {
 	files, err := template.RenderAll(&template.ProjectData{
 		ProjectName:        filepath.Base(targetDir),
 		ProjectType:        projectType,
+		ToolPermissions:    ov.ToolPermissions,
 		ValidationCommands: ov.ValidationCommands,
 		PRTestPlanItems:    ov.PRTestPlanItems,
 	})

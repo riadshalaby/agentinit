@@ -104,6 +104,22 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 	}
 }
 
+func TestRunIsIdempotentForGoScaffold(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if len(result.Changes) != 0 {
+		t.Fatalf("Run() changes = %#v, want no changes", result.Changes)
+	}
+}
+
 func TestRunDryRunDoesNotModifyFiles(t *testing.T) {
 	dir := t.TempDir()
 	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
