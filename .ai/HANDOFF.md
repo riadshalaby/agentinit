@@ -22,3 +22,14 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | plan \| implement \| review \| none |
 
 ---
+
+### T-001..T-005 — plan — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned v0.7.0 cycle: 5 tasks covering MCP debug logging, async send/poll model, SIGKILL escalation, jsonResult fix, and PO prompt run-mode control |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Next Role | implement |
+
+---
