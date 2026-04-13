@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.6.1](https://github.com/riadshalaby/agentinit/compare/v0.6.0...v0.6.1) (2026-04-13)
+
+
+### Features
+
+* **ai:** removed agents from tasks board ([668b150](https://github.com/riadshalaby/agentinit/commit/668b150d30497ecbdf5c759f12120128a6f8fa55))
+* **mcp:** poll session output with get_output ([52d69ff](https://github.com/riadshalaby/agentinit/commit/52d69ffb0999f26248dc776f763c13e752562134))
+* **mcp:** write MCP server debug logs to .ai/mcp-server.log ([bcc11f3](https://github.com/riadshalaby/agentinit/commit/bcc11f3ff06e2cddba92be8e086aadb719590c07))
+
+
+### Bug Fixes
+
+* **mcp:** force-stop hung sessions with SIGKILL ([02a7882](https://github.com/riadshalaby/agentinit/commit/02a7882b7aa6cfd564abc7f2df39597de08a72f2))
+* **mcp:** preserve structured JSON tool results ([7bea686](https://github.com/riadshalaby/agentinit/commit/7bea68603cf15be79fb17a1b352c793ef36711f7))
+
+
+### Miscellaneous Chores
+
+* **ai:** close cycle ([5327cda](https://github.com/riadshalaby/agentinit/commit/5327cda465b42c1f05f415475630b412e6f3b549))
+* **ai:** roadmap for version 0.7.0 ([a327cf1](https://github.com/riadshalaby/agentinit/commit/a327cf15b1133014fca585ca6355c9b269aa9301))
+* **docs:** new logo ([2a27b4b](https://github.com/riadshalaby/agentinit/commit/2a27b4bda9c3ab331ef88cc67d20cc7f7e1103a1))
+* start cycle v0.7.0 ([51bad16](https://github.com/riadshalaby/agentinit/commit/51bad16f47d3c5a8c99703af21a06067de0d9e3c))
+
+
+### Documentation
+
+* **po:** clarify post-planning auto-mode run control ([e837457](https://github.com/riadshalaby/agentinit/commit/e8374570d64ba5e27d68c33c0e052b6f4d5e9c19))
+* **workflow:** document task-scoped .ai artifact commits ([2502507](https://github.com/riadshalaby/agentinit/commit/25025077a27ade43ac5ad8062aa7127c1611063b))
+
 ## [0.6.0](https://github.com/riadshalaby/agentinit/compare/v0.5.1...v0.6.0) (2026-04-12)
 
 
