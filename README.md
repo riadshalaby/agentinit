@@ -268,12 +268,13 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 }
 ```
 
-The server currently exposes four tools for the PO session:
+The server currently exposes five tools for the PO session:
 
 | Tool | Purpose |
 |------|---------|
 | `start_session` | Start a role session through `scripts/ai-launch.sh` |
-| `send_command` | Write a command to a running session and return its output |
+| `send_command` | Write a command to a running session and return an acknowledgement |
+| `get_output` | Poll for output from the last command sent to a running session |
 | `list_sessions` | Show tracked sessions and their status |
 | `stop_session` | Stop a running session |
 

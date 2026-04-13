@@ -57,8 +57,8 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 
 	srv := NewServer("1.2.3-test")
 
-	if got := len(srv.server.ListTools()); got != 4 {
-		t.Fatalf("registered tools = %d, want 4", got)
+	if got := len(srv.server.ListTools()); got != 5 {
+		t.Fatalf("registered tools = %d, want 5", got)
 	}
 	if _, err := os.Stat(filepath.Join(tempDir, defaultMCPLogPath)); err != nil {
 		t.Fatalf("expected log file %q to exist: %v", defaultMCPLogPath, err)
@@ -98,8 +98,8 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListTools() error = %v", err)
 	}
-	if len(tools.Tools) != 4 {
-		t.Fatalf("ListTools() count = %d, want 4", len(tools.Tools))
+	if len(tools.Tools) != 5 {
+		t.Fatalf("ListTools() count = %d, want 5", len(tools.Tools))
 	}
 
 	startResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
@@ -134,8 +134,28 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 		t.Fatalf("CallTool(send_command) result = %+v", sendResult)
 	}
 	output := mcpproto.GetTextFromContent(sendResult.Content[0])
-	if !containsAll(output, "response:next_task T-003") {
+	if !containsAll(output, "sent command to implement") {
 		t.Fatalf("CallTool(send_command) output = %q", output)
+	}
+
+	getOutputResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "get_output",
+			Arguments: map[string]any{
+				"role":            "implement",
+				"timeout_seconds": 1,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_output) error = %v", err)
+	}
+	if getOutputResult.IsError {
+		t.Fatalf("CallTool(get_output) result = %+v", getOutputResult)
+	}
+	getOutputText := mcpproto.GetTextFromContent(getOutputResult.Content[0])
+	if !containsAll(getOutputText, "response:next_task T-003") {
+		t.Fatalf("CallTool(get_output) output = %q", getOutputText)
 	}
 
 	listResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
