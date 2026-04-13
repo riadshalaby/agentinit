@@ -58,6 +58,7 @@
   - implements `.ai/PLAN.md`
   - updates tests
   - updates affected documentation and code comments whenever behavior, interfaces, or workflows change
+  - stages task-specific `.ai/` artifact changes with the task commit when applicable
   - stages files with `git add -A`
   - commits with a Conventional Commit message
   - updates `.ai/TASKS.md` status to `ready_for_review`
@@ -65,6 +66,7 @@
   - must not invent requirements
 - Implement Mode (`commit_task` after review):
   - only for tasks in `ready_to_commit`
+  - stages `.ai/` artifact changes and includes them in the squashed commit
   - squashes WIP commits into one Conventional Commit with a release-note-ready subject
   - updates `.ai/TASKS.md` status to `done`
   - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
@@ -163,13 +165,15 @@ Use these text commands inside the already-running role sessions.
   - `commit_task [TASK_ID]`
     - implementer only
     - target a task in `ready_to_commit`
+    - stage all `.ai/` artifact changes (`.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/PLAN.md`, `ROADMAP.md`, etc.) as part of the squash
     - squash WIP commits into a single Conventional Commit describing the user-visible outcome
     - update the task to `done`
     - if the supplied task is not ready to commit, report its current status and abort
-  - `finish_cycle [TASK_ID]`
-    - verify the requested task is `done`, or all tasks are `done` when no task ID is supplied
+  - `finish_cycle [VERSION]`
+    - verify all tasks are `done`
     - if the completion condition is not met, report the blocking task states and abort
-    - stage and commit the cycle-close `.ai/` artifacts (`.ai/REVIEW.md`, `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/PLAN.md`) if they changed
+    - stage and commit any remaining `.ai/` artifacts with a `chore(ai): close cycle` subject
+    - if a version argument is provided (for example `finish_cycle 0.7.0`), add `Release-As: x.y.z` to the commit body; if no version is supplied, ask the user for it before committing
     - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
@@ -190,8 +194,9 @@ Use these text commands inside the already-running role sessions.
 - Commit behavior by role:
   - `plan` role never commits.
   - `review` role never commits.
-  - `implement` role must stage all changes and create a Conventional Commit after validations pass. The `implement` role also creates the cycle-close commit for `.ai/` artifacts via `finish_cycle`.
-  - runtime `.ai/` cycle logs are committed at cycle close, not in individual task commits.
+  - `implement` role must stage all changes and create a Conventional Commit after validations pass.
+  - `.ai/` artifact changes produced by a task are staged and committed as part of that task's Conventional Commit via `commit_task`.
+  - `finish_cycle` commits any remaining dirty `.ai/` artifacts as the cycle-close commit and always includes a `Release-As: x.y.z` footer.
 - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
 - Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
 

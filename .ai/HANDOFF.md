@@ -60,6 +60,17 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-002 — plan — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned T-002: commit `.ai/` artifacts with task squash and add `Release-As:` footer at `finish_cycle` to pin the release-please version |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Next Role | implement |
+
+---
+
 ### T-001 — implement — 2026-04-13T05:53:27Z
 
 | Field | Value |
@@ -69,6 +80,45 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md` |
 | Validation | Not rerun during `commit_task`; no code changes were made and reviewed validations for commit `f3eb38c` remained current. |
 | Commit | `f3eb38c feat(mcp): write MCP server debug logs to .ai/mcp-server.log` |
+| Next Role | none |
+
+---
+
+### T-002 — implement — 2026-04-13T06:16:55Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated the workflow docs so task commits carry their `.ai/` artifacts and `finish_cycle` requires a versioned `Release-As:` footer. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `README.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `b7db9e5 docs(workflow): document task-scoped .ai artifact commits` |
+| Next Role | review |
+
+---
+
+### T-002 — review — 2026-04-13T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002: all three required files updated for commit_task and finish_cycle; snapshot tests aligned; no Go code changed; all tests pass. |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-13T06:21:39Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-002 by squashing the workflow docs change together with the task board, review log, and handoff artifacts into one release-ready task commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `README.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | Not rerun during `commit_task`; reviewed validations for the task remained current from the accepted implementation and review pass. |
+| Commit | `<pending>` |
 | Next Role | none |
 
 ---

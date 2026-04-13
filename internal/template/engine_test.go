@@ -118,8 +118,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
 		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
-		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |",
-		"| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |",
+		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
+		"| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -212,7 +212,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`commit_task [TASK_ID]`") {
 		t.Error("implementer prompt should describe commit_task")
 	}
-	if !strings.Contains(implementerPrompt, "`finish_cycle [TASK_ID]`") {
+	if !strings.Contains(implementerPrompt, "`finish_cycle [VERSION]`") {
 		t.Error("implementer prompt should describe finish_cycle")
 	}
 	if !strings.Contains(implementerPrompt, "`ready_to_commit`") {
@@ -221,7 +221,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`status_cycle [TASK_ID]`") {
 		t.Error("implementer prompt should describe status_cycle")
 	}
-	if !strings.Contains(implementerPrompt, "stage and commit the cycle-close `.ai/` artifacts") {
+	if !strings.Contains(implementerPrompt, "Release-As: VERSION") {
 		t.Error("implementer prompt should describe the cycle-close artifact commit")
 	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
@@ -454,8 +454,8 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`finish_cycle [TASK_ID]`",
-		"stage and commit the cycle-close `.ai/` artifacts",
+		"`finish_cycle [VERSION]`",
+		"Release-As: x.y.z",
 		"`in_review` -> `ready_to_commit` -> `done`",
 		"`review` role never commits.",
 	} {

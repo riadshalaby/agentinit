@@ -77,7 +77,7 @@ implementer> next_task T-001
 reviewer> next_task T-001
 implementer> commit_task T-001
 implementer> rework_task T-001
-implementer> finish_cycle
+implementer> finish_cycle 0.7.0
 ```
 
 **Planner commands:**
@@ -94,9 +94,9 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task |
-| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
+| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
+| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
 | `status_cycle [TASK_ID]` | Show task status and recommended next action |
 
 **Reviewer commands:**

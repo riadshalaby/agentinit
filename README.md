@@ -74,7 +74,7 @@ planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
 implementer>  commit_task
-implementer>  finish_cycle
+implementer>  finish_cycle 0.7.0
 
 # Create or update the PR
 scripts/ai-pr.sh sync
@@ -240,9 +240,9 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | Command | Description |
 |---------|-------------|
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
-| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit |
+| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
-| `finish_cycle [TASK_ID]` | Close the cycle after all tasks reach `done` |
+| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 **Reviewer**
@@ -318,4 +318,3 @@ No type = generic scaffold without validation commands.
 Proudly created by
 
 ![LFJ Labs, Built by Agents, Directed by Humans](logo-white-small.png)
-

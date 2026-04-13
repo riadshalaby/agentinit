@@ -30,7 +30,16 @@ Objective: add a file-based debug log to the MCP server so operators can see wha
 - Log key events: server start/stop, tool calls received, session lifecycle (start/stop/exit), commands sent to sessions, output captured, errors.
 - Log level should be detailed enough to diagnose "why didn't the PO get a response" scenarios.
 
-## Priority 4 — Bug fixes and robustness
+## Priority 4 — Workflow: commit `.ai/` artifacts with task, pin version at cycle close
+
+Objective: keep the git history self-contained per task and let the implementer tag the release version without manual steps.
+
+- `commit_task` squashes all WIP commits AND includes any staged `.ai/` artifact changes (TASKS.md, HANDOFF.md, PLAN.md, ROADMAP.md, etc.) in the single Conventional Commit for the task.
+- `finish_cycle` accepts an optional version argument (e.g. `finish_cycle 0.7.0`); if provided it adds a `Release-As: x.y.z` footer to the cycle-close commit so release-please picks up the pinned version; if omitted the implementer must ask for the version before committing.
+- Update `AGENTS.md` commit conventions to reflect the new model: `.ai/` artifacts travel with the task commit that produces them; `finish_cycle` commits any remaining artifacts and always carries the `Release-As:` footer.
+- Update implementer prompt (`.ai/prompts/implementer.md`) and its scaffold template (`internal/template/templates/base/ai/prompts/implementer.md.tmpl`) to match.
+
+## Priority 5 — Bug fixes and robustness
 
 Objective: fix remaining bugs discovered in the MCP session management code.
 
