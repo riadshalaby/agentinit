@@ -20,6 +20,8 @@ const (
 	outputIdleTimeout   = 5 * time.Second
 	startupReadTimeout  = 200 * time.Millisecond
 	startupQuietTimeout = 20 * time.Millisecond
+	stopTermGracePeriod = 2 * time.Second
+	stopKillGracePeriod = 500 * time.Millisecond
 )
 
 var (
@@ -59,6 +61,7 @@ type Session struct {
 	updateCh          chan struct{}
 	done              chan struct{}
 	waitErr           error
+	stopping          bool
 	logger            *slog.Logger
 }
 
@@ -231,20 +234,31 @@ func (m *SessionManager) StopSession(role string) (SessionInfo, error) {
 		m.logger.Error("stop session failed", "role", role, "error", err)
 		return SessionInfo{}, err
 	}
-	delete(m.sessions, role)
 	m.mu.Unlock()
 
 	if session.Status == SessionStatusRunning && session.cmd.Process != nil {
+		session.setStopping(true)
 		m.logger.Info("sending session signal", "role", role, "session_id", session.ID, "signal", "SIGTERM")
 		if err := session.cmd.Process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			session.setStopping(false)
 			m.logger.Error("stop session failed", "role", role, "session_id", session.ID, "error", err)
 			return SessionInfo{}, fmt.Errorf("stop session %q: %w", role, err)
 		}
-	}
-
-	select {
-	case <-session.done:
-	case <-time.After(2 * time.Second):
+		if !waitForSessionExit(session, stopTermGracePeriod) {
+			m.logger.Warn("session still running after grace period; escalating stop", "role", role, "session_id", session.ID, "signal", "SIGKILL")
+			if err := session.cmd.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+				session.setStopping(false)
+				m.logger.Error("stop session failed", "role", role, "session_id", session.ID, "error", err)
+				return SessionInfo{}, fmt.Errorf("kill session %q: %w", role, err)
+			}
+			m.logger.Info("sending session signal", "role", role, "session_id", session.ID, "signal", "SIGKILL")
+			if !waitForSessionExit(session, stopKillGracePeriod) {
+				session.setStopping(false)
+				err := fmt.Errorf("session %q did not exit after SIGKILL", role)
+				m.logger.Error("stop session failed", "role", role, "session_id", session.ID, "error", err)
+				return SessionInfo{}, err
+			}
+		}
 	}
 
 	session.outputMu.Lock()
@@ -252,6 +266,10 @@ func (m *SessionManager) StopSession(role string) (SessionInfo, error) {
 		session.Status = SessionStatusStopped
 	}
 	session.outputMu.Unlock()
+
+	m.mu.Lock()
+	delete(m.sessions, role)
+	m.mu.Unlock()
 
 	info := session.info()
 	m.logger.Info("session stopped", "role", role, "session_id", info.SessionID, "status", info.Status)
@@ -375,7 +393,7 @@ func (s *Session) waitForExit() {
 		s.waitErr = err
 	}
 	if s.Status == SessionStatusRunning {
-		if err == nil {
+		if s.stopping || err == nil {
 			s.Status = SessionStatusStopped
 		} else {
 			s.Status = SessionStatusExited
@@ -502,6 +520,12 @@ func (s *Session) readOutput(ctx context.Context, timeout time.Duration) (string
 	}
 }
 
+func (s *Session) setStopping(stopping bool) {
+	s.outputMu.Lock()
+	defer s.outputMu.Unlock()
+	s.stopping = stopping
+}
+
 func (s *Session) outputLen() int {
 	s.outputMu.Lock()
 	defer s.outputMu.Unlock()
@@ -529,6 +553,18 @@ func (s *Session) outputSince(offset int) string {
 		return ""
 	}
 	return string(data[offset:])
+}
+
+func waitForSessionExit(session *Session, timeout time.Duration) bool {
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case <-session.done:
+		return true
+	case <-timer.C:
+		return false
+	}
 }
 
 func validateRole(role string) error {

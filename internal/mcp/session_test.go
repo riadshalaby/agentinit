@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -155,6 +157,38 @@ func TestWriteCommandBrokenPipe(t *testing.T) {
 	}
 }
 
+func TestStopSessionSIGKILLEscalation(t *testing.T) {
+	manager := newSessionManager(testLauncher(t), testLogger())
+
+	if _, err := manager.StartSession(context.Background(), "review", "claude"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+
+	if _, err := manager.SendCommand(context.Background(), "review", "ignore-term"); err != nil {
+		t.Fatalf("SendCommand() error = %v", err)
+	}
+
+	output, err := manager.GetOutput(context.Background(), "review", time.Second)
+	if err != nil {
+		t.Fatalf("GetOutput() error = %v", err)
+	}
+	if !strings.Contains(output.Output, "ignoring-term") {
+		t.Fatalf("GetOutput() output = %q", output.Output)
+	}
+
+	start := time.Now()
+	stopped, err := manager.StopSession("review")
+	if err != nil {
+		t.Fatalf("StopSession() error = %v", err)
+	}
+	if stopped.Status != SessionStatusStopped {
+		t.Fatalf("StopSession() status = %q, want %q", stopped.Status, SessionStatusStopped)
+	}
+	if elapsed := time.Since(start); elapsed < stopTermGracePeriod {
+		t.Fatalf("StopSession() elapsed = %v, want at least %v to prove SIGKILL escalation", elapsed, stopTermGracePeriod)
+	}
+}
+
 func testLauncher(t *testing.T) launcherFunc {
 	t.Helper()
 
@@ -191,6 +225,14 @@ func TestHelperSessionProcess(t *testing.T) {
 		}
 		if line == "silent" {
 			continue
+		}
+		if line == "ignore-term" {
+			fmt.Println("ignoring-term")
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, syscall.SIGTERM)
+			defer signal.Stop(sigCh)
+			for range sigCh {
+			}
 		}
 		fmt.Printf("response:%s\n", line)
 		time.Sleep(10 * time.Millisecond)

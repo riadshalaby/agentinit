@@ -150,3 +150,48 @@ Reviewed: 2026-04-13
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-004 — Stop session SIGKILL escalation
+
+### Review Round 1
+
+Status: **PASS_WITH_NOTES**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `internal/mcp/session.go:StopSession` | Moving `delete(m.sessions, role)` to after the kill wait is a behavioral regression from the old code: error paths (SIGTERM failure, SIGKILL grace timeout) now leave a zombie entry in the session map. In the old code, the delete always happened first. These error paths are effectively unreachable on normal OS behavior (SIGKILL cannot be trapped), but the invariant is broken. | No |
+
+#### Verification
+
+##### Steps
+- Read plan section for T-004 in `.ai/PLAN.md`.
+- Read full diff of `internal/mcp/session.go` and `internal/mcp/session_test.go` for commit `56d8d8d`.
+- Verified plan requirements:
+  - `StopSession` waits up to `stopTermGracePeriod` (2s) after SIGTERM ✅
+  - Escalates to `SIGKILL` via `session.cmd.Process.Kill()` if not dead ✅
+  - Waits up to `stopKillGracePeriod` (500ms) after SIGKILL ✅
+  - Logs each escalation step ✅
+  - `TestStopSessionSIGKILLEscalation` added with SIGTERM-trapping helper ✅
+- Verified additional correctness:
+  - `stopping bool` field (protected by `outputMu`) causes `waitForExit` to set `SessionStatusStopped` even when SIGKILL produces a non-zero exit code ✅
+  - `waitForSessionExit` helper is clean and reused for both grace periods ✅
+  - `setStopping(false)` called in all error paths so field is not left in bad state ✅
+  - `stopping` is consistently read/written under `outputMu` — no data race ✅
+- Ran `go test -count=1 -v -run TestStopSessionSIGKILLEscalation` → PASS (3.03s, confirming SIGTERM grace period elapsed before kill) ✅
+- Ran `go fmt ./... && go vet ./... && go test -count=1 ./...` → all packages pass.
+
+##### Findings
+- The `stopping` flag is an elegant solution for preserving `SessionStatusStopped` after SIGKILL (which exits with non-zero). Well done.
+- The `delete` sequencing regression (finding #1) only matters in OS-level failure scenarios that don't occur in practice. The happy path and the SIGKILL escalation path are both correct.
+
+##### Risks
+- `TestStopSessionSIGKILLEscalation` adds ~3s to the test suite wall time. Acceptable as a one-time cost, but worth noting if CI has tight timeouts.
+
+#### Verdict
+`PASS_WITH_NOTES`

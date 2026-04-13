@@ -276,7 +276,7 @@ The server currently exposes five tools for the PO session:
 | `send_command` | Write a command to a running session and return an acknowledgement |
 | `get_output` | Poll for output from the last command sent to a running session |
 | `list_sessions` | Show tracked sessions and their status |
-| `stop_session` | Stop a running session |
+| `stop_session` | Stop a running session, escalating from `SIGTERM` to `SIGKILL` after a grace period |
 
 Current MCP role coverage:
 
