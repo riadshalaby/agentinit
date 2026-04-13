@@ -24,3 +24,6 @@ bin/
 *.test
 *.out
 vendor/
+
+# AI workflow runtime logs
+.ai/mcp-server.log

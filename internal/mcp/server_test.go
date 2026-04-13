@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -10,6 +12,8 @@ import (
 )
 
 func TestNewServerRespondsToInitialize(t *testing.T) {
+	t.Chdir(t.TempDir())
+
 	srv := NewServer("1.2.3-test")
 
 	mcpClient, err := client.NewInProcessClient(srv.server)
@@ -48,15 +52,21 @@ func TestNewServerRespondsToInitialize(t *testing.T) {
 }
 
 func TestNewServerRegistersSessionTools(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
 	srv := NewServer("1.2.3-test")
 
 	if got := len(srv.server.ListTools()); got != 4 {
 		t.Fatalf("registered tools = %d, want 4", got)
 	}
+	if _, err := os.Stat(filepath.Join(tempDir, defaultMCPLogPath)); err != nil {
+		t.Fatalf("expected log file %q to exist: %v", defaultMCPLogPath, err)
+	}
 }
 
 func TestServerSessionToolsLifecycle(t *testing.T) {
-	srv := newServer("1.2.3-test", newSessionManager(testLauncher(t)))
+	srv := newServer("1.2.3-test", newSessionManager(testLauncher(t), testLogger()), testLogger())
 
 	mcpClient, err := client.NewInProcessClient(srv.server)
 	if err != nil {

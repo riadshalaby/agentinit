@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"log/slog"
 
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )
@@ -13,23 +14,34 @@ var serveStdio = mcpserver.ServeStdio
 type Server struct {
 	server  *mcpserver.MCPServer
 	manager *SessionManager
+	logger  *slog.Logger
 }
 
 func NewServer(version string) *Server {
-	return newServer(version, NewSessionManager())
+	logger, err := NewFileLogger(defaultMCPLogPath)
+	if err != nil {
+		logger = newDiscardLogger()
+	}
+
+	return newServer(version, NewSessionManager(logger), logger)
 }
 
-func newServer(version string, manager *SessionManager) *Server {
+func newServer(version string, manager *SessionManager, logger *slog.Logger) *Server {
+	if logger == nil {
+		logger = newDiscardLogger()
+	}
+
 	srv := mcpserver.NewMCPServer(
 		serverName,
 		version,
 		mcpserver.WithToolCapabilities(false),
 	)
-	registerTools(srv, manager)
+	registerTools(srv, manager, logger)
 
 	return &Server{
 		server:  srv,
 		manager: manager,
+		logger:  logger,
 	}
 }
 

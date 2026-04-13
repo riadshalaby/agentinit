@@ -254,7 +254,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 
 ### MCP Server
 
-`agentinit mcp` starts a stdio MCP server named `agentinit`. The generated `scripts/ai-po.sh` wrapper creates a temporary MCP config that points a PO session at this command:
+`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, which should stay gitignored. The generated `scripts/ai-po.sh` wrapper creates a temporary MCP config that points a PO session at this command:
 
 ```json
 {
@@ -318,5 +318,4 @@ No type = generic scaffold without validation commands.
 Proudly created by
 
 ![LFJ Labs, Built by Agents, Directed by Humans](logo-white-small.png)
-
 
