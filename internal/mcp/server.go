@@ -12,9 +12,8 @@ const serverName = "agentinit"
 var serveStdio = mcpserver.ServeStdio
 
 type Server struct {
-	server  *mcpserver.MCPServer
-	manager *SessionManager
-	logger  *slog.Logger
+	server *mcpserver.MCPServer
+	logger *slog.Logger
 }
 
 func NewServer(version string) *Server {
@@ -22,11 +21,10 @@ func NewServer(version string) *Server {
 	if err != nil {
 		logger = newDiscardLogger()
 	}
-
-	return newServer(version, NewSessionManager(logger), logger)
+	return newServer(version, logger)
 }
 
-func newServer(version string, manager *SessionManager, logger *slog.Logger) *Server {
+func newServer(version string, logger *slog.Logger) *Server {
 	if logger == nil {
 		logger = newDiscardLogger()
 	}
@@ -36,13 +34,8 @@ func newServer(version string, manager *SessionManager, logger *slog.Logger) *Se
 		version,
 		mcpserver.WithToolCapabilities(false),
 	)
-	registerTools(srv, manager, logger)
-
-	return &Server{
-		server:  srv,
-		manager: manager,
-		logger:  logger,
-	}
+	registerTools(srv, logger)
+	return &Server{server: srv, logger: logger}
 }
 
 func (s *Server) Run(ctx context.Context) error {
