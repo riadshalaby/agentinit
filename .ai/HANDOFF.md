@@ -223,3 +223,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-006 — review — 2026-04-14T15:05:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-006 live MCP tool surface: all 7 tools wired correctly, in-process lifecycle test covers all 8 plan steps, E2E handshake passes, race-free — verdict PASS. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-006 — implement — 2026-04-14T18:25:09Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Wired the live 7-tool MCP surface to the session manager, config, and adapters, and restored the full in-process lifecycle coverage. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, internal/mcp/server.go, internal/mcp/tools.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/...` PASS, `go test -tags e2e ./e2e/...` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): wire real named-session MCP tools` |
+| Next Role | review |
+
+---
+
+### T-006 — implement — 2026-04-14T18:33:38Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-006 implementation into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, internal/mcp/server.go, internal/mcp/tools.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/...` PASS, `go test -tags e2e ./e2e/...` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): wire real named-session MCP tools` |
+| Next Role | none |
+
+---

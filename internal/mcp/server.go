@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"log/slog"
+	"os"
+	"path/filepath"
 
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )
@@ -12,8 +14,10 @@ const serverName = "agentinit"
 var serveStdio = mcpserver.ServeStdio
 
 type Server struct {
-	server *mcpserver.MCPServer
-	logger *slog.Logger
+	server  *mcpserver.MCPServer
+	manager *SessionManager
+	config  Config
+	logger  *slog.Logger
 }
 
 func NewServer(version string) *Server {
@@ -21,10 +25,20 @@ func NewServer(version string) *Server {
 	if err != nil {
 		logger = newDiscardLogger()
 	}
-	return newServer(version, logger)
+
+	cwd, _ := os.Getwd()
+	cfg, _ := LoadConfig(cwd)
+	store := NewStore(filepath.Join(cwd, defaultSessionsPath))
+	adapters := map[string]Adapter{
+		"claude": NewClaudeAdapter(cwd, cfg.Defaults.Claude),
+		"codex":  NewCodexAdapter(cwd, cfg.Defaults.Codex),
+	}
+	manager := NewSessionManager(store, adapters, cfg, cwd, logger)
+
+	return newServer(version, manager, cfg, logger)
 }
 
-func newServer(version string, logger *slog.Logger) *Server {
+func newServer(version string, manager *SessionManager, cfg Config, logger *slog.Logger) *Server {
 	if logger == nil {
 		logger = newDiscardLogger()
 	}
@@ -34,8 +48,8 @@ func newServer(version string, logger *slog.Logger) *Server {
 		version,
 		mcpserver.WithToolCapabilities(false),
 	)
-	registerTools(srv, logger)
-	return &Server{server: srv, logger: logger}
+	registerTools(srv, manager, cfg, logger)
+	return &Server{server: srv, manager: manager, config: cfg, logger: logger}
 }
 
 func (s *Server) Run(ctx context.Context) error {
