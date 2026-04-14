@@ -332,10 +332,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"## Commands",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
-		"`start_session`",
-		"`send_command`",
-		"`stop_session`",
-		"`list_sessions`",
+		"`session_start`",
+		"`session_run`",
+		"`session_status`",
+		"`session_list`",
+		"`session_stop`",
+		"`session_reset`",
+		"`session_delete`",
+		"`session_run(name, command)`",
+		"`session_start(name=\"implementer\", role=\"implement\")`",
 		"`ready_to_commit` -> implementer `commit_task`",
 		"Reviewer owns both review and verification",
 	} {
@@ -388,10 +393,19 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"\"review\": {",
 		"\"model\": \"sonnet\"",
 		"\"effort\": \"medium\"",
+		"\"defaults\": {",
+		"\"permission_mode\": \"acceptEdits\"",
+		"\"sandbox\": \"workspace-write\"",
+		"\"network_access\": true",
 	} {
 		if !strings.Contains(config, snippet) {
 			t.Errorf(".ai/config.json should contain %q", snippet)
 		}
+	}
+
+	gitignore := files[".gitignore"]
+	if !strings.Contains(gitignore, ".ai/sessions.json") {
+		t.Error(".gitignore should contain .ai/sessions.json")
 	}
 
 	assertUnifiedWorkflowArtifacts(t, files)
