@@ -147,3 +147,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-004 — review — 2026-04-14T14:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-004 provider adapters: all 6 contract tests pass, helper process pattern correct, `promptFileForRole`/`readPromptFile` placement in adapter_codex.go is acceptable, all validation commands pass — verdict PASS. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-14T14:56:58Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added provider adapter implementations for Codex and Claude plus helper-process contract tests for start and resume behavior. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, internal/mcp/adapter.go, internal/mcp/adapter_codex.go, internal/mcp/adapter_claude.go, internal/mcp/adapter_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestAdapter` PASS, `go test ./internal/mcp/... -run TestHelper` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add provider adapters for codex and claude` |
+| Next Role | review |
+
+---
+
+### T-004 — implement — 2026-04-14T15:00:55Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-004 implementation into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, internal/mcp/adapter.go, internal/mcp/adapter_codex.go, internal/mcp/adapter_claude.go, internal/mcp/adapter_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestAdapter` PASS, `go test ./internal/mcp/... -run TestHelper` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add provider adapters for codex and claude` |
+| Next Role | none |
+
+---
