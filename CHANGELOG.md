@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.0](https://github.com/riadshalaby/agentinit/compare/v0.6.1...v0.7.0) (2026-04-14)
+
+
+### Features
+
+* **mcp:** support codex role sessions across MCP commands ([f4e85e8](https://github.com/riadshalaby/agentinit/commit/f4e85e8ec44b2fd6b368cf46229e1b6fcf4fee4b))
+* **po:** support codex and validate ai-po agent selection ([63f97cf](https://github.com/riadshalaby/agentinit/commit/63f97cf5a329e40412dc772588cd944de3e3fadb))
+
+
+### Bug Fixes
+
+* **mcp:** wait longer before cutting off MCP session output ([796bc62](https://github.com/riadshalaby/agentinit/commit/796bc62a90e46abc7581db4d90318f630e07fdff))
+
+
+### Miscellaneous Chores
+
+* start cycle 0.6.2 ([670dcfd](https://github.com/riadshalaby/agentinit/commit/670dcfda22ef4502f04c5cf1fc3ba70e75f04ac1))
+
+
+### Documentation
+
+* **po:** define explicit work_task and work_all commands ([60096d1](https://github.com/riadshalaby/agentinit/commit/60096d1a3e10bb1cdb4ccf6291c044b4abf5f475))
+
 ## [0.6.1](https://github.com/riadshalaby/agentinit/compare/v0.6.0...v0.6.1) (2026-04-13)
 
 
