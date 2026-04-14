@@ -1,6 +1,6 @@
 {
   "version": "(dev)",
-  "generated_at": "2026-04-11T20:54:35Z",
+  "generated_at": "2026-04-14T20:40:39Z",
   "files": [
     {
       "path": ".ai/prompts/implementer.md",
@@ -16,10 +16,6 @@
     },
     {
       "path": ".ai/prompts/reviewer.md",
-      "management": "full"
-    },
-    {
-      "path": ".ai/prompts/tester.md",
       "management": "full"
     },
     {
@@ -72,10 +68,6 @@
     },
     {
       "path": "scripts/ai-start-cycle.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-test.sh",
       "management": "full"
     }
   ]
