@@ -294,10 +294,16 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"agent_args+=(--model \"$role_model\")",
 		"agent_args+=(--effort \"$role_effort\")",
 		"agent_args+=(-m \"$role_model\")",
+		"exec codex exec",
+		"prompt_text=\"$(<\"$prompt_file\")\"",
+		"\"$@\" - <<<\"$prompt_text\"",
 	} {
 		if !strings.Contains(launchScript, snippet) {
 			t.Errorf("ai-launch.sh should contain %q", snippet)
 		}
+	}
+	if strings.Contains(launchScript, "--full-auto") {
+		t.Error("ai-launch.sh should not use the codex --full-auto alias")
 	}
 	startCycleScript := files["scripts/ai-start-cycle.sh"]
 	for _, snippet := range []string{

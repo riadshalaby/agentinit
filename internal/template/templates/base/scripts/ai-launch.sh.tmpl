@@ -96,12 +96,11 @@ case "$agent" in
     if [[ -n "$role_model" ]]; then
       agent_args+=(-m "$role_model")
     fi
-    prompt_text="$(cat "$prompt_file")"
-    exec codex \
-      --full-auto \
+    prompt_text="$(<"$prompt_file")"
+    exec codex exec \
       --sandbox workspace-write \
       -c "sandbox_workspace_write.network_access=true" \
-      ${agent_args[@]+"${agent_args[@]}"} "$@" "$prompt_text"
+      ${agent_args[@]+"${agent_args[@]}"} "$@" - <<<"$prompt_text"
     ;;
   *)
     echo "Unsupported agent: $agent" >&2

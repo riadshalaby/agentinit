@@ -66,7 +66,7 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 }
 
 func TestServerSessionToolsLifecycle(t *testing.T) {
-	srv := newServer("1.2.3-test", newSessionManager(testLauncher(t), testLogger()), testLogger())
+	srv := newServer("1.2.3-test", newSessionManager(testLauncher(t), testSpawnLauncher(t, nil), testLogger()), testLogger())
 
 	mcpClient, err := client.NewInProcessClient(srv.server)
 	if err != nil {
@@ -150,7 +150,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if getOutputResult.IsError {
 		t.Fatalf("CallTool(get_output) result = %+v", getOutputResult)
 	}
-	assertStructuredToolResult(t, getOutputResult, "response:next_task T-003", `"role":"implement"`, `"output":"response:next_task T-003\n"`)
+	assertStructuredToolResult(t, getOutputResult, "response:next_task T-003", `"role":"implement"`, `"session_id":"spawn-session-123"`, `response:next_task T-003\n`)
 
 	listResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{Name: "list_sessions"},

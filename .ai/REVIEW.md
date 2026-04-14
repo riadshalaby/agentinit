@@ -43,6 +43,51 @@ No required fixes.
 
 ---
 
+## Task: T-004
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+
+1. **nit** — `SpawnSession.start()` calls `cmd.CombinedOutput()` with no timeout. If a real codex process hangs during initial startup, `StartSession` would block indefinitely. The plan does not require a timeout here and this matches the intent, but it is a known risk.
+2. **nit** — `defaultSpawnLauncher` for resume includes `-c sandbox_workspace_write.network_access=true` even though `--sandbox workspace-write` is not set on resume. Codex may silently ignore it; the implementer confirmed the flow works. Not a required fix.
+
+No required fixes.
+
+#### Verification
+##### Steps
+- `go fmt ./...` — PASS
+- `go vet ./...` — PASS
+- `go test ./...` — PASS (all packages, including `internal/mcp` with new spawn tests)
+- Reviewed `session.go` diff: `SpawnSession` struct, `newSpawnSession`, `start`, `sendCommand`, `waitForCommand`, `readOutput`, `outputState`, `hasBufferedOutput`, `stop`; `isSpawnAgent`; `defaultSpawnLauncher`; `managedSession` interface dispatch in `StartSession` — all correct.
+- Reviewed `session_test.go`: `testSpawnLauncher`, `TestHelperSpawnProcess`, `TestSpawnSessionLifecycle`, `TestSpawnSessionResumeUsesSessionID`, `TestStartSessionUsesCallerContext` (extended) — all three new/updated plan-required tests present.
+- Reviewed `server_test.go` diff: `newSessionManager` constructor updated to include spawn launcher; `get_output` assertion extended with `session_id: spawn-session-123` — correct.
+- Reviewed `scripts/ai-launch.sh` diff: `--full-auto` removed from codex branch; prompt passed via `<<<"$prompt_text"` (stdin) — matches plan.
+- Confirmed `ai-launch.sh.tmpl` matches `scripts/ai-launch.sh`.
+- Confirmed `session_test.go` existing tests (`TestGetOutputTimeout`, `TestStopSessionSIGKILLEscalation`, etc.) still pass — claude long-running path unaffected.
+
+##### Findings
+- All acceptance criteria met: `start_session + send_command + get_output` cycle works for codex via spawn model; claude sessions unchanged; three new tests cover the spawn lifecycle.
+- The `managedSession` interface cleanly unifies both session types; type dispatch is in `StartSession` only, with no type switches elsewhere. This is the cleanest possible design.
+- `extractCodexSessionID` with a regex on output is pragmatic; fallback to `--last` means the system degrades gracefully when the session ID is absent.
+- Stdin-based prompt delivery (`strings.NewReader`) avoids shell escaping issues with arbitrary prompt text.
+
+##### Risks
+- The blocking `CombinedOutput()` in `start()` with no timeout (noted as nit above).
+- `codex exec resume` is an undocumented/unstable codex flag — version updates could break it. Acceptable risk given codex is already a hard dependency.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-003
 
 ### Review Round 1

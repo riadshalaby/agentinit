@@ -8,6 +8,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-004 — review — 2026-04-14T06:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed spawn-per-command codex session model; all acceptance criteria met, interface dispatch is clean, three new tests cover the lifecycle |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-14T06:05:26Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Split codex MCP role sessions onto a spawn-per-command path, preserved the long-running claude session model, and updated the launcher to pass codex prompts through stdin |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `internal/mcp/server_test.go`, `internal/mcp/session.go`, `internal/mcp/session_test.go`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/scripts/ai-launch.sh.tmpl`, `scripts/ai-launch.sh` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./internal/mcp ./internal/template ./internal/scaffold` PASS; `go test ./...` PASS |
+| Commit | none |
+| Next Role | review |
+
+---
+
 ### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
 
 | Field | Value |
@@ -158,6 +184,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/scripts/ai-po.sh.tmpl`, `scripts/ai-po.sh` |
 | Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS; `bash scripts/ai-po.sh --help` PASS; `bash scripts/ai-po.sh badagent` PASS (exit 1); `bash scripts/ai-po.sh codex --help` PASS |
 | Commit | `0df8a5e feat(po): support codex and validate ai-po agent selection` |
+| Next Role | none |
+
+---
+
+### T-004 — implement — 2026-04-14T06:28:10Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the codex spawn-per-command session work into the final task commit after review approval |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `internal/mcp/server_test.go`, `internal/mcp/session.go`, `internal/mcp/session_test.go`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/scripts/ai-launch.sh.tmpl`, `scripts/ai-launch.sh` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `0407feb feat(mcp): support codex role sessions across MCP commands` |
 | Next Role | none |
 
 ---
