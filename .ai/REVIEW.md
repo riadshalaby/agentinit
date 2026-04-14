@@ -243,3 +243,60 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-006
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **nit** — `tools.go:50-59, 83-92` — `session_start` and `session_run` call `manager.store.Get(args.Name)` directly after the manager call to expose `ProviderState.SessionID` in the JSON result. This accesses a private field across a package-internal boundary. It works correctly (same package), and the addition of `session_id` in the result is useful for the PO. A cleaner approach would be for the manager to return the session ID alongside `SessionInfo`, but that is a follow-on refactor — not a blocker for T-006.
+- **nit** — `e2e/e2e_test.go` — No changes were needed (confirmed: no tool-count assertion exists in the E2E file), consistent with the plan note.
+
+#### Verification
+##### Steps
+1. Read `server.go` — `NewServer` and `newServer` updated per plan. `Server` struct now holds `manager` and `config`. `registerTools` receives `manager`, `cfg`, and `logger`. ✅
+2. Read `tools.go` — all 7 tool handlers implemented with real manager calls. Provider defaulting in `session_start` (`cfg.ProviderForRole`). Timeout defaulting in `session_run` (300s). `jsonResult` helper retained. Error paths return `mcpproto.NewToolResultErrorf`. ✅
+3. Verified each tool maps to the correct manager method:
+   - `session_start` → `StartSession` ✅
+   - `session_run` → `RunSession` ✅
+   - `session_status` → `GetSession` ✅
+   - `session_list` → `ListSessions` ✅
+   - `session_stop` → `StopSession` ✅
+   - `session_reset` → `ResetSession` ✅
+   - `session_delete` → `DeleteSession` + `{"name", "deleted":true}` ✅
+4. Read `server_test.go` — all 3 tests present; `TestServerSessionToolsLifecycle` covers all 8 plan-specified steps via in-process MCP client:
+   - `session_start` success + session_id in JSON ✅
+   - `session_run` success + run_count=1 + status=idle ✅
+   - `session_status` → idle ✅
+   - `session_list` → contains implementer ✅
+   - duplicate `session_start` → IsError ✅
+   - `session_reset` → success ✅
+   - `session_delete` → success ✅
+   - `session_status` after delete → IsError ✅
+5. Verified `testToolAdapter`, `testLogger`, `containsAll`, `assertStructuredToolResult` helpers reintroduced per plan. ✅
+6. Read `e2e/e2e_test.go` — unchanged; no tool-count assertion; `TestMCPInitializeHandshake` passes. ✅
+7. Ran `go fmt ./...` — clean.
+8. Ran `go vet ./...` — clean.
+9. Ran `go test -count=1 ./internal/mcp/...` — all tests pass (includes TestNewServerRespondsToInitialize, TestNewServerRegistersSessionTools, TestServerSessionToolsLifecycle, plus all prior task tests).
+10. Ran `go test -count=1 -tags e2e ./e2e/... -v` — all E2E tests pass including `TestMCPInitializeHandshake`.
+11. Ran `go test -count=1 ./...` — all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. The `manager.store` direct access from tool handlers is a minor layering concern but does not affect correctness or test coverage. The entire path from MCP tool call through manager to store and back is exercised by the in-process lifecycle test.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
