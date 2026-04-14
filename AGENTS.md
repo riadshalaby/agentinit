@@ -85,7 +85,7 @@
     - `scripts/ai-plan.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
     - `scripts/ai-implement.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `scripts/ai-review.sh [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
-    - `scripts/ai-po.sh [agent-options...]` for the PO orchestration session
+    - `scripts/ai-po.sh [agent] [agent-options...]` for the PO orchestration session
 - Launcher scripts are for starting each role session, not for day-to-day task switching.
 - No `.ai/MODE` file is used.
 
@@ -128,6 +128,7 @@ Use these text commands inside the already-running role sessions.
 - PO session:
   - launched with `scripts/ai-po.sh [agent]` (default agent: `claude`)
   - uses MCP tools internally (`start_session`, `send_command`, `get_output`, `list_sessions`, `stop_session`) to coordinate role sessions
+  - `codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides, so no global Codex MCP registration is required
   - never starts a planner session; if no tasks are in `ready_for_implement` or later, tells the user to run the planner first
   - `work_task [TASK_ID]`
     - no task ID: pick the first task that is not `done`, regardless of status (supports in-flight recovery)

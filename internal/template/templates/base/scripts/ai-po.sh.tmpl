@@ -5,11 +5,57 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/ai-po.sh [agent] [agent-options...]
+
+Agents:
+  claude (default)
+  codex
+
+Examples:
+  scripts/ai-po.sh
+  scripts/ai-po.sh claude
+  scripts/ai-po.sh codex -m gpt-5.4
+EOF
+}
+
 prompt_file=".ai/prompts/po.md"
 config_file=".ai/config.json"
 if [[ ! -f "$prompt_file" ]]; then
   echo "Prompt file not found: $prompt_file" >&2
   exit 1
+fi
+
+agent="claude"
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    claude | codex)
+      agent="$1"
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      ;;
+    *)
+      echo "error: unsupported PO agent '$1' (expected: claude or codex)" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+fi
+
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+  esac
 fi
 
 mcp_config="$(mktemp)"
@@ -66,11 +112,21 @@ EOF
   printf -- '- `review`: `%s`\n' "$(config_role_agent review)"
 } >"$po_prompt"
 
-claude \
-  --permission-mode acceptEdits \
-  --add-dir "$REPO_ROOT" \
-  --mcp-config "$mcp_config" \
-  "$@" --system-prompt-file "$po_prompt"
-status=$?
-
-exit "$status"
+case "$agent" in
+  claude)
+    exec claude \
+      --permission-mode acceptEdits \
+      --add-dir "$REPO_ROOT" \
+      --mcp-config "$mcp_config" \
+      "$@" --system-prompt-file "$po_prompt"
+    ;;
+  codex)
+    exec codex exec \
+      --full-auto \
+      --sandbox workspace-write \
+      -c "sandbox_workspace_write.network_access=true" \
+      -c 'mcp_servers.agentinit.command="agentinit"' \
+      -c 'mcp_servers.agentinit.args=["mcp"]' \
+      "$@" - <"$po_prompt"
+    ;;
+esac

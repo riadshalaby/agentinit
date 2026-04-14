@@ -122,3 +122,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — review — 2026-04-13T20:50:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed ai-po.sh agent argument handling; all acceptance criteria met, codex branch implemented via inline MCP overrides, tests cover all new paths |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-13T20:46:22Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added explicit PO agent parsing, wired a codex PO branch with inline `mcp_servers.agentinit.*` overrides, and documented the supported launch modes |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/scripts/ai-po.sh.tmpl`, `scripts/ai-po.sh` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS; `bash scripts/ai-po.sh --help` PASS; `bash scripts/ai-po.sh badagent` PASS (exit 1); `bash scripts/ai-po.sh codex --help` PASS; `codex mcp list/get -c 'mcp_servers.agentinit.*'` confirmed inline MCP overrides work |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-003 — implement — 2026-04-14T05:44:10Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-003 into the final task commit after review approval |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/scripts/ai-po.sh.tmpl`, `scripts/ai-po.sh` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS; `bash scripts/ai-po.sh --help` PASS; `bash scripts/ai-po.sh badagent` PASS (exit 1); `bash scripts/ai-po.sh codex --help` PASS |
+| Commit | `0df8a5e feat(po): support codex and validate ai-po agent selection` |
+| Next Role | none |
+
+---
