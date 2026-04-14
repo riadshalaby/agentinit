@@ -14,5 +14,14 @@
       "model": "sonnet",
       "effort": "medium"
     }
+  },
+  "defaults": {
+    "claude": {
+      "permission_mode": "acceptEdits"
+    },
+    "codex": {
+      "sandbox": "workspace-write",
+      "network_access": true
+    }
   }
 }

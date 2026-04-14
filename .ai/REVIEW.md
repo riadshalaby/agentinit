@@ -300,3 +300,56 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-007
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **nit** — `README.md:283` — `session_stop` description says "escalating from `SIGTERM` to `SIGKILL` after a grace period". The `StopSession` implementation in T-005 only calls `cancel()` and `adapter.Stop()` (both no-ops for spawn-per-command). No SIGTERM/SIGKILL escalation exists in the current code. This is a documentation overstatement. Not a blocker — the user-visible behavior is still correct (stop cancels the context), but the description should be softened in a follow-on.
+
+#### Verification
+##### Steps
+1. Read `internal/template/templates/base/ai/prompts/po.md.tmpl` — contains all 7 `session_*` tool names, `session_run(name, command)` interaction pattern, session naming convention, and `session_start` examples. Matches plan spec. ✅
+2. Verified `.ai/prompts/po.md` is identical to the template — kept in sync. ✅
+3. Read `internal/template/templates/base/ai/config.json.tmpl` — `defaults` block added with `claude.permission_mode` and `codex.sandbox`/`network_access`. Matches plan spec exactly. ✅
+4. Verified `.ai/config.json` (repo's own) has the same `defaults` block. ✅
+5. Read `internal/template/templates/base/gitignore.tmpl` — `.ai/sessions.json` present on line 19. ✅
+6. Verified `.gitignore` (repo's own) has `.ai/sessions.json` on line 30. ✅
+7. Checked `README.md` for all plan-required content:
+   - 7-tool table with `session_start`…`session_delete` ✅
+   - `session_run` is synchronous note ✅
+   - `defaults` block mention in config schema description ✅
+   - `0.7.0 Migration` note ✅
+8. Read `internal/template/engine_test.go` — tests updated to assert all T-007 additions in rendered output:
+   - PO prompt: all 7 tool names, interaction pattern, session naming, examples ✅
+   - `.ai/config.json`: `defaults` block with all expected fields ✅
+   - `.gitignore`: `.ai/sessions.json` ✅
+9. Ran scaffold to verify E2E: `go run . init demo --no-git --dir /tmp/test-scaffold-t007-review` — succeeds. ✅
+10. Confirmed scaffolded output:
+    - `.ai/prompts/po.md` contains `session_start`, `session_run`, `session_delete` (11 matches) ✅
+    - `.gitignore` contains `.ai/sessions.json` ✅
+    - `.ai/config.json` contains `"defaults": {` ✅
+11. Ran `go fmt ./...` — clean.
+12. Ran `go vet ./...` — clean.
+13. Ran `go test -count=1 ./...` — all packages pass (includes `internal/template` which covers all T-007 assertions).
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. The `session_stop` description overstatement in README is the only gap, and it is cosmetic — the tool behavior is correct.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

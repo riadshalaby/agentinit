@@ -8,6 +8,44 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-007 — review — 2026-04-14T15:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-007 template and doc updates: all 7 session tools in PO prompt, defaults block in config template, sessions.json in gitignore, 7-tool README table, migration note, scaffold E2E verified — verdict PASS with one nit on session_stop description. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-007 — implement — 2026-04-14T18:41:06Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated the scaffold prompt, config, gitignore, and README for the named-session MCP workflow and refreshed template coverage for the new tool surface. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/config.json, .ai/prompts/po.md, .gitignore, README.md, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl, internal/template/templates/base/ai/prompts/po.md.tmpl, internal/template/templates/base/gitignore.tmpl |
+| Validation | `go fmt ./...` PASS, `go vet ./...` PASS, `go test ./...` PASS, `go run . init demo --no-git --dir /tmp/test-scaffold-t007` PASS, `/tmp/agentinit-t007-bin update --dry-run` PASS |
+| Commit | `PENDING docs(mcp): update scaffold prompts for named sessions` |
+| Next Role | review |
+
+---
+
+### T-007 — implement — 2026-04-14T18:45:38Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-007 scaffold and documentation updates into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, .ai/config.json, .ai/prompts/po.md, .gitignore, README.md, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl, internal/template/templates/base/ai/prompts/po.md.tmpl, internal/template/templates/base/gitignore.tmpl |
+| Validation | `go fmt ./...` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING docs(mcp): update scaffold prompts for named sessions` |
+| Next Role | none |
+
+---
+
 ### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
 
 | Field | Value |

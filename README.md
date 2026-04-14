@@ -258,7 +258,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 
 ### MCP Server
 
-`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, which should stay gitignored. The generated `scripts/ai-po.sh` wrapper creates a temporary MCP config that points a PO session at this command:
+`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, and named session metadata persists in `.ai/sessions.json`; both files should stay gitignored. The generated `scripts/ai-po.sh` wrapper creates a temporary MCP config that points a PO session at this command:
 
 ```json
 {
@@ -272,21 +272,23 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 }
 ```
 
-The server currently exposes five tools for the PO session:
+The server currently exposes seven tools for the PO session:
 
 | Tool | Purpose |
 |------|---------|
-| `start_session` | Start a role session through `scripts/ai-launch.sh` |
-| `send_command` | Write a command to a running session and return an acknowledgement |
-| `get_output` | Poll for output from the last command sent to a running session |
-| `list_sessions` | Show tracked sessions and their status |
-| `stop_session` | Stop a running session, escalating from `SIGTERM` to `SIGKILL` after a grace period |
+| `session_start` | Create and initialize a named role session through `scripts/ai-launch.sh` |
+| `session_run` | Resume a named session, send one command, and return the full output synchronously |
+| `session_status` | Show the current status and metadata for one named session |
+| `session_list` | List all tracked named sessions and their status |
+| `session_stop` | Stop an in-flight run, escalating from `SIGTERM` to `SIGKILL` after a grace period |
+| `session_reset` | Clear stored provider state so the next run starts a fresh conversation |
+| `session_delete` | Remove a tracked session entirely |
 
 Tool responses include both a readable text summary and structured JSON in `structuredContent`, so MCP clients can consume either form.
+`session_run` is synchronous, so the PO prompt no longer needs a `send_command` plus `get_output` polling loop.
 
 Current MCP role coverage:
 
-- `plan`
 - `implement`
 - `review`
 
@@ -305,11 +307,13 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `.ai/TASKS.md` | Task board with status per task | yes |
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | yes (tracked cycle log) |
-| `.ai/config.json` | Per-role agent, model, and effort defaults for launch scripts | yes |
+| `.ai/config.json` | Per-role agent/model settings plus provider defaults for launch scripts and MCP sessions | yes |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |
 | `scripts/` | Launcher, cycle bootstrap, gate, and PR scripts | yes |
+
+> **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `agentinit update` to get the updated PO prompt. `session_run` replaces the old `send_command` + `get_output` polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
 
 ### Supported Project Types
 

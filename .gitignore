@@ -27,3 +27,4 @@ vendor/
 
 # AI workflow runtime logs
 .ai/mcp-server.log
+.ai/sessions.json
