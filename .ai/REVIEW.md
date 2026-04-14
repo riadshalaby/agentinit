@@ -40,3 +40,52 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **nit** — `internal/mcp/config.go:16-19` — `validRoles` is declared but unreferenced in T-002. This is intentional: the plan notes it is reserved for the session manager (T-005). Go does not flag unused package-level vars, so it compiles fine.
+- **nit** — `internal/mcp/config_test.go:24` — `TestConfigLoadProjectTemplate` reads the real template file at a relative path (`../template/templates/base/ai/config.json.tmpl`). This couples the test to the template directory layout. Acceptable here because the plan explicitly requires testing against the project template JSON, but worth noting for future maintenance.
+
+#### Verification
+##### Steps
+1. Read `internal/mcp/config.go` and compared against T-002 plan spec field-by-field — all structs, methods, and logic match.
+2. Noted the implementer added a `validate()` helper called inside `LoadConfig`; this satisfies the acceptance criterion "validation rejects unknown providers" and is a clean addition consistent with the plan intent.
+3. Confirmed `validRoles` is declared but not yet used (T-005 will consume it). Go package-level vars are not subject to the "declared and not used" compile error.
+4. Checked template file `internal/template/templates/base/ai/config.json.tmpl` — contains `plan`, `implement` (codex/gpt-5.4), and `review` (claude/sonnet/medium) roles; no `defaults` block. Test assertions match template content exactly.
+5. Read `internal/mcp/config_test.go` — all 9 plan-specified test cases covered:
+   - Missing file → zero-value ✅
+   - Template file → correct provider/model/effort ✅
+   - Malformed JSON → error ✅
+   - Unknown provider → error ✅
+   - Known role provider → returns configured value ✅
+   - Unknown role → defaults to "claude" ✅
+   - `ModelForRole` with and without model ✅
+   - `EffortForRole` with and without effort ✅
+   - `Defaults` block accessible ✅
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test -count=1 ./internal/mcp/... -run TestConfig -v` — all 9 tests pass.
+9. Ran `go test -count=1 ./...` — all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. Config layer is read-only at this stage; no side effects beyond file I/O. The template-relative path in one test is a minor fragility but not a runtime risk.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
