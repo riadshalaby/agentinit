@@ -109,3 +109,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — review — 2026-04-14T14:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-003 session store: all 7 plan-required test cases covered (plus one bonus), locking discipline correct, all validation commands pass — verdict PASS. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-14T14:39:38Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added a JSON-backed session store for `.ai/sessions.json` with concurrency-safe CRUD operations and persistence tests. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, internal/mcp/store.go, internal/mcp/store_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestStore` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add persistent session store` |
+| Next Role | review |
+
+---
+
+### T-003 — implement — 2026-04-14T14:45:30Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-003 implementation into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, internal/mcp/store.go, internal/mcp/store_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestStore` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add persistent session store` |
+| Next Role | none |
+
+---

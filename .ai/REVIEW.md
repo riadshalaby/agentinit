@@ -89,3 +89,51 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **nit** — `store.go:122-124` — The plan's `save()` returned `os.WriteFile(...)` directly (no error wrap). The implementer wrapped it with `fmt.Errorf("write sessions file: %w", err)`. Positive improvement — consistent with the wrapping pattern used for the read/mkdir errors.
+- **nit** — `store.go:89` — The plan's `List()` had a loop variable `s` that would shadow the receiver; the implementer correctly renamed it to `session`. Bug-in-spec fixed by the implementer.
+
+#### Verification
+##### Steps
+1. Read `store.go` and compared against T-003 plan spec — structs, methods, locking discipline, and file I/O all match. Two minor positive deviations noted above.
+2. Verified `sync.Mutex` usage: all public methods lock before delegating to private `load()`/`save()`; no double-locking risk (private helpers are never called externally, so no reentrance issue).
+3. Checked `load()` handles JSON `null` — `sessions == nil` guard returns an empty map correctly. ✅
+4. Verified `save()` calls `os.MkdirAll` before writing — parent directory creation on `Put` is tested. ✅
+5. Read `store_test.go` — all 7 plan-required test cases covered, plus one bonus:
+   - Missing file → empty map, no error ✅ (`TestStoreLoadMissingFile`)
+   - `Put` → `Get` round-trip ✅ (`TestStorePutGetRoundTrip`)
+   - `Put` → `List` contains session ✅ (`TestStorePutListContainsSession`)
+   - `Put` → `Delete` → `Get` returns error ✅ (`TestStoreDeleteRemovesSession`)
+   - Two `Put`s → `List` returns both ✅ (`TestStoreListMultipleSessions`)
+   - Corrupt JSON → `Load` returns error ✅ (`TestStoreLoadCorruptJSON`)
+   - `Put` creates parent directory ✅ (`TestStorePutCreatesParentDirectory`)
+   - Bonus: `Get` on empty store returns non-`os.ErrNotExist` error ✅ (`TestStoreGetMissingReturnsError`)
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test -count=1 ./internal/mcp/... -run TestStore -v` — 8/8 pass.
+9. Ran `go test -count=1 ./...` — all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. Every operation does a full read-modify-write cycle on disk (no in-memory cache). This is intentional — the session manager (T-005) will hold in-memory state and use the store only for persistence. The current design is correct for the store's role.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
