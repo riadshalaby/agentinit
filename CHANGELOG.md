@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0](https://github.com/riadshalaby/agentinit/compare/v0.6.2...v0.7.0) (2026-04-14)
+
+
+### Features
+
+* **mcp:** add named session manager lifecycle ([b165a6c](https://github.com/riadshalaby/agentinit/commit/b165a6cb4fc1a3bc5a5c2640d7287e4182c90222))
+* **mcp:** add persistent session store ([7c14bf1](https://github.com/riadshalaby/agentinit/commit/7c14bf19439b8ef69185c71d65b5045c164dc618))
+* **mcp:** add provider adapters for codex and claude ([7dffe4d](https://github.com/riadshalaby/agentinit/commit/7dffe4d16532477eb2cf491285f0f05a535a595f))
+* **mcp:** add typed config loading and provider validation ([806ff08](https://github.com/riadshalaby/agentinit/commit/806ff0870a7598b2c84143088a813f6a0328192e))
+* **mcp:** wire real named-session MCP tools ([d370b61](https://github.com/riadshalaby/agentinit/commit/d370b61dcb63aa089ba162ab936d62e91c4983f0))
+
+
+### Bug Fixes
+
+* **ai:** manual scripts fixed ([f38e081](https://github.com/riadshalaby/agentinit/commit/f38e081826f6aabd314f7a2dcc9b0227260fe7ab))
+
+
+### Miscellaneous Chores
+
+* **ai:** close cycle ([ee434e9](https://github.com/riadshalaby/agentinit/commit/ee434e9b2bc0e5ac5dddb1be8983e3fa7b8ec495))
+* **ai:** close cycle ([2ecce2d](https://github.com/riadshalaby/agentinit/commit/2ecce2d4a454dbab2ef4071c607f0238fc027c6e))
+* **ai:** start cycle 0.7.0 ([53c2ac5](https://github.com/riadshalaby/agentinit/commit/53c2ac500887c7578d5534d8c0c9362bfd2157bd))
+* start cycle 0.7.0 ([ab57e57](https://github.com/riadshalaby/agentinit/commit/ab57e5703d4165ea31fd4b3696ec4baa70248eaf))
+
+
+### Documentation
+
+* **mcp:** update scaffold prompts for named sessions ([7fc204f](https://github.com/riadshalaby/agentinit/commit/7fc204f07ae36aac4900ba43d11b8d145e40bfa9))
+
 ## [0.6.2](https://github.com/riadshalaby/agentinit/compare/v0.6.2...v0.6.2) (2026-04-14)
 
 
