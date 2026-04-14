@@ -294,13 +294,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"agent_args+=(--model \"$role_model\")",
 		"agent_args+=(--effort \"$role_effort\")",
 		"agent_args+=(-m \"$role_model\")",
-		"exec codex exec",
 		"prompt_text=\"$(<\"$prompt_file\")\"",
-		"\"$@\" - <<<\"$prompt_text\"",
+		"\"$@\" \"$prompt_text\"",
 	} {
 		if !strings.Contains(launchScript, snippet) {
 			t.Errorf("ai-launch.sh should contain %q", snippet)
 		}
+	}
+	if strings.Contains(launchScript, "exec codex exec") {
+		t.Error("ai-launch.sh should start codex interactively")
 	}
 	if strings.Contains(launchScript, "--full-auto") {
 		t.Error("ai-launch.sh should not use the codex --full-auto alias")
@@ -359,12 +361,19 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"agent=\"claude\"",
 		"scripts/ai-po.sh [agent] [agent-options...]",
 		"error: unsupported PO agent",
+		"prompt_text=\"$(<\"$po_prompt\")\"",
 		"mcp_servers.agentinit.command=\"agentinit\"",
 		"mcp_servers.agentinit.args=[\"mcp\"]",
 	} {
 		if !strings.Contains(poScript, snippet) {
 			t.Errorf("ai-po.sh should contain %q", snippet)
 		}
+	}
+	if strings.Contains(poScript, "exec codex exec") {
+		t.Error("ai-po.sh should start codex interactively")
+	}
+	if strings.Contains(poScript, "--full-auto") {
+		t.Error("ai-po.sh should not use the codex --full-auto alias")
 	}
 
 	config := files[".ai/config.json"]

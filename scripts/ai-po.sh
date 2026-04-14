@@ -121,12 +121,12 @@ case "$agent" in
       "$@" --system-prompt-file "$po_prompt"
     ;;
   codex)
-    exec codex exec \
-      --full-auto \
+    prompt_text="$(<"$po_prompt")"
+    exec codex \
       --sandbox workspace-write \
       -c "sandbox_workspace_write.network_access=true" \
       -c 'mcp_servers.agentinit.command="agentinit"' \
       -c 'mcp_servers.agentinit.args=["mcp"]' \
-      "$@" - <"$po_prompt"
+      "$@" "$prompt_text"
     ;;
 esac
