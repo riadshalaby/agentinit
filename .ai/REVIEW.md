@@ -137,3 +137,52 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-004
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **nit** — `adapter_codex.go:97-121` — `promptFileForRole` and `readPromptFile` are placed here rather than in `manager.go` as the plan indicated. Both are package-level functions so they are equally accessible to the session manager. The placement is logical since `readPromptFile` is called from `CodexAdapter.Start`. No action needed.
+- **nit** — `adapter_codex.go:84` — The plan's `defaultExec` appended `"\n"` to stdin (`stdin + "\n"`); the implementer passes stdin as-is. Minor behavioral difference that doesn't affect correctness for the test helpers or real CLI invocation.
+- **nit** — Test names use `TestAdapterCodex*`/`TestAdapterClaude*` ordering rather than plan's `TestCodexAdapter*`/`TestClaudeAdapter*`. The acceptance criterion uses `-run TestAdapter` which matches all of them correctly. No issue.
+
+#### Verification
+##### Steps
+1. Read `adapter.go` — interface and options types match plan spec exactly. ✅
+2. Read `adapter_codex.go` — `CodexAdapter` struct, `NewCodexAdapter`, `Start`, `Run`, `Stop`, `defaultExec`, `extractCodexSessionID` all match plan. Named type alias `codexExecFunc` is a clean improvement. `promptFileForRole` and `readPromptFile` placed here rather than `manager.go` — functionally identical.
+3. Read `adapter_claude.go` — `ClaudeAdapter` struct, `NewClaudeAdapter`, `Start`, `Run`, `Stop`, `defaultExec` match plan exactly. Named type alias `claudeExecFunc` is a clean improvement.
+4. Read `adapter_test.go` — all 6 plan-required contract tests present and correct:
+   - `TestAdapterCodexStart`: session ID extracted from helper output, `session.ProviderState.SessionID` set to `"test-session-abc"`. ✅
+   - `TestAdapterCodexRun`: `resume` args passed, stdin command echoed in output. ✅
+   - `TestAdapterCodexRunNoSessionID`: error returned when session has no ID. ✅
+   - `TestAdapterClaudeStart`: `--session-id` and `--system-prompt-file` present in args echo. ✅
+   - `TestAdapterClaudeRun`: `--session-id` from provider state passed, command echoed. ✅
+   - `TestAdapterClaudeRunNoSessionID`: error returned when session has no ID. ✅
+5. Helper processes verified: `TestHelperCodexProcess` (start vs resume dispatch) and `TestHelperClaudeProcess` (echo args) match the plan's helper spec. The `--` separator pattern for extracting args is correct.
+6. Verified `testCodexExec`/`testClaudeExec` wire helpers via `os.Args[0]` — standard Go test helper process pattern. ✅
+7. Ran `go fmt ./...` — clean.
+8. Ran `go vet ./...` — clean.
+9. Ran `go test -count=1 ./internal/mcp/... -run TestAdapter -v` — 6/6 pass.
+10. Ran `go test -count=1 ./internal/mcp/... -run TestHelper -v` — 2/2 pass (env-guarded; no-ops outside helper context).
+11. Ran `go test -count=1 ./...` — all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. Adapters are stateless beyond the injected `exec` func; real CLI invocation is not exercised in tests. The test helper process pattern is correct and robust. The `time` import in `StartOpts`/`RunOpts` (in `adapter.go`) is not yet used in adapter logic — consumed by the session manager in T-005.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

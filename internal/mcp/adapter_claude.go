@@ -1,0 +1,79 @@
+package mcp
+
+import (
+	"context"
+	"fmt"
+	"os/exec"
+)
+
+type claudeExecFunc func(ctx context.Context, args []string) (string, error)
+
+type ClaudeAdapter struct {
+	cwd            string
+	permissionMode string
+	exec           claudeExecFunc
+}
+
+func NewClaudeAdapter(cwd string, defaults ClaudeDefaults) *ClaudeAdapter {
+	permissionMode := defaults.PermissionMode
+	if permissionMode == "" {
+		permissionMode = "acceptEdits"
+	}
+
+	a := &ClaudeAdapter{cwd: cwd, permissionMode: permissionMode}
+	a.exec = a.defaultExec
+	return a
+}
+
+func (a *ClaudeAdapter) Start(ctx context.Context, session *Session, opts StartOpts) (string, error) {
+	if session.ProviderState.SessionID == "" {
+		return "", fmt.Errorf("session %q has no session ID; caller must set one before Start", session.Name)
+	}
+
+	args := []string{
+		"-p",
+		"--session-id", session.ProviderState.SessionID,
+		"--permission-mode", a.permissionMode,
+	}
+	if opts.PromptFile != "" {
+		args = append(args, "--system-prompt-file", opts.PromptFile)
+	}
+	if opts.Model != "" {
+		args = append(args, "--model", opts.Model)
+	}
+	if opts.Effort != "" {
+		args = append(args, "--effort", opts.Effort)
+	}
+	args = append(args, "You are now in WAIT_FOR_USER_START state.")
+
+	return a.exec(ctx, args)
+}
+
+func (a *ClaudeAdapter) Run(ctx context.Context, session *Session, command string, opts RunOpts) (string, error) {
+	if session.ProviderState.SessionID == "" {
+		return "", fmt.Errorf("session %q has no provider session ID; call Start first", session.Name)
+	}
+
+	args := []string{
+		"-p",
+		"--session-id", session.ProviderState.SessionID,
+		"--permission-mode", a.permissionMode,
+	}
+	if opts.Model != "" {
+		args = append(args, "--model", opts.Model)
+	}
+	args = append(args, command)
+
+	return a.exec(ctx, args)
+}
+
+func (a *ClaudeAdapter) Stop(_ context.Context, _ *Session) error {
+	return nil
+}
+
+func (a *ClaudeAdapter) defaultExec(ctx context.Context, args []string) (string, error) {
+	cmd := exec.CommandContext(ctx, "claude", args...)
+	cmd.Dir = a.cwd
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
