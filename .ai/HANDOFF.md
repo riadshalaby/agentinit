@@ -71,3 +71,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-14T14:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002 config layer: all 9 plan-specified test cases covered, `validate()` helper correctly rejects unknown providers, all validation commands pass — verdict PASS. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-14T12:39:32Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added typed `.ai/config.json` loading with provider validation and role/default lookup helpers for the new MCP architecture. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, internal/mcp/config.go, internal/mcp/config_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestConfig` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add typed config loading and provider validation` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-14T13:25:15Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-002 implementation into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, internal/mcp/config.go, internal/mcp/config_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestConfig` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add typed config loading and provider validation` |
+| Next Role | none |
+
+---
