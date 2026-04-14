@@ -185,3 +185,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-005 — review — 2026-04-14T14:45:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-005 session manager: all 10 plan-required tests pass including concurrent and recovery scenarios, race detector clean, one minor fragility in error string matching noted but not blocking — verdict PASS. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-005 — implement — 2026-04-14T16:56:07Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the session manager to coordinate named session lifecycle, persistence, stale-run recovery, and run concurrency control. |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, internal/mcp/manager.go, internal/mcp/manager_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestManager` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add named session manager lifecycle` |
+| Next Role | review |
+
+---
+
+### T-005 — implement — 2026-04-14T17:01:36Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-005 implementation into one task commit and closed the task after reviewer approval. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, internal/mcp/manager.go, internal/mcp/manager_test.go |
+| Validation | `go fmt ./...` PASS, `go test ./internal/mcp/... -run TestManager` PASS, `go vet ./...` PASS, `go test ./...` PASS |
+| Commit | `PENDING feat(mcp): add named session manager lifecycle` |
+| Next Role | none |
+
+---

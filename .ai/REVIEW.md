@@ -186,3 +186,60 @@ No blocking or major findings.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-005
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+No blocking or major findings.
+
+- **minor** — `manager.go:83` — Duplicate-name detection uses `strings.Contains(err.Error(), "not found")` to distinguish "session not found" from other store errors. This is a string-match on an error message rather than a typed sentinel. It works correctly today because the store always formats that error as `"session %q not found"`, but it is fragile if that message changes. A sentinel error (e.g. `var ErrSessionNotFound`) would be safer. Not a required fix for this task — can be addressed when the store is next touched (T-006 or follow-on).
+- **nit** — `manager.go:279-288` — `ListSessions` adds `slices.SortFunc` for stable ordering. This is a positive, unplanned addition that improves determinism for callers.
+- **nit** — `NewSessionManager` adds `if store == nil { store = NewStore("") }` guard. Defensive and fine.
+- **nit** — `promptFileForRole`/`readPromptFile` are in `adapter_codex.go` (placed in T-004), not in `manager.go` as the plan indicated. Package-level, fully accessible. No action needed.
+- **nit** — `testCWD(t)` resolves to the repo root via `filepath.Clean(filepath.Join("..", ".."))` — this couples the test to the two-level depth of `internal/mcp/` but works correctly and is consistent with how other tests in the package resolve paths.
+
+#### Verification
+##### Steps
+1. Read `manager.go` in full — all methods (`recoverStaleRunning`, `StartSession`, `RunSession`, `StopSession`, `ResetSession`, `DeleteSession`, `GetSession`, `ListSessions`, `validateProvider`, `validateRole`) match the plan's intent. `recoverStaleRunning` is fully implemented (plan had `{ ... }` placeholder).
+2. Verified locking discipline in `RunSession`: creates cancel func before acquiring lock; checks `m.running[name]`; cancels and unlocks immediately if already running; otherwise registers cancel and defers cleanup. No deadlock or double-lock risk. ✅
+3. Verified `StopSession` acquires `m.mu` only to read `cancel`, not for the duration of the Stop call — correct. ✅
+4. Confirmed `RunSession` increments `RunCount` only on success (no error from adapter.Run). ✅
+5. Confirmed `context.Canceled`/`context.DeadlineExceeded` map to `StatusStopped` (not `StatusErrored`). ✅
+6. Read `manager_test.go` — all 10 plan-required tests present and correct:
+   - `TestManagerStartSession` ✅
+   - `TestManagerStartDuplicateName` ✅
+   - `TestManagerRunSession` (RunCount, LastActiveAt, output) ✅
+   - `TestManagerRunConcurrent` (channel-based blocking, "already running" error) ✅
+   - `TestManagerStopSession` (cancel propagation, status=stopped) ✅
+   - `TestManagerResetSession` (ProviderState cleared, status=idle) ✅
+   - `TestManagerDeleteSession` (Get returns error after delete) ✅
+   - `TestManagerRestartRecovery` (pre-seeded running session → errored after construction) ✅
+   - `TestManagerStartInvalidRole` ✅
+   - `TestManagerStartInvalidProvider` ✅
+7. `testAdapter` implementation matches plan spec exactly; `runBlock`/`runStarted` channels for concurrency tests are a clean addition. ✅
+8. Verified `.ai/prompts/implementer.md` and `.ai/prompts/reviewer.md` exist at repo root — required by `promptFileForRole` in tests that call `StartSession`. ✅
+9. Ran `go fmt ./...` — clean.
+10. Ran `go vet ./...` — clean.
+11. Ran `go test -count=1 ./internal/mcp/... -run TestManager -v` — 10/10 pass.
+12. Ran `go test -count=1 -race ./internal/mcp/... -run TestManager -v` — 10/10 pass, no races detected.
+13. Ran `go test -count=1 ./...` — all packages pass.
+
+##### Findings
+- All acceptance criteria met.
+
+##### Risks
+- Low. The `strings.Contains` error string check in `StartSession` (noted above) is the only fragile point, and it is contained to a single location. Race detector clean under all concurrent test scenarios.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
