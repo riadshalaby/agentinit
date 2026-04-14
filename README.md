@@ -65,6 +65,8 @@ scripts/ai-review.sh        # terminal 3
 # Wrappers read default agent/model settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
 # Example: scripts/ai-review.sh claude --model sonnet
+# Claude starts interactively by default, and the Codex wrappers use
+# interactive `codex` mode so the session stays open for role commands.
 
 # Or start the PO orchestrator for auto mode
 scripts/ai-po.sh
@@ -199,6 +201,8 @@ scripts/ai-plan.sh
 scripts/ai-implement.sh
 scripts/ai-review.sh
 ```
+
+Claude starts interactively by default, and the Codex wrappers use interactive `codex` mode so the session stays open for role commands.
 
 4. Drive the workflow through the session commands documented in the generated README and `AGENTS.md`.
 
