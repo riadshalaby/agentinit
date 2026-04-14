@@ -43,6 +43,42 @@ No required fixes.
 
 ---
 
+## Task: T-005
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-14
+
+#### Findings
+
+None.
+
+#### Verification
+##### Steps
+- `go fmt ./...` — PASS
+- `go vet ./...` — PASS
+- `go test ./...` — PASS (all packages)
+- `go test ./internal/mcp/... -v -run "TestGet|TestStartup|TestSession"` — PASS; `TestGetOutputTimeout` uses a 50ms argument to `GetOutput` (independent of `outputIdleTimeout`), unaffected by the constant change.
+- Reviewed `session.go` diff: exactly two constant lines changed (`outputIdleTimeout` 5s→15s, `startupReadTimeout` 200ms→2s); `startupQuietTimeout`, `stopTermGracePeriod`, `stopKillGracePeriod` unchanged.
+- Confirmed no `session_test.go` changes required — no test relies on the old constant values in a timing-sensitive way.
+
+##### Findings
+- All acceptance criteria met: constants updated to specified values, all tests pass.
+- Change is constants-only with no behaviour, interface, or test logic changes, as intended.
+
+##### Risks
+- None. The larger idle timeout (15s) slightly increases worst-case `get_output` call time when a session produces no output, but this is the explicit intent of the change.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-004
 
 ### Review Round 1

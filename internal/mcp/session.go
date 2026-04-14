@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	outputIdleTimeout   = 5 * time.Second
-	startupReadTimeout  = 200 * time.Millisecond
+	outputIdleTimeout   = 15 * time.Second
+	startupReadTimeout  = 2 * time.Second
 	startupQuietTimeout = 20 * time.Millisecond
 	stopTermGracePeriod = 2 * time.Second
 	stopKillGracePeriod = 500 * time.Millisecond
