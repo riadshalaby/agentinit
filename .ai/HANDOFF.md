@@ -22,3 +22,14 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | plan \| implement \| review \| none |
 
 ---
+
+### T-001..T-007 — plan — 2026-04-14T12:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned 7-task replacement of the broken MCP server with a spawn-per-command session architecture; all ADRs resolved; ROADMAP.md, PLAN.md, and TASKS.md written |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
