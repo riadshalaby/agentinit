@@ -176,10 +176,11 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`review` role never commits.",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
-		"`scripts/ai-po.sh [agent-options...]`",
+		"`scripts/ai-po.sh [agent] [agent-options...]`",
 		"`scripts/ai-po.sh [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
+		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
 		"`status_cycle [TASK_ID]`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
@@ -349,6 +350,11 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"config_file=\".ai/config.json\"",
 		"Use these default agents when calling `start_session`",
 		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
+		"agent=\"claude\"",
+		"scripts/ai-po.sh [agent] [agent-options...]",
+		"error: unsupported PO agent",
+		"mcp_servers.agentinit.command=\"agentinit\"",
+		"mcp_servers.agentinit.args=[\"mcp\"]",
 	} {
 		if !strings.Contains(poScript, snippet) {
 			t.Errorf("ai-po.sh should contain %q", snippet)

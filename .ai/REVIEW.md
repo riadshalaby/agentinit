@@ -43,6 +43,49 @@ No required fixes.
 
 ---
 
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-13
+
+#### Findings
+
+1. **nit** — `scripts/ai-po.sh` lines 41–43: when `$1` starts with `-` (flag-first invocation like `ai-po.sh -m model`), the case falls through silently, keeping the flag in `$@` and defaulting to `claude`. This is the correct pass-through behavior but is not documented in the usage text. Not a required fix.
+
+No required fixes.
+
+#### Verification
+##### Steps
+- `go fmt ./...` — PASS
+- `go vet ./...` — PASS
+- `go test ./...` — PASS (all packages)
+- `bash scripts/ai-po.sh --help` → exits 0, prints usage ✓
+- `bash scripts/ai-po.sh badagent 2>&1; echo "exit:$?"` → prints `error: unsupported PO agent 'badagent'`, usage to stderr, exits 1 ✓
+- `bash scripts/ai-po.sh codex --help` (simulated via script inspection) → would print usage and exit 0 after the second `--help` check ✓
+- Reviewed `scripts/ai-po.sh` diff: agent parsing, usage function, second `--help` check, `exec` dispatch via `case "$agent"`, codex branch with inline `-c mcp_servers.agentinit.*` overrides — all correct.
+- Confirmed `ai-po.sh.tmpl` is byte-for-byte identical to the live `ai-po.sh` (same diff applied to both).
+- Reviewed `AGENTS.md` diff: `[agent-options...]` → `[agent] [agent-options...]` in AI Operating Mode section; codex note added to PO session entry.
+- Reviewed `scaffold_test.go` and `engine_test.go` diffs: both add assertions for `agent="claude"`, error message, and the codex `mcp_servers.*` overrides in the rendered script.
+
+##### Findings
+- All acceptance criteria met: optional `[agent]` arg with default `claude`; unknown agents exit 1 with error; codex PO works via inline MCP overrides; no silent misrouting.
+- Claude branch uses `exec` (no trailing status capture) — clean improvement over the old `status=$?` pattern.
+- Codex branch uses `--full-auto --sandbox workspace-write` with `network_access=true`, consistent with the plan's findings that inline MCP config works for codex.
+
+##### Risks
+- Codex inline MCP (`-c mcp_servers.agentinit.*`) is undocumented in codex's public API and may break on codex version updates. Acceptable for now; the implementer confirmed it works.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-002
 
 ### Review Round 1

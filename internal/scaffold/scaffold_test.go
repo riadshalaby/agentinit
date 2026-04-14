@@ -282,9 +282,11 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"`commit_task [TASK_ID]`",
 		"`finish_cycle [VERSION]`",
 		"Release-As: x.y.z",
+		"`scripts/ai-po.sh [agent] [agent-options...]`",
 		"`scripts/ai-po.sh [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
+		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
 		"conversation with the planner is the roadmap-refinement phase",
 		"`start_plan` is the gate to formal planning",
 		"`review` role never commits.",
@@ -426,6 +428,11 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"config_file=\".ai/config.json\"",
 		"Use these default agents when calling `start_session`",
 		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
+		"agent=\"claude\"",
+		"scripts/ai-po.sh [agent] [agent-options...]",
+		"error: unsupported PO agent",
+		"mcp_servers.agentinit.command=\"agentinit\"",
+		"mcp_servers.agentinit.args=[\"mcp\"]",
 	} {
 		if !strings.Contains(poScript, snippet) {
 			t.Errorf("generated ai-po.sh should contain %q", snippet)
