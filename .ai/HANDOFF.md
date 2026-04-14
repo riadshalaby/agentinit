@@ -200,3 +200,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-005 — review — 2026-04-14T07:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed two-line constants-only change; both values correct, all tests pass, no test logic changes needed |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-005 — implement — 2026-04-14T07:24:04Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Increased the MCP session output idle timeout and startup read timeout without changing session behavior or test logic |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `internal/mcp/session.go` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-005 — implement — 2026-04-14T07:37:43Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the MCP timeout constant update into the final task commit after review approval |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `internal/mcp/session.go` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `51e953a fix(mcp): wait longer before cutting off MCP session output` |
+| Next Role | none |
+
+---
