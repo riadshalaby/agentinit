@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.1](https://github.com/riadshalaby/agentinit/compare/v0.7.0...v0.7.1) (2026-04-15)
+
+
+### Features
+
+* **mcp:** stream session output asynchronously ([553aab6](https://github.com/riadshalaby/agentinit/commit/553aab6bd1563cda76691cad464d8454f6135f78))
+* **scaffold:** configure Claude MCP server ([c6bfd04](https://github.com/riadshalaby/agentinit/commit/c6bfd04764c5a4ab993e7f1902d9c8b7f2f92a46))
+* **scaffold:** initialize projects on main by default ([c6ed145](https://github.com/riadshalaby/agentinit/commit/c6ed14531047b795d5b7ba78c3b2eefaeebe79f6))
+
+
+### Miscellaneous Chores
+
+* **ai:** close cycle ([c01a047](https://github.com/riadshalaby/agentinit/commit/c01a047ec94619407f5e515e5b5f8bb210baf439))
+* **ai:** roadmap 0.7.1 ([f91e077](https://github.com/riadshalaby/agentinit/commit/f91e0779547c8d3c235d8d5454ed436c96c5ccfe))
+* **ai:** update manifest ([e412b1d](https://github.com/riadshalaby/agentinit/commit/e412b1d8a09e2101a2a2996df50859341ca2f192))
+* start cycle 0.7.1 ([5d2db83](https://github.com/riadshalaby/agentinit/commit/5d2db83710a2f3bd098d45510537011260967e73))
+
 ## [0.7.0](https://github.com/riadshalaby/agentinit/compare/v0.6.2...v0.7.0) (2026-04-14)
 
 
