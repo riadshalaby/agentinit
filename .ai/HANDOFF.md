@@ -72,3 +72,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — implement — 2026-04-15T19:51:39Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the `agentinit` MCP server block to the generated Claude settings template |
+| Files Changed | `internal/template/templates/base/claude/settings.json.tmpl`, `internal/template/engine_test.go`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go test ./internal/template` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `68f115a feat(scaffold): configure Claude MCP server` |
+| Next Role | review |
+
+---
+
+### T-002 — review — 2026-04-15T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002 implementation; template matches plan spec exactly, all engine tests pass |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-15T19:54:30Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed T-002 implementation and review artifacts into the final task commit |
+| Files Changed | `internal/template/templates/base/claude/settings.json.tmpl`, `internal/template/engine_test.go`, `.ai/TASKS.md`, `.ai/REVIEW.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | final commit created by `commit_task`: `feat(scaffold): configure Claude MCP server` |
+| Next Role | none |
+
+---

@@ -425,6 +425,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(settings, "\"includeCoAuthoredBy\": false") {
 		t.Error(".claude/settings.json should disable co-authored-by trailers")
 	}
+	for _, snippet := range []string{
+		"\"mcpServers\"",
+		"\"agentinit\"",
+		"\"mcp\"",
+	} {
+		if !strings.Contains(settings, snippet) {
+			t.Errorf(".claude/settings.json should contain %q", snippet)
+		}
+	}
 
 	localSettings := files[".claude/settings.local.json"]
 	for _, entry := range []string{

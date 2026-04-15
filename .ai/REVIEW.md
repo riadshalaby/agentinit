@@ -39,3 +39,40 @@ Reviewed: 2026-04-15
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-15
+
+#### Findings
+
+No findings. Implementation is a clean, minimal change that exactly matches the plan spec.
+
+#### Verification
+##### Steps
+1. Read `.ai/PLAN.md` T-002 scope against commit `68f115a`.
+2. Verified `settings.json.tmpl` content matches the plan-specified JSON exactly (field order, `env: {}` included).
+3. Verified `engine_test.go` assertions added for `"mcpServers"`, `"agentinit"`, and `"mcp"` against the rendered `.claude/settings.json` string.
+4. Ran `go fmt ./...` — PASS.
+5. Ran `go vet ./...` — PASS.
+6. Ran `go test ./internal/template/... -run TestRenderAll` — all 5 sub-tests PASS.
+7. Ran `go test ./...` — all packages pass.
+
+##### Findings
+- All plan requirements satisfied.
+- Acceptance criteria met: scaffolded `.claude/settings.json` contains the `mcpServers.agentinit` block; engine tests pass.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
