@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -13,22 +14,21 @@ type StartOpts struct {
 	Timeout    time.Duration // 0 means no timeout
 }
 
-// RunOpts are passed to Adapter.Run.
+// RunOpts are passed to Adapter.RunStream.
 type RunOpts struct {
-	Model   string
-	Timeout time.Duration // 0 means no timeout
+	Model string
 }
 
 // Adapter handles provider-specific CLI invocation.
-// Each method spawns a short-lived subprocess and returns its full output.
+// Each method spawns a short-lived provider subprocess.
 type Adapter interface {
 	// Start runs the initial CLI invocation with the role system prompt.
 	// It updates session.ProviderState in place.
 	Start(ctx context.Context, session *Session, opts StartOpts) (output string, err error)
 
-	// Run resumes the session with a command.
+	// RunStream resumes the session with a command and streams stdout+stderr to w.
 	// It updates session.ProviderState in place.
-	Run(ctx context.Context, session *Session, command string, opts RunOpts) (output string, err error)
+	RunStream(ctx context.Context, session *Session, command string, opts RunOpts, w io.Writer) error
 
 	// Stop kills the process identified by session.ProviderState if it is
 	// currently running. No-op if nothing is running.

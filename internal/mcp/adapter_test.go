@@ -49,12 +49,13 @@ func TestAdapterCodexRun(t *testing.T) {
 	adapter := NewCodexAdapter(t.TempDir(), CodexDefaults{NetworkAccess: true})
 	adapter.exec = testCodexExec(t)
 
-	output, err := adapter.Run(context.Background(), session, "next_task T-004", RunOpts{Model: "gpt-5.4"})
+	var output strings.Builder
+	err := adapter.RunStream(context.Background(), session, "next_task T-004", RunOpts{Model: "gpt-5.4"}, &output)
 	if err != nil {
-		t.Fatalf("Run() error = %v", err)
+		t.Fatalf("RunStream() error = %v", err)
 	}
-	if !strings.Contains(output, "response: next_task T-004") {
-		t.Fatalf("Run() output = %q", output)
+	if !strings.Contains(output.String(), "response: next_task T-004") {
+		t.Fatalf("RunStream() output = %q", output.String())
 	}
 }
 
@@ -62,9 +63,9 @@ func TestAdapterCodexRunNoSessionID(t *testing.T) {
 	t.Parallel()
 
 	adapter := NewCodexAdapter(t.TempDir(), CodexDefaults{})
-	_, err := adapter.Run(context.Background(), &Session{Name: "implementer"}, "next_task T-004", RunOpts{})
+	err := adapter.RunStream(context.Background(), &Session{Name: "implementer"}, "next_task T-004", RunOpts{}, io.Discard)
 	if err == nil {
-		t.Fatal("Run() error = nil, want missing session ID error")
+		t.Fatal("RunStream() error = nil, want missing session ID error")
 	}
 }
 
@@ -109,12 +110,13 @@ func TestAdapterClaudeRun(t *testing.T) {
 	adapter := NewClaudeAdapter(t.TempDir(), ClaudeDefaults{PermissionMode: "acceptEdits"})
 	adapter.exec = testClaudeExec(t)
 
-	output, err := adapter.Run(context.Background(), session, "status_cycle", RunOpts{Model: "sonnet"})
+	var output strings.Builder
+	err := adapter.RunStream(context.Background(), session, "status_cycle", RunOpts{Model: "sonnet"}, &output)
 	if err != nil {
-		t.Fatalf("Run() error = %v", err)
+		t.Fatalf("RunStream() error = %v", err)
 	}
-	if !strings.Contains(output, "--session-id claude-session-123") || !strings.Contains(output, "status_cycle") {
-		t.Fatalf("Run() output = %q", output)
+	if !strings.Contains(output.String(), "--session-id claude-session-123") || !strings.Contains(output.String(), "status_cycle") {
+		t.Fatalf("RunStream() output = %q", output.String())
 	}
 }
 
@@ -122,9 +124,9 @@ func TestAdapterClaudeRunNoSessionID(t *testing.T) {
 	t.Parallel()
 
 	adapter := NewClaudeAdapter(t.TempDir(), ClaudeDefaults{})
-	_, err := adapter.Run(context.Background(), &Session{Name: "reviewer"}, "status_cycle", RunOpts{})
+	err := adapter.RunStream(context.Background(), &Session{Name: "reviewer"}, "status_cycle", RunOpts{}, io.Discard)
 	if err == nil {
-		t.Fatal("Run() error = nil, want missing session ID error")
+		t.Fatal("RunStream() error = nil, want missing session ID error")
 	}
 }
 
@@ -173,27 +175,29 @@ func TestHelperClaudeProcess(t *testing.T) {
 func testCodexExec(t *testing.T) codexExecFunc {
 	t.Helper()
 
-	return func(ctx context.Context, args []string, stdin string) (string, error) {
+	return func(ctx context.Context, args []string, stdin string, w io.Writer) error {
 		cmdArgs := []string{"-test.run=TestHelperCodexProcess", "--"}
 		cmdArgs = append(cmdArgs, args...)
 		cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 		cmd.Env = append(os.Environ(), "GO_WANT_HELPER_CODEX=1")
 		cmd.Stdin = strings.NewReader(stdin)
-		out, err := cmd.CombinedOutput()
-		return string(out), err
+		cmd.Stdout = w
+		cmd.Stderr = w
+		return cmd.Run()
 	}
 }
 
 func testClaudeExec(t *testing.T) claudeExecFunc {
 	t.Helper()
 
-	return func(ctx context.Context, args []string) (string, error) {
+	return func(ctx context.Context, args []string, w io.Writer) error {
 		cmdArgs := []string{"-test.run=TestHelperClaudeProcess", "--"}
 		cmdArgs = append(cmdArgs, args...)
 		cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 		cmd.Env = append(os.Environ(), "GO_WANT_HELPER_CLAUDE=1")
-		out, err := cmd.CombinedOutput()
-		return string(out), err
+		cmd.Stdout = w
+		cmd.Stderr = w
+		return cmd.Run()
 	}
 }
 

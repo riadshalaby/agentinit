@@ -111,3 +111,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — implement — 2026-04-15T20:01:22Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Made MCP session runs asynchronous with incremental output polling and updated generated PO workflow documentation |
+| Files Changed | `internal/mcp/adapter.go`, `internal/mcp/adapter_claude.go`, `internal/mcp/adapter_codex.go`, `internal/mcp/output_buffer.go`, `internal/mcp/manager.go`, `internal/mcp/tools.go`, `internal/mcp/adapter_test.go`, `internal/mcp/manager_test.go`, `internal/mcp/server_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/po.md.tmpl`, `internal/template/templates/base/AGENTS.md.tmpl`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `641034b feat(mcp): stream session output asynchronously` |
+| Next Role | review |
+
+---
+
+### T-003 — review — 2026-04-15T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-003 implementation; async session model correct, polling end-to-end verified, all validations pass |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-15T20:07:39Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed T-003 implementation and review artifacts into the final task commit |
+| Files Changed | `internal/mcp/adapter.go`, `internal/mcp/adapter_claude.go`, `internal/mcp/adapter_codex.go`, `internal/mcp/output_buffer.go`, `internal/mcp/manager.go`, `internal/mcp/tools.go`, `internal/mcp/adapter_test.go`, `internal/mcp/manager_test.go`, `internal/mcp/server_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/po.md.tmpl`, `internal/template/templates/base/AGENTS.md.tmpl`, `.ai/TASKS.md`, `.ai/REVIEW.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | final commit created by `commit_task`: `feat(mcp): stream session output asynchronously` |
+| Next Role | none |
+
+---
