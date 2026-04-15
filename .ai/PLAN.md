@@ -1,4 +1,4 @@
-# PLAN — cycle 0.7.1
+# PLAN — cycle 0.7.1 done
 
 Status: **ready**
 
