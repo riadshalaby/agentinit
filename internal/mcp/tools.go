@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	mcpproto "github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
@@ -17,9 +16,13 @@ type sessionStartArgs struct {
 }
 
 type sessionRunArgs struct {
-	Name           string `json:"name"`
-	Command        string `json:"command"`
-	TimeoutSeconds int    `json:"timeout_seconds"`
+	Name    string `json:"name"`
+	Command string `json:"command"`
+}
+
+type sessionGetOutputArgs struct {
+	Name   string `json:"name"`
+	Offset int    `json:"offset"`
 }
 
 type sessionNameArgs struct {
@@ -63,33 +66,51 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 	server.AddTool(
 		mcpproto.NewTool(
 			"session_run",
-			mcpproto.WithDescription("Send a command to a named session and return full output."),
+			mcpproto.WithDescription("Send a command to a named session. Returns immediately; use session_get_output to poll for results."),
 			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
 			mcpproto.WithString("command", mcpproto.Required(), mcpproto.Description("Command to execute.")),
-			mcpproto.WithNumber("timeout_seconds", mcpproto.Description("Timeout in seconds. Defaults to 300.")),
 		),
 		mcpproto.NewTypedToolHandler(func(ctx context.Context, _ mcpproto.CallToolRequest, args sessionRunArgs) (*mcpproto.CallToolResult, error) {
 			logger.Info("tool call started", "tool", "session_run", "args", args)
-			timeoutSeconds := args.TimeoutSeconds
-			if timeoutSeconds <= 0 {
-				timeoutSeconds = 300
-			}
-			info, output, err := manager.RunSession(ctx, args.Name, args.Command, time.Duration(timeoutSeconds)*time.Second)
+			info, err := manager.RunSession(ctx, args.Name, args.Command)
 			if err != nil {
 				logger.Error("tool call failed", "tool", "session_run", "args", args, "error", err)
 				return mcpproto.NewToolResultErrorf("session_run failed: %v", err), nil
 			}
 			logger.Info("tool call completed", "tool", "session_run", "name", info.Name, "status", info.Status, "run_count", info.RunCount)
-			session, sessionErr := manager.store.Get(args.Name)
-			if sessionErr != nil {
-				logger.Error("tool call failed", "tool", "session_run", "args", args, "error", sessionErr)
-				return mcpproto.NewToolResultErrorf("session_run failed: %v", sessionErr), nil
-			}
 			return jsonResult(struct {
-				Session   SessionInfo `json:"session"`
-				SessionID string      `json:"session_id,omitempty"`
-				Output    string      `json:"output"`
-			}{Session: info, SessionID: session.ProviderState.SessionID, Output: output}, output)
+				Session SessionInfo `json:"session"`
+				Message string      `json:"message"`
+			}{Session: info, Message: "run started"}, "run started")
+		}),
+	)
+
+	server.AddTool(
+		mcpproto.NewTool(
+			"session_get_output",
+			mcpproto.WithDescription("Poll output from a running or completed session. Pass offset=0 to read from the start, or offset=total_bytes from the previous call to read only new output."),
+			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
+			mcpproto.WithNumber("offset", mcpproto.Description("Byte offset to start reading from.")),
+		),
+		mcpproto.NewTypedToolHandler(func(_ context.Context, _ mcpproto.CallToolRequest, args sessionGetOutputArgs) (*mcpproto.CallToolResult, error) {
+			logger.Info("tool call started", "tool", "session_get_output", "args", args)
+			chunk, totalBytes, running, err := manager.GetOutput(args.Name, args.Offset)
+			if err != nil {
+				logger.Error("tool call failed", "tool", "session_get_output", "args", args, "error", err)
+				return mcpproto.NewToolResultErrorf("session_get_output failed: %v", err), nil
+			}
+			info, err := manager.GetSession(args.Name)
+			if err != nil {
+				logger.Error("tool call failed", "tool", "session_get_output", "args", args, "error", err)
+				return mcpproto.NewToolResultErrorf("session_get_output failed: %v", err), nil
+			}
+			logger.Info("tool call completed", "tool", "session_get_output", "name", info.Name, "status", info.Status, "running", running, "total_bytes", totalBytes)
+			return jsonResult(struct {
+				Chunk      string        `json:"chunk"`
+				TotalBytes int           `json:"total_bytes"`
+				Running    bool          `json:"running"`
+				Status     SessionStatus `json:"status"`
+			}{Chunk: chunk, TotalBytes: totalBytes, Running: running, Status: info.Status}, chunk)
 		}),
 	)
 

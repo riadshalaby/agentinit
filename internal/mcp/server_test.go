@@ -3,11 +3,13 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mark3labs/mcp-go/client"
 	mcpproto "github.com/mark3labs/mcp-go/mcp"
@@ -59,8 +61,8 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 
 	srv := NewServer("1.2.3-test")
 
-	if got := len(srv.server.ListTools()); got != 7 {
-		t.Fatalf("registered tools = %d, want 7", got)
+	if got := len(srv.server.ListTools()); got != 8 {
+		t.Fatalf("registered tools = %d, want 8", got)
 	}
 	if _, err := os.Stat(filepath.Join(tempDir, defaultMCPLogPath)); err != nil {
 		t.Fatalf("expected log file %q to exist: %v", defaultMCPLogPath, err)
@@ -140,7 +142,12 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if runResult.IsError {
 		t.Fatalf("CallTool(session_run) result = %+v", runResult)
 	}
-	assertStructuredToolResult(t, runResult, "response: next_task T-001", `"run_count":1`, `"status":"idle"`)
+	assertStructuredToolResult(t, runResult, "run started", `"message":"run started"`, `"status":"running"`)
+
+	output := pollToolOutput(t, ctx, mcpClient, "implementer")
+	if !strings.Contains(output, "response: next_task T-001") {
+		t.Fatalf("session_get_output accumulated output = %q", output)
+	}
 
 	statusResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{
@@ -156,7 +163,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	if statusResult.IsError {
 		t.Fatalf("CallTool(session_status) result = %+v", statusResult)
 	}
-	assertStructuredToolResult(t, statusResult, "implementer", `"status":"idle"`)
+	assertStructuredToolResult(t, statusResult, "implementer", `"run_count":1`, `"status":"idle"`)
 
 	listResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{Name: "session_list"},
@@ -239,8 +246,9 @@ func (testToolAdapter) Start(_ context.Context, session *Session, _ StartOpts) (
 	return "WAIT_FOR_USER_START", nil
 }
 
-func (testToolAdapter) Run(_ context.Context, _ *Session, command string, _ RunOpts) (string, error) {
-	return fmt.Sprintf("response: %s", command), nil
+func (testToolAdapter) RunStream(_ context.Context, _ *Session, command string, _ RunOpts, w io.Writer) error {
+	_, err := fmt.Fprintf(w, "response: %s", command)
+	return err
 }
 
 func (testToolAdapter) Stop(_ context.Context, _ *Session) error {
@@ -279,4 +287,63 @@ func assertStructuredToolResult(t *testing.T, result *mcpproto.CallToolResult, t
 	if !containsAll(jsonFallback, jsonSubstrings...) {
 		t.Fatalf("tool result JSON fallback = %q", jsonFallback)
 	}
+}
+
+func pollToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client, name string) string {
+	t.Helper()
+	var output strings.Builder
+	offset := 0
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+			Params: mcpproto.CallToolParams{
+				Name: "session_get_output",
+				Arguments: map[string]any{
+					"name":   name,
+					"offset": offset,
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("CallTool(session_get_output) error = %v", err)
+		}
+		if result.IsError {
+			t.Fatalf("CallTool(session_get_output) result = %+v", result)
+		}
+		if result.StructuredContent == nil {
+			t.Fatal("session_get_output missing structured content")
+		}
+		text := mcpproto.GetTextFromContent(result.Content[0])
+		output.WriteString(text)
+		jsonFallback := mcpproto.GetTextFromContent(result.Content[1])
+		if !strings.Contains(jsonFallback, `"total_bytes":`) || !strings.Contains(jsonFallback, `"running":`) {
+			t.Fatalf("session_get_output JSON fallback = %q", jsonFallback)
+		}
+		offset = extractTotalBytes(t, jsonFallback)
+		if strings.Contains(jsonFallback, `"running":false`) {
+			return output.String()
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("timed out polling session_get_output")
+	return ""
+}
+
+func extractTotalBytes(t *testing.T, jsonFallback string) int {
+	t.Helper()
+	marker := `"total_bytes":`
+	idx := strings.Index(jsonFallback, marker)
+	if idx == -1 {
+		t.Fatalf("total_bytes missing from %q", jsonFallback)
+	}
+	rest := jsonFallback[idx+len(marker):]
+	end := strings.IndexAny(rest, ",}")
+	if end == -1 {
+		t.Fatalf("total_bytes value not terminated in %q", jsonFallback)
+	}
+	var total int
+	if _, err := fmt.Sscanf(rest[:end], "%d", &total); err != nil {
+		t.Fatalf("parse total_bytes from %q: %v", jsonFallback, err)
+	}
+	return total
 }

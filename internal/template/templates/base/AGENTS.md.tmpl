@@ -131,7 +131,7 @@
 Use these text commands inside the already-running role sessions.
 - PO session:
   - launched with `scripts/ai-po.sh [agent]` (default agent: `claude`)
-  - uses MCP tools internally (`start_session`, `send_command`, `get_output`, `list_sessions`, `stop_session`) to coordinate role sessions
+  - uses MCP tools internally (`session_start`, `session_run`, `session_get_output`, `session_status`, `session_list`, `session_stop`, `session_reset`, `session_delete`) to coordinate role sessions
   - `codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides, so no global Codex MCP registration is required
   - never starts a planner session; if no tasks are in `ready_for_implement` or later, tells the user to run the planner first
   - `work_task [TASK_ID]`
