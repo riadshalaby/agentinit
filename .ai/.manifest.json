@@ -1,6 +1,6 @@
 {
-  "version": "(dev)",
-  "generated_at": "2026-04-14T20:40:39Z",
+  "version": "v0.7.1",
+  "generated_at": "2026-04-15T20:23:41Z",
   "files": [
     {
       "path": ".ai/prompts/implementer.md",
