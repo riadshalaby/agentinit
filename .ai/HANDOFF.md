@@ -33,3 +33,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | implement |
 
 ---
+
+### T-001 — implement — 2026-04-15T19:41:04Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated scaffold git initialization to prefer the `main` default branch and use `chore: initial commit` for generated repositories |
+| Files Changed | `internal/scaffold/scaffold.go`, `internal/scaffold/scaffold_test.go`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `d73b955 feat(scaffold): initialize projects on main by default` |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-15T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-001 implementation; all plan requirements satisfied and all validations pass |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-15T19:48:53Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed T-001 implementation and review artifacts into the final task commit |
+| Files Changed | `internal/scaffold/scaffold.go`, `internal/scaffold/scaffold_test.go`, `.ai/TASKS.md`, `.ai/REVIEW.md`, `.ai/HANDOFF.md` |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | final commit created by `commit_task`: `feat(scaffold): initialize projects on main by default` |
+| Next Role | none |
+
+---
