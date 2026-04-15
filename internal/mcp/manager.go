@@ -22,6 +22,7 @@ type SessionManager struct {
 	cwd      string
 	mu       sync.Mutex
 	running  map[string]context.CancelFunc
+	outputs  map[string]*outputBuffer
 	logger   *slog.Logger
 }
 
@@ -39,6 +40,7 @@ func NewSessionManager(store *Store, adapters map[string]Adapter, config Config,
 		config:   config,
 		cwd:      cwd,
 		running:  make(map[string]context.CancelFunc),
+		outputs:  make(map[string]*outputBuffer),
 		logger:   logger,
 	}
 	m.recoverStaleRunning()
@@ -130,73 +132,96 @@ func (m *SessionManager) StartSession(ctx context.Context, name, role, provider 
 	return session.info(), output, nil
 }
 
-// RunSession sends a command to an existing session synchronously.
+// RunSession sends a command to an existing session asynchronously.
 // Returns an error if the session is already running.
-func (m *SessionManager) RunSession(ctx context.Context, name, command string, timeout time.Duration) (SessionInfo, string, error) {
+func (m *SessionManager) RunSession(ctx context.Context, name, command string) (SessionInfo, error) {
 	session, err := m.store.Get(name)
 	if err != nil {
-		return SessionInfo{}, "", err
+		return SessionInfo{}, err
 	}
 	adapter, ok := m.adapters[session.Provider]
 	if !ok {
-		return SessionInfo{}, "", fmt.Errorf("adapter %q is not configured", session.Provider)
+		return SessionInfo{}, fmt.Errorf("adapter %q is not configured", session.Provider)
 	}
 
-	runCtx := ctx
-	var cancel context.CancelFunc
-	if timeout > 0 {
-		runCtx, cancel = context.WithTimeout(ctx, timeout)
-	} else {
-		runCtx, cancel = context.WithCancel(ctx)
-	}
-
+	runCtx, cancel := context.WithCancel(ctx)
 	m.mu.Lock()
 	if _, exists := m.running[name]; exists {
 		m.mu.Unlock()
 		cancel()
-		return SessionInfo{}, "", fmt.Errorf("session %q is already running", name)
+		return SessionInfo{}, fmt.Errorf("session %q is already running", name)
 	}
 	m.running[name] = cancel
 	m.mu.Unlock()
-	defer func() {
-		cancel()
-		m.mu.Lock()
-		delete(m.running, name)
-		m.mu.Unlock()
-	}()
+
+	buf := &outputBuffer{}
+	m.mu.Lock()
+	m.outputs[name] = buf
+	m.mu.Unlock()
 
 	session.Status = StatusRunning
 	session.Error = ""
 	if err := m.store.Put(session); err != nil {
-		return SessionInfo{}, "", err
+		cancel()
+		m.mu.Lock()
+		delete(m.running, name)
+		delete(m.outputs, name)
+		m.mu.Unlock()
+		return SessionInfo{}, err
 	}
 
-	output, runErr := adapter.Run(runCtx, session, command, RunOpts{
-		Model:   session.Model,
-		Timeout: timeout,
-	})
-	session.LastActiveAt = time.Now().UTC()
-	if runErr != nil {
-		if errors.Is(runErr, context.Canceled) || errors.Is(runErr, context.DeadlineExceeded) {
-			session.Status = StatusStopped
-			session.Error = ""
-		} else {
-			session.Status = StatusErrored
-			session.Error = runErr.Error()
+	go func() {
+		defer func() {
+			cancel()
+			m.mu.Lock()
+			delete(m.running, name)
+			m.mu.Unlock()
+		}()
+
+		runErr := adapter.RunStream(runCtx, session, command, RunOpts{Model: session.Model}, buf)
+		current, err := m.store.Get(name)
+		if err != nil {
+			m.logger.Error("load session after run failed", "name", name, "error", err)
+			return
 		}
-	} else {
-		session.Status = StatusIdle
-		session.RunCount++
-		session.Error = ""
-	}
 
-	if err := m.store.Put(session); err != nil {
+		current.ProviderState = session.ProviderState
+		current.LastActiveAt = time.Now().UTC()
 		if runErr != nil {
-			return SessionInfo{}, output, fmt.Errorf("%w (persist error: %v)", runErr, err)
+			if errors.Is(runErr, context.Canceled) || errors.Is(runErr, context.DeadlineExceeded) {
+				current.Status = StatusStopped
+				current.Error = ""
+			} else {
+				current.Status = StatusErrored
+				current.Error = runErr.Error()
+			}
+		} else {
+			current.Status = StatusIdle
+			current.RunCount++
+			current.Error = ""
 		}
-		return SessionInfo{}, output, err
+
+		if err := m.store.Put(current); err != nil {
+			m.logger.Error("persist session after run failed", "name", name, "error", err)
+		}
+	}()
+
+	return session.info(), nil
+}
+
+func (m *SessionManager) GetOutput(name string, offset int) (chunk string, totalBytes int, running bool, err error) {
+	session, err := m.store.Get(name)
+	if err != nil {
+		return "", 0, false, err
 	}
-	return session.info(), output, runErr
+	m.mu.Lock()
+	buf := m.outputs[name]
+	m.mu.Unlock()
+	if buf == nil {
+		return "", 0, session.Status == StatusRunning, nil
+	}
+	chunk, total := buf.StringFrom(offset)
+	return chunk, total, session.Status == StatusRunning, nil
 }
 
 // StopSession cancels any in-flight RunSession for the named session.
@@ -235,6 +260,9 @@ func (m *SessionManager) ResetSession(name string) (SessionInfo, error) {
 	if err != nil {
 		return SessionInfo{}, err
 	}
+	m.mu.Lock()
+	delete(m.outputs, name)
+	m.mu.Unlock()
 
 	session.ProviderState = ProviderState{}
 	session.Status = StatusIdle
@@ -253,6 +281,7 @@ func (m *SessionManager) DeleteSession(name string) error {
 		cancel()
 		delete(m.running, name)
 	}
+	delete(m.outputs, name)
 	m.mu.Unlock()
 	return m.store.Delete(name)
 }

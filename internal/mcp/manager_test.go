@@ -3,7 +3,9 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -57,15 +59,17 @@ func TestManagerRunSession(t *testing.T) {
 		t.Fatalf("store.Get() error = %v", err)
 	}
 
-	info, output, err := manager.RunSession(context.Background(), "implementer", "next_task T-005", time.Second)
+	info, err := manager.RunSession(context.Background(), "implementer", "next_task T-005")
 	if err != nil {
 		t.Fatalf("RunSession() error = %v", err)
 	}
+	if info.Status != StatusRunning {
+		t.Fatalf("RunSession() status = %q, want %q", info.Status, StatusRunning)
+	}
+
+	output := waitForOutput(t, manager, "implementer")
 	if output != "response: next_task T-005" {
 		t.Fatalf("RunSession() output = %q", output)
-	}
-	if info.RunCount != 1 {
-		t.Fatalf("RunSession() RunCount = %d, want 1", info.RunCount)
 	}
 
 	after, err := manager.store.Get("implementer")
@@ -77,6 +81,9 @@ func TestManagerRunSession(t *testing.T) {
 	}
 	if after.Status != StatusIdle {
 		t.Fatalf("status = %q, want %q", after.Status, StatusIdle)
+	}
+	if after.RunCount != 1 {
+		t.Fatalf("RunCount = %d, want 1", after.RunCount)
 	}
 }
 
@@ -90,22 +97,18 @@ func TestManagerRunConcurrent(t *testing.T) {
 		t.Fatalf("StartSession() error = %v", err)
 	}
 
-	runDone := make(chan error, 1)
-	go func() {
-		_, _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005", time.Second)
-		runDone <- err
-	}()
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("first RunSession() error = %v", err)
+	}
 
 	<-startedCh
 
-	if _, _, err := manager.RunSession(context.Background(), "implementer", "status_cycle", time.Second); err == nil {
+	if _, err := manager.RunSession(context.Background(), "implementer", "status_cycle"); err == nil {
 		t.Fatal("second RunSession() error = nil, want already-running error")
 	}
 
 	close(blockCh)
-	if err := <-runDone; err != nil {
-		t.Fatalf("first RunSession() error = %v", err)
-	}
+	_ = waitForOutput(t, manager, "implementer")
 }
 
 func TestManagerStopSession(t *testing.T) {
@@ -118,11 +121,9 @@ func TestManagerStopSession(t *testing.T) {
 		t.Fatalf("StartSession() error = %v", err)
 	}
 
-	runDone := make(chan error, 1)
-	go func() {
-		_, _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005", 5*time.Second)
-		runDone <- err
-	}()
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
 
 	<-startedCh
 
@@ -134,10 +135,32 @@ func TestManagerStopSession(t *testing.T) {
 		t.Fatalf("StopSession() status = %q, want %q", info.Status, StatusStopped)
 	}
 
-	if err := <-runDone; err == nil {
-		t.Fatal("RunSession() error = nil, want context cancellation")
-	}
 	close(blockCh)
+	waitForStatus(t, manager, "implementer", StatusStopped)
+}
+
+func TestManagerGetOutput(t *testing.T) {
+	t.Parallel()
+
+	manager := newTestManager(t, testAdapter{})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	output := waitForOutput(t, manager, "implementer")
+	if !strings.Contains(output, "response: next_task T-005") {
+		t.Fatalf("GetOutput() output = %q", output)
+	}
+	_, _, running, err := manager.GetOutput("implementer", len(output))
+	if err != nil {
+		t.Fatalf("GetOutput() error = %v", err)
+	}
+	if running {
+		t.Fatal("GetOutput() running = true, want false")
+	}
 }
 
 func TestManagerResetSession(t *testing.T) {
@@ -232,7 +255,7 @@ func (a testAdapter) Start(_ context.Context, session *Session, _ StartOpts) (st
 	return "WAIT_FOR_USER_START", nil
 }
 
-func (a testAdapter) Run(ctx context.Context, _ *Session, command string, _ RunOpts) (string, error) {
+func (a testAdapter) RunStream(ctx context.Context, _ *Session, command string, _ RunOpts, w io.Writer) error {
 	if a.runStarted != nil {
 		select {
 		case a.runStarted <- struct{}{}:
@@ -242,11 +265,12 @@ func (a testAdapter) Run(ctx context.Context, _ *Session, command string, _ RunO
 	if a.runBlock != nil {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			return ctx.Err()
 		case <-a.runBlock:
 		}
 	}
-	return fmt.Sprintf("response: %s", command), nil
+	_, err := fmt.Fprintf(w, "response: %s", command)
+	return err
 }
 
 func (a testAdapter) Stop(_ context.Context, _ *Session) error {
@@ -275,4 +299,41 @@ func newTestManager(t *testing.T, adapter Adapter) *SessionManager {
 func testCWD(t *testing.T) string {
 	t.Helper()
 	return filepath.Clean(filepath.Join("..", ".."))
+}
+
+func waitForOutput(t *testing.T, manager *SessionManager, name string) string {
+	t.Helper()
+	var output strings.Builder
+	offset := 0
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		chunk, total, running, err := manager.GetOutput(name, offset)
+		if err != nil {
+			t.Fatalf("GetOutput() error = %v", err)
+		}
+		output.WriteString(chunk)
+		offset = total
+		if !running {
+			return output.String()
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("timed out waiting for session output")
+	return ""
+}
+
+func waitForStatus(t *testing.T, manager *SessionManager, name string, want SessionStatus) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		info, err := manager.GetSession(name)
+		if err != nil {
+			t.Fatalf("GetSession() error = %v", err)
+		}
+		if info.Status == want {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for status %q", want)
 }

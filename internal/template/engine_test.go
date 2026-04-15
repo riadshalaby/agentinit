@@ -334,12 +334,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`work_all`",
 		"`session_start`",
 		"`session_run`",
+		"`session_get_output`",
 		"`session_status`",
 		"`session_list`",
 		"`session_stop`",
 		"`session_reset`",
 		"`session_delete`",
 		"`session_run(name, command)`",
+		"`session_get_output(name, offset)`",
+		"`running == false`",
 		"`session_start(name=\"implementer\", role=\"implement\")`",
 		"`ready_to_commit` -> implementer `commit_task`",
 		"Reviewer owns both review and verification",
@@ -424,6 +427,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	settings := files[".claude/settings.json"]
 	if !strings.Contains(settings, "\"includeCoAuthoredBy\": false") {
 		t.Error(".claude/settings.json should disable co-authored-by trailers")
+	}
+	for _, snippet := range []string{
+		"\"mcpServers\"",
+		"\"agentinit\"",
+		"\"mcp\"",
+	} {
+		if !strings.Contains(settings, snippet) {
+			t.Errorf(".claude/settings.json should contain %q", snippet)
+		}
 	}
 
 	localSettings := files[".claude/settings.local.json"]

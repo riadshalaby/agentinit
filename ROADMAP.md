@@ -1,57 +1,56 @@
 # ROADMAP
 
-Goal: replace the broken MCP server with a working spawn-per-command session architecture that makes auto mode reliable.
+Goal: define and deliver the scope for cycle 0.7.1.
 
-## Priority 1 — Replace MCP server internals
+## Scope
 
-Objective: rewrite `internal/mcp/` so that every `session_run` spawns a short-lived CLI process with provider-native session resume, eliminating pipe-based I/O and timeout heuristics.
+### 1. Default branch name on `git init`
 
-### Scope
+When `agentinit init` initialises a git repository, the initial branch must be
+named `main` (not `master`).
 
-- Delete the pipe-based `Session` type and the tightly-coupled `SpawnSession` type.
-- Introduce a provider adapter interface with Claude and Codex implementations.
-  - Claude adapter: `claude -p --session-id <id>` (non-interactive, conversation-persistent).
-  - Codex adapter: `codex exec resume <id>` (existing spawn pattern, generalized).
-- Named durable sessions persisted to `.ai/sessions.json` (gitignored).
-- New synchronous MCP tool surface: `session_start`, `session_run`, `session_status`, `session_list`, `session_stop`, `session_reset`, `session_delete`.
-  - `session_run` combines the old `send_command` + `get_output` into a single blocking call.
-- Only two MCP-startable roles: `implement` and `review` (more may follow in future cycles).
-- Typed config loading from `.ai/config.json` with validation and optional `defaults` block for provider-specific settings.
+- Pass `--initial-branch=main` to `git init`.
+- If the flag is unsupported (git < 2.28), fall back silently and let git use
+  its own default — no hard failure.
 
-### Acceptance criteria
+### 2. Conventional commit for the initial commit
 
-- `session_start` creates a named session, runs the provider CLI, captures initial output, persists metadata to disk.
-- `session_run` resumes an existing session, sends a command, blocks until the CLI process exits, returns full output.
-- Sessions survive MCP server restarts: metadata loaded from `.ai/sessions.json`, provider session IDs remain valid for resume.
-- Both adapters pass contract tests using Go test helper processes (no real CLI dependency in CI).
-- In-process MCP client tests cover the full 7-tool lifecycle.
-- E2E MCP handshake test still passes.
-- Existing manual mode scripts are unaffected.
+The scaffolded initial commit message must be `chore: initial commit` instead
+of the current `chore: scaffold project with agentinit`.
 
-### Constraints
+### 3. MCP server registration in `.claude/settings.json`
 
-- Execution model: spawn-per-command. No long-lived processes, no PTY, no API-direct.
-- `session_run` is synchronous. No polling.
-- Clean break on MCP tool names. No backward-compatible shim for old tool names.
-- `.ai/sessions.json` stored in `.ai/`, gitignored.
-- Config schema is backward-compatible: existing `roles` block works unchanged; new `defaults` block is optional.
+The scaffolded `.claude/settings.json` must include the `mcpServers` block that
+registers `agentinit mcp` so new projects have the MCP server wired up for all
+developers without any manual step.
 
-### Decisions (resolved)
+- Target file: `.claude/settings.json` (committed, shared across the team).
+- Command: `agentinit` (assumes binary is on `$PATH`).
+- Args: `["mcp"]`.
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Execution model | Spawn-per-command | Eliminates pipe fragility; each invocation has clean start/finish lifecycle |
-| MCP-startable roles | `implement`, `review` only | Matches current auto mode; PO and planner are not MCP-managed |
-| `session_run` semantics | Synchronous | Eliminates polling; both Claude Code and Codex handle long MCP tool calls |
-| Session persistence | `.ai/sessions.json`, gitignored | Project-scoped runtime state |
-| Tool name migration | Clean break | Old names removed; PO prompt updated; `agentinit update` propagates |
+### 4. Async sessions and partial-output polling via MCP
 
-## Priority 2 — Template and documentation updates
+Replace the current blocking `session_run` model with an async execution model
+that lets callers poll for liveness and partial output while a session is
+running.
 
-Objective: update scaffold templates and project documentation so new and existing users get the updated MCP surface.
+Acceptance criteria:
+- `session_run` (or a new `session_start_run`) launches the agent in the
+  background and returns immediately with a run ID or session status.
+- A new `session_get_output` (or equivalent) MCP tool returns accumulated
+  output so far, whether the session is still running, and whether it has
+  completed or errored.
+- The caller can poll `session_get_output` in a loop to stream output
+  incrementally over the stdio MCP transport.
+- A running session that is waiting on a permission prompt is visible as
+  `running` to the poller (it does not silently hang the caller).
+- Existing `session_status`, `session_stop`, `session_list`, and
+  `session_delete` tools continue to work.
+- All existing tests pass; new behaviour is covered by unit tests.
 
-- Update `.ai/prompts/po.md` template: new tool names, synchronous `session_run` interaction pattern.
-- Update `.ai/config.json` template: add `defaults` block example.
-- Update `.gitignore` template: add `sessions.json`.
-- Update `README.md`: MCP tools table, config schema, migration note.
-- `agentinit update` propagates template changes to existing projects.
+### Out of scope
+
+- True server-sent-event / WebSocket streaming (MCP transport stays stdio).
+- Automatic permission-prompt resolution.
+- Timeout increase as a standalone item (superseded by the async model, which
+  removes the blocking timeout concern for the caller).

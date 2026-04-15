@@ -3,10 +3,12 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
+	"strings"
 )
 
-type claudeExecFunc func(ctx context.Context, args []string) (string, error)
+type claudeExecFunc func(ctx context.Context, args []string, w io.Writer) error
 
 type ClaudeAdapter struct {
 	cwd            string
@@ -46,12 +48,14 @@ func (a *ClaudeAdapter) Start(ctx context.Context, session *Session, opts StartO
 	}
 	args = append(args, "You are now in WAIT_FOR_USER_START state.")
 
-	return a.exec(ctx, args)
+	var sb strings.Builder
+	err := a.exec(ctx, args, &sb)
+	return sb.String(), err
 }
 
-func (a *ClaudeAdapter) Run(ctx context.Context, session *Session, command string, opts RunOpts) (string, error) {
+func (a *ClaudeAdapter) RunStream(ctx context.Context, session *Session, command string, opts RunOpts, w io.Writer) error {
 	if session.ProviderState.SessionID == "" {
-		return "", fmt.Errorf("session %q has no provider session ID; call Start first", session.Name)
+		return fmt.Errorf("session %q has no provider session ID; call Start first", session.Name)
 	}
 
 	args := []string{
@@ -64,16 +68,17 @@ func (a *ClaudeAdapter) Run(ctx context.Context, session *Session, command strin
 	}
 	args = append(args, command)
 
-	return a.exec(ctx, args)
+	return a.exec(ctx, args, w)
 }
 
 func (a *ClaudeAdapter) Stop(_ context.Context, _ *Session) error {
 	return nil
 }
 
-func (a *ClaudeAdapter) defaultExec(ctx context.Context, args []string) (string, error) {
+func (a *ClaudeAdapter) defaultExec(ctx context.Context, args []string, w io.Writer) error {
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = a.cwd
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	cmd.Stdout = w
+	cmd.Stderr = w
+	return cmd.Run()
 }

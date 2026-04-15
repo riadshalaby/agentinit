@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 
 var codexSessionIDPattern = regexp.MustCompile(`(?m)^session id:\s+(\S+)$`)
 
-type codexExecFunc func(ctx context.Context, args []string, stdin string) (string, error)
+type codexExecFunc func(ctx context.Context, args []string, stdin string, w io.Writer) error
 
 type CodexAdapter struct {
 	cwd     string
@@ -46,16 +47,18 @@ func (a *CodexAdapter) Start(ctx context.Context, session *Session, opts StartOp
 	}
 	args = append(args, "-")
 
-	output, err := a.exec(ctx, args, prompt)
+	var sb strings.Builder
+	err = a.exec(ctx, args, prompt, &sb)
+	output := sb.String()
 	if sessionID := extractCodexSessionID(output); sessionID != "" {
 		session.ProviderState.SessionID = sessionID
 	}
 	return output, err
 }
 
-func (a *CodexAdapter) Run(ctx context.Context, session *Session, command string, opts RunOpts) (string, error) {
+func (a *CodexAdapter) RunStream(ctx context.Context, session *Session, command string, opts RunOpts, w io.Writer) error {
 	if session.ProviderState.SessionID == "" {
-		return "", fmt.Errorf("session %q has no provider session ID; call Start first", session.Name)
+		return fmt.Errorf("session %q has no provider session ID; call Start first", session.Name)
 	}
 
 	args := []string{"exec", "resume", session.ProviderState.SessionID}
@@ -67,23 +70,27 @@ func (a *CodexAdapter) Run(ctx context.Context, session *Session, command string
 	}
 	args = append(args, "-")
 
-	output, err := a.exec(ctx, args, command)
+	var sb strings.Builder
+	mw := io.MultiWriter(w, &sb)
+	err := a.exec(ctx, args, command, mw)
+	output := sb.String()
 	if sessionID := extractCodexSessionID(output); sessionID != "" {
 		session.ProviderState.SessionID = sessionID
 	}
-	return output, err
+	return err
 }
 
 func (a *CodexAdapter) Stop(_ context.Context, _ *Session) error {
 	return nil
 }
 
-func (a *CodexAdapter) defaultExec(ctx context.Context, args []string, stdin string) (string, error) {
+func (a *CodexAdapter) defaultExec(ctx context.Context, args []string, stdin string, w io.Writer) error {
 	cmd := exec.CommandContext(ctx, "codex", args...)
 	cmd.Dir = a.cwd
 	cmd.Stdin = strings.NewReader(stdin)
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	cmd.Stdout = w
+	cmd.Stderr = w
+	return cmd.Run()
 }
 
 func extractCodexSessionID(output string) string {
