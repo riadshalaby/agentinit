@@ -1,4 +1,11 @@
 {
   "includeCoAuthoredBy": false,
-  "autoUpdatesChannel": "stable"
+  "autoUpdatesChannel": "stable",
+  "mcpServers": {
+    "agentinit": {
+      "command": "agentinit",
+      "args": ["mcp"],
+      "env": {}
+    }
+  }
 }
