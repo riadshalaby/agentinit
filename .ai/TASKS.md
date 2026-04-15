@@ -20,4 +20,6 @@ Command expectations:
 
 | Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- |
-| T-001 | replace with task scope | in_planning | replace with measurable acceptance criteria | n/a | planner |
+| T-001 | git init: default branch `main` + `chore: initial commit` message | ready_for_implement | `agentinit init` creates a git repo with default branch `main`; initial commit message is `chore: initial commit`; scaffold tests pass | n/a | implement |
+| T-002 | MCP server block in `.claude/settings.json` template | ready_for_implement | Scaffolded `.claude/settings.json` contains `mcpServers.agentinit` block with `command: agentinit` and `args: ["mcp"]`; engine tests pass | n/a | implement |
+| T-003 | Async session execution with incremental output polling | ready_for_implement | `session_run` returns immediately with `status: running`; `session_get_output` returns buffered output and `running` flag; `StopSession` still cancels in-flight runs; all existing and new tests pass; `po.md` and `AGENTS.md` templates updated | n/a | implement |
