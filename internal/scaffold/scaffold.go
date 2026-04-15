@@ -60,12 +60,15 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 }
 
 func gitInit(dir string) error {
+	if err := gitInitWithMainBranch(dir); err != nil {
+		return err
+	}
+
 	commands := []struct {
 		args []string
 	}{
-		{[]string{"git", "init"}},
 		{[]string{"git", "add", "-A"}},
-		{[]string{"git", "commit", "-m", "chore: scaffold project with agentinit"}},
+		{[]string{"git", "commit", "-m", "chore: initial commit"}},
 	}
 
 	for _, c := range commands {
@@ -76,6 +79,23 @@ func gitInit(dir string) error {
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("%s: %w", c.args[0], err)
 		}
+	}
+	return nil
+}
+
+func gitInitWithMainBranch(dir string) error {
+	cmd := exec.Command("git", "init", "--initial-branch=main")
+	cmd.Dir = dir
+	if err := cmd.Run(); err == nil {
+		return nil
+	}
+
+	cmd = exec.Command("git", "init")
+	cmd.Dir = dir
+	cmd.Stdout = nil
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git init: %w", err)
 	}
 	return nil
 }

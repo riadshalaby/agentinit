@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -532,6 +533,32 @@ func TestRunWithGitInit(t *testing.T) {
 	}
 	if len(result.ValidationCommands) == 0 {
 		t.Fatal("expected validation commands for node overlay")
+	}
+}
+
+func TestGitInitDefaultBranch(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Test\n"), 0o644); err != nil {
+		t.Fatalf("write README.md: %v", err)
+	}
+	if err := gitInit(dir); err != nil {
+		t.Fatalf("gitInit() error: %v", err)
+	}
+
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("git rev-parse HEAD: %v", err)
+	}
+
+	branch := strings.TrimSpace(string(out))
+	if branch != "main" && branch != "master" {
+		t.Fatalf("default branch = %q, want main or master", branch)
 	}
 }
 
