@@ -79,7 +79,7 @@ func Run(targetDir string, dryRun bool) (Result, error) {
 		desiredByPath[file.Path] = file.Management
 	}
 
-	paths := managedPaths(targetDir, currentByPath, desiredByPath)
+	paths := managedPaths(currentByPath, desiredByPath)
 	changes := make([]Change, 0, len(paths)+1)
 
 	for _, relPath := range paths {
@@ -160,15 +160,13 @@ func loadManifest(targetDir string) (scaffold.Manifest, bool, error) {
 	return DiscoverManagedFiles(targetDir), true, nil
 }
 
-func managedPaths(targetDir string, currentByPath, desiredByPath map[string]string) []string {
+func managedPaths(currentByPath, desiredByPath map[string]string) []string {
 	pathSet := make(map[string]struct{}, len(currentByPath)+len(desiredByPath))
 	for path := range currentByPath {
 		pathSet[path] = struct{}{}
 	}
 	for path := range desiredByPath {
-		if _, ok := currentByPath[path]; ok || !fileExists(filepath.Join(targetDir, path)) {
-			pathSet[path] = struct{}{}
-		}
+		pathSet[path] = struct{}{}
 	}
 
 	paths := make([]string, 0, len(pathSet))
