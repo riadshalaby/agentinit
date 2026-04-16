@@ -428,6 +428,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(settings, "\"includeCoAuthoredBy\": false") {
 		t.Error(".claude/settings.json should disable co-authored-by trailers")
 	}
+	if !strings.Contains(settings, "\"autoUpdatesChannel\": \"stable\"") {
+		t.Error(".claude/settings.json should contain autoUpdatesChannel stable")
+	}
 	for _, snippet := range []string{
 		"\"mcpServers\"",
 		"\"agentinit\"",
@@ -444,6 +447,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Bash(tree-sitter:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
+		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
@@ -544,6 +548,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 		"Bash(go mod:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
+		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
@@ -623,6 +628,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 		"Bash(npm test:*)",
 		"Bash(git add:*)",
 		"Bash(git commit:*)",
+		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
