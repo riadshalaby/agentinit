@@ -135,12 +135,6 @@ func TestHelperCodexProcess(t *testing.T) {
 		return
 	}
 
-	stdin, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
 	args := os.Args
 	idx := indexOf(args, "--")
 	if idx == -1 || idx == len(args)-1 {
@@ -150,7 +144,8 @@ func TestHelperCodexProcess(t *testing.T) {
 	cmdArgs := args[idx+1:]
 
 	if len(cmdArgs) >= 2 && cmdArgs[0] == "exec" && cmdArgs[1] == "resume" {
-		fmt.Printf("response: %s", strings.TrimSpace(string(stdin)))
+		// command is the last positional argument
+		fmt.Printf("response: %s", cmdArgs[len(cmdArgs)-1])
 		os.Exit(0)
 	}
 

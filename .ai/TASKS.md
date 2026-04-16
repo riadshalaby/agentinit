@@ -21,4 +21,4 @@ Command expectations:
 | Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- |
 | T-001 | Fix MCP permissions in project settings files | done | `agentinit update` produces `.claude/settings.local.json` with `"mcp__agentinit__*"` in allow array; `agentinit update` produces `.claude/settings.json` with `"autoUpdatesChannel": "stable"`; idempotent on second run; all tests pass | n/a | none |
-| T-002 | Real-agent E2E test for MCP session lifecycle | ready_for_implement | E2E test skips cleanly when `claude`/`codex` not in PATH; passes end-to-end with real CLIs; exercises codex-implement and claude-review sessions via `SessionManager`; asserts non-empty output | n/a | implement |
+| T-002 | Real-agent E2E test for MCP session lifecycle | done | E2E test skips cleanly when `claude`/`codex` not in PATH; passes end-to-end with real CLIs; exercises codex-implement and claude-review sessions via `SessionManager`; asserts non-empty output | n/a | none |

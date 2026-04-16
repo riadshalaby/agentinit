@@ -45,10 +45,10 @@ func (a *CodexAdapter) Start(ctx context.Context, session *Session, opts StartOp
 	if opts.Model != "" {
 		args = append(args, "-m", opts.Model)
 	}
-	args = append(args, "-")
+	args = append(args, prompt)
 
 	var sb strings.Builder
-	err = a.exec(ctx, args, prompt, &sb)
+	err = a.exec(ctx, args, "", &sb)
 	output := sb.String()
 	if sessionID := extractCodexSessionID(output); sessionID != "" {
 		session.ProviderState.SessionID = sessionID
@@ -68,11 +68,11 @@ func (a *CodexAdapter) RunStream(ctx context.Context, session *Session, command 
 	if opts.Model != "" {
 		args = append(args, "-m", opts.Model)
 	}
-	args = append(args, "-")
+	args = append(args, command)
 
 	var sb strings.Builder
 	mw := io.MultiWriter(w, &sb)
-	err := a.exec(ctx, args, command, mw)
+	err := a.exec(ctx, args, "", mw)
 	output := sb.String()
 	if sessionID := extractCodexSessionID(output); sessionID != "" {
 		session.ProviderState.SessionID = sessionID
