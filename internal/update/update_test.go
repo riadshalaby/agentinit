@@ -365,6 +365,51 @@ func TestRunDeletesOrphanedTestReportTemplate(t *testing.T) {
 	assertHasChange(t, result.Changes, ".ai/TEST_REPORT.template.md", actionDelete)
 }
 
+func TestRunReconcilesManagedFileNotInManifest(t *testing.T) {
+	// Simulate a project initialised before .claude/settings.json and
+	// .claude/settings.local.json were added to the template set.  Those files
+	// exist on disk but are absent from the manifest; managedPaths must still
+	// include them so they are reconciled.
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	// Remove the two settings files from the manifest so they look like
+	// pre-existing files from an older scaffold run.
+	manifest, err := scaffold.ReadManifest(projectDir)
+	if err != nil {
+		t.Fatalf("ReadManifest() error = %v", err)
+	}
+	filtered := manifest.Files[:0]
+	for _, f := range manifest.Files {
+		if f.Path != ".claude/settings.json" && f.Path != ".claude/settings.local.json" {
+			filtered = append(filtered, f)
+		}
+	}
+	manifest.Files = filtered
+	if err := scaffold.WriteManifest(projectDir, manifest); err != nil {
+		t.Fatalf("WriteManifest() error = %v", err)
+	}
+
+	// Overwrite the files with stale content so a change is detectable.
+	for _, relPath := range []string{".claude/settings.json", ".claude/settings.local.json"} {
+		absPath := filepath.Join(projectDir, relPath)
+		if err := os.WriteFile(absPath, []byte("{}"), 0o644); err != nil {
+			t.Fatalf("write stale %s: %v", relPath, err)
+		}
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	assertHasChange(t, result.Changes, ".claude/settings.json", actionUpdate)
+	assertHasChange(t, result.Changes, ".claude/settings.local.json", actionUpdate)
+}
+
 func assertHasChange(t *testing.T, changes []Change, path, action string) {
 	t.Helper()
 	for _, change := range changes {
