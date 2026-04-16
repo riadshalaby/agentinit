@@ -22,3 +22,14 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | plan \| implement \| review \| none |
 
 ---
+
+### cycle-0.7.3 — plan — 2026-04-16T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned three tasks: fix managedPaths skipping desired-only files, broaden go/git tool permissions, fix RunSession request-scoped context killing claude subprocesses |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
