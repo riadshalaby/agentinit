@@ -1,6 +1,5 @@
 {
   "includeCoAuthoredBy": false,
-  "autoUpdatesChannel": "stable",
   "mcpServers": {
     "agentinit": {
       "command": "agentinit",
