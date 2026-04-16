@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.2](https://github.com/riadshalaby/agentinit/compare/v0.7.1...v0.7.2) (2026-04-16)
+
+
+### Features
+
+* **template:** add MCP permission and autoUpdatesChannel to scaffolded Claude settings ([98af946](https://github.com/riadshalaby/agentinit/commit/98af9460942c8dde349be92fa7d24ca616ff2966))
+
+
+### Documentation
+
+* **workflow:** finish_cycle amends HEAD when working tree is clean ([899fbfd](https://github.com/riadshalaby/agentinit/commit/899fbfd39c0c3c6cd073e02486b505d7ea65bff6))
+
 ## [0.7.1](https://github.com/riadshalaby/agentinit/compare/v0.7.0...v0.7.1) (2026-04-15)
 
 
