@@ -173,8 +173,9 @@ Use these text commands inside the already-running role sessions.
   - `finish_cycle [VERSION]`
     - verify all tasks are `done`
     - if the completion condition is not met, report the blocking task states and abort
-    - stage and commit any remaining `.ai/` artifacts with a `chore(ai): close cycle` subject
-    - if a version argument is provided (for example `finish_cycle 0.7.0`), add `Release-As: x.y.z` to the commit body; if no version is supplied, ask the user for it before committing
+    - if no version is supplied, ask the user for it before proceeding
+    - if any `.ai/` artifacts are dirty: stage and commit them with a `chore(ai): close cycle` subject and a `Release-As: x.y.z` footer
+    - if nothing is dirty: amend HEAD to add or replace the `Release-As: x.y.z` footer line
     - then instruct the user to run `scripts/ai-pr.sh sync` to update the PR
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
@@ -197,7 +198,7 @@ Use these text commands inside the already-running role sessions.
   - `review` role never commits.
   - `implement` role must stage all changes and create a Conventional Commit after validations pass.
   - `.ai/` artifact changes produced by a task are staged and committed as part of that task's Conventional Commit via `commit_task`.
-  - `finish_cycle` commits any remaining dirty `.ai/` artifacts as the cycle-close commit and always includes a `Release-As: x.y.z` footer.
+  - `finish_cycle` commits any remaining dirty `.ai/` artifacts as the cycle-close commit with a `Release-As: x.y.z` footer; when nothing is dirty, it amends HEAD to add or replace the `Release-As: x.y.z` footer instead.
 - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
 - Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
 

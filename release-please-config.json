@@ -14,10 +14,6 @@
           "section": "Bug Fixes"
         },
         {
-          "type": "chore",
-          "section": "Miscellaneous Chores"
-        },
-        {
           "type": "docs",
           "section": "Documentation"
         }

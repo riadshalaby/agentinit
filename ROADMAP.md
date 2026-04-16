@@ -54,3 +54,27 @@ Acceptance criteria:
 - Test skips cleanly when CLIs are absent
 - Test passes end-to-end with real CLIs present
 - Output assertions catch a non-responding or erroring agent
+
+### T-003 — `finish_cycle` amends HEAD when nothing is dirty
+
+**Problem:** `finish_cycle VERSION` adds `Release-As: x.y.z` to a new commit. If all `.ai/` artifacts are already committed (clean working tree), there is nothing to commit, so the footer is never written and release-please never sees the version.
+
+**Fix:** When `finish_cycle` finds nothing dirty, instead of creating a new commit it amends HEAD to add (or replace) the `Release-As: VERSION` footer line.
+
+**Exact behavior:**
+1. If VERSION not supplied → ask the user for it before proceeding.
+2. Check for dirty `.ai/` artifacts.
+3. **Dirty:** stage and commit with subject `chore(ai): close cycle` and footer `Release-As: VERSION` (existing behavior).
+4. **Nothing dirty:** read HEAD commit message, replace any existing `Release-As:` line or append one if absent, then `git commit --amend -m "<updated message>"`.
+5. In both cases, instruct the user to run `scripts/ai-pr.sh sync`.
+
+**Files to change:**
+- `internal/template/templates/base/ai/prompts/implementer.md.tmpl` — update `finish_cycle` bullet
+- `internal/template/templates/base/AGENTS.md.tmpl` — update `finish_cycle` in session commands list, detailed description, and commit conventions section (3 occurrences)
+- `AGENTS.md` — update managed section (same content as template; marker-managed file)
+- `internal/template/engine_test.go` — add assertion that implementer prompt describes the amend-HEAD path
+
+Acceptance criteria:
+- Implementer prompt and AGENTS.md describe the amend-HEAD fallback precisely
+- `engine_test.go` asserts the implementer prompt contains `"amend HEAD"`
+- All tests pass (`go test ./...`)

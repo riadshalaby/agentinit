@@ -88,3 +88,45 @@ Reviewed: 2026-04-16
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-16
+
+#### Findings
+
+No issues found.
+
+#### Verification
+
+##### Steps
+1. Read `PLAN.md` T-003 section to establish expected changes across 4 file targets.
+2. Inspected commit `fbc98be` diff against all planned file targets.
+3. Verified live `implementer.md.tmpl` contains "amend HEAD" at line 18 — confirmed.
+4. Verified live `AGENTS.md` contains "amend HEAD" at lines 178 and 201 — confirmed.
+5. Diffed `finish_cycle` / "amend HEAD" occurrences between live `AGENTS.md` and `AGENTS.md.tmpl` — content identical, only line numbers differ.
+6. Verified `engine_test.go` new assertion: `strings.Contains(implementerPrompt, "amend HEAD")` — present and correctly placed after the existing `Release-As: VERSION` assertion.
+7. Ran `go fmt ./...` — clean (no output).
+8. Ran `go vet ./...` — clean (no output).
+9. Ran `go clean -testcache && go test ./...` — all 8 packages pass.
+
+##### Findings
+- `implementer.md.tmpl`: `finish_cycle` bullet fully replaced with new algorithm; contains "amend HEAD", ask-before-proceeding, dirty-path, and clean-path branches — exact match to plan.
+- `AGENTS.md.tmpl`: Occurrence A (session-commands shortlist) and Occurrence B (commit conventions) both updated — exact match to plan.
+- `AGENTS.md` (live): Identical changes applied; template and live file are in sync.
+- `engine_test.go`: Assertion added immediately after the existing `Release-As: VERSION` check — correct placement and wording.
+
+##### Risks
+- None. Changes are documentation-only; no code logic is modified.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

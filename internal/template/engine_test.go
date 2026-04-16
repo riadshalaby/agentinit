@@ -228,6 +228,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "Release-As: VERSION") {
 		t.Error("implementer prompt should describe the cycle-close artifact commit")
 	}
+	if !strings.Contains(implementerPrompt, "amend HEAD") {
+		t.Error("implementer prompt should describe amending HEAD when nothing is dirty")
+	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
 	}
