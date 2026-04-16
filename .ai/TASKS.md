@@ -22,3 +22,4 @@ Command expectations:
 | --- | --- | --- | --- | --- | --- |
 | T-001 | Fix MCP permissions in project settings files | done | `agentinit update` produces `.claude/settings.local.json` with `"mcp__agentinit__*"` in allow array; `agentinit update` produces `.claude/settings.json` with `"autoUpdatesChannel": "stable"`; idempotent on second run; all tests pass | n/a | none |
 | T-002 | Real-agent E2E test for MCP session lifecycle | done | E2E test skips cleanly when `claude`/`codex` not in PATH; passes end-to-end with real CLIs; exercises codex-implement and claude-review sessions via `SessionManager`; asserts non-empty output | n/a | none |
+| T-003 | `finish_cycle` amends HEAD when nothing is dirty | done | Implementer prompt and AGENTS.md describe the amend-HEAD fallback; `engine_test.go` asserts implementer prompt contains `"amend HEAD"`; all tests pass | n/a | none |

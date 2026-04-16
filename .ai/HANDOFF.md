@@ -109,3 +109,52 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — plan — 2026-04-16T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned T-003: update finish_cycle behavior in implementer prompt and AGENTS.md templates to amend HEAD when nothing is dirty, replacing any existing Release-As footer |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-16T08:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Updated implementer.md.tmpl, AGENTS.md.tmpl, and live AGENTS.md to document the finish_cycle amend-HEAD fallback; added engine_test.go assertion for "amend HEAD" in the implementer prompt |
+| Files Changed | `internal/template/templates/base/ai/prompts/implementer.md.tmpl`, `internal/template/templates/base/AGENTS.md.tmpl`, `AGENTS.md`, `internal/template/engine_test.go`, `.ai/TASKS.md` |
+| Validation | `go fmt ./...` — clean; `go vet ./...` — clean; `go test ./...` — all pass |
+| Commit | `fbc98be docs(workflow): finish_cycle amends HEAD when working tree is clean` |
+| Next Role | review |
+
+---
+
+### T-003 — review — 2026-04-16T08:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed finish_cycle amend-HEAD documentation changes; all four file targets match the plan, template and live AGENTS.md are in sync, all tests pass |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-16T09:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Squashed T-003 WIP into single Conventional Commit; marked task done |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md` |
+| Commit | `b20327c docs(workflow): finish_cycle amends HEAD when working tree is clean` |
+| Next Role | none |
+
+---
