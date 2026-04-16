@@ -20,7 +20,12 @@
       "Bash(go test ./...:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(go clean:*)"
+      "Bash(go clean:*)",
+      "Bash(codex exec:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(mktemp -d)",
+      "Bash(grep:*)",
+      "Bash(git reset:*)"
     ]
   }
 }
