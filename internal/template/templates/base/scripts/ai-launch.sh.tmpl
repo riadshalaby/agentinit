@@ -77,6 +77,11 @@ echo "Expected output: $expected_output"
 
 role_model="$(config_value "$role" "model")"
 role_effort="$(config_value "$role" "effort")"
+role_configured_agent="$(config_value "$role" "agent")"
+if [[ -n "$role_configured_agent" && "$agent" != "$role_configured_agent" ]]; then
+  role_model=""
+  role_effort=""
+fi
 agent_args=()
 
 case "$agent" in

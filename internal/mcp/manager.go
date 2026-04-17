@@ -102,11 +102,13 @@ func (m *SessionManager) StartSession(ctx context.Context, name, role, provider 
 	}
 
 	now := time.Now().UTC()
+	model := m.config.ModelForRoleAndProvider(role, provider)
+	effort := m.config.EffortForRoleAndProvider(role, provider)
 	session := &Session{
 		Name:         name,
 		Role:         role,
 		Provider:     provider,
-		Model:        m.config.ModelForRole(role),
+		Model:        model,
 		Status:       StatusIdle,
 		CreatedAt:    now,
 		LastActiveAt: now,
@@ -117,8 +119,8 @@ func (m *SessionManager) StartSession(ctx context.Context, name, role, provider 
 
 	output, err := adapter.Start(ctx, session, StartOpts{
 		PromptFile: promptFile,
-		Model:      session.Model,
-		Effort:     m.config.EffortForRole(role),
+		Model:      model,
+		Effort:     effort,
 	})
 	if err != nil {
 		session.Status = StatusErrored

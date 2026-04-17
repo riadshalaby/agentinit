@@ -201,3 +201,80 @@ All Round 1 required fixes addressed.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003 — Fix RunSession using request-scoped context (Round 2)
+
+### Review Round 2
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+All Round 1 required fixes addressed.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | blocker | — | ✅ Fixed — commit `bef5fc9` created; working tree clean | n/a |
+
+#### Verification
+##### Steps
+- Confirmed commit `bef5fc9` present; working tree clean (only reviewer's own `.ai/TASKS.md` edit unstaged).
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./... -count=1 -race` — all 8 packages pass, no data races.
+##### Findings
+- Required fix resolved; all code verified correct in Round 1 is unchanged.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
+## Task: T-004 — Fix model/effort passed to wrong agent in scripts and MCP sessions
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+No findings. Implementation matches plan exactly.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| — | — | — | No findings | — |
+
+#### Verification
+##### Steps
+- Confirmed commit `0b7e6fd` present; working tree clean.
+- `internal/mcp/config.go`: `ModelForRole`/`EffortForRole` replaced by `ModelForRoleAndProvider`/`EffortForRoleAndProvider` with `rc.Provider != "" && rc.Provider != provider` guard — matches plan exactly ✅
+- `internal/mcp/manager.go`: `StartSession` uses both new provider-aware accessors; model stored on `session.Model` and passed through `StartOpts` ✅
+- `internal/template/templates/base/scripts/ai-launch.sh.tmpl`: reads `role_configured_agent`, zeros `role_model`/`role_effort` when agent doesn't match — matches plan snippet exactly ✅
+- `internal/mcp/config_test.go`: `TestConfigModelForRoleAndProvider` and `TestConfigEffortForRoleAndProvider` cover match, mismatch, and unknown-role cases ✅
+- `internal/mcp/manager_test.go`: `testAdapter` converted to pointer receiver to capture `startOpts`; `TestManagerStartSession` asserts correct model passed to adapter; new `TestManagerStartSessionClearsModelAndEffortForProviderMismatch` asserts empty model/effort on provider mismatch ✅
+- `internal/scaffold/scaffold_test.go` + `internal/template/engine_test.go`: snippet assertions verify the guard block is present in rendered script ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./internal/mcp/... -count=1 -race` — all tests pass, no races.
+- Ran `go test ./... -count=1` — all 8 packages pass.
+##### Findings
+- All code correct; tests cover all three cases (provider match, provider mismatch, unknown role).
+##### Risks
+- None. Backward-compatible: roles without an explicit `provider` in config still return their model/effort for any provider (guard fires only when `rc.Provider != ""`).
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

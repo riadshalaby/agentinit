@@ -74,21 +74,32 @@ func (c Config) ProviderForRole(role string) string {
 	return "claude"
 }
 
-// ModelForRole returns the configured model for a role. Empty string means
-// the provider's own default.
-func (c Config) ModelForRole(role string) string {
-	if rc, ok := c.Roles[role]; ok {
-		return rc.Model
+// ModelForRoleAndProvider returns the configured model for a role when it
+// matches the provider being launched. Empty string means the provider's own
+// default should be used.
+func (c Config) ModelForRoleAndProvider(role, provider string) string {
+	rc, ok := c.Roles[role]
+	if !ok {
+		return ""
 	}
-	return ""
+	if rc.Provider != "" && rc.Provider != provider {
+		return ""
+	}
+	return rc.Model
 }
 
-// EffortForRole returns the configured effort for a role (Claude-specific).
-func (c Config) EffortForRole(role string) string {
-	if rc, ok := c.Roles[role]; ok {
-		return rc.Effort
+// EffortForRoleAndProvider returns the configured effort for a role when it
+// matches the provider being launched. Empty string means the provider's own
+// default should be used.
+func (c Config) EffortForRoleAndProvider(role, provider string) string {
+	rc, ok := c.Roles[role]
+	if !ok {
+		return ""
 	}
-	return ""
+	if rc.Provider != "" && rc.Provider != provider {
+		return ""
+	}
+	return rc.Effort
 }
 
 func (c Config) validate() error {

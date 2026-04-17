@@ -43,11 +43,11 @@ func TestConfigLoadProjectTemplate(t *testing.T) {
 	if got := cfg.ProviderForRole("plan"); got != "claude" {
 		t.Fatalf("ProviderForRole(plan) = %q, want %q", got, "claude")
 	}
-	if got := cfg.ModelForRole("implement"); got != "gpt-5.4" {
-		t.Fatalf("ModelForRole(implement) = %q, want %q", got, "gpt-5.4")
+	if got := cfg.ModelForRoleAndProvider("implement", "codex"); got != "gpt-5.4" {
+		t.Fatalf("ModelForRoleAndProvider(implement, codex) = %q, want %q", got, "gpt-5.4")
 	}
-	if got := cfg.EffortForRole("review"); got != "medium" {
-		t.Fatalf("EffortForRole(review) = %q, want %q", got, "medium")
+	if got := cfg.EffortForRoleAndProvider("review", "claude"); got != "medium" {
+		t.Fatalf("EffortForRoleAndProvider(review, claude) = %q, want %q", got, "medium")
 	}
 }
 
@@ -109,37 +109,43 @@ func TestConfigProviderForRoleUnknownRoleDefaultsToClaude(t *testing.T) {
 	}
 }
 
-func TestConfigModelForRole(t *testing.T) {
+func TestConfigModelForRoleAndProvider(t *testing.T) {
 	t.Parallel()
 
 	cfg := Config{
 		Roles: map[string]RoleConfig{
-			"implement": {Model: "gpt-5.4"},
+			"implement": {Provider: "codex", Model: "gpt-5.4"},
 		},
 	}
 
-	if got := cfg.ModelForRole("implement"); got != "gpt-5.4" {
-		t.Fatalf("ModelForRole(implement) = %q, want %q", got, "gpt-5.4")
+	if got := cfg.ModelForRoleAndProvider("implement", "codex"); got != "gpt-5.4" {
+		t.Fatalf("ModelForRoleAndProvider(implement, codex) = %q, want %q", got, "gpt-5.4")
 	}
-	if got := cfg.ModelForRole("review"); got != "" {
-		t.Fatalf("ModelForRole(review) = %q, want empty string", got)
+	if got := cfg.ModelForRoleAndProvider("implement", "claude"); got != "" {
+		t.Fatalf("ModelForRoleAndProvider(implement, claude) = %q, want empty string", got)
+	}
+	if got := cfg.ModelForRoleAndProvider("review", "claude"); got != "" {
+		t.Fatalf("ModelForRoleAndProvider(review, claude) = %q, want empty string", got)
 	}
 }
 
-func TestConfigEffortForRole(t *testing.T) {
+func TestConfigEffortForRoleAndProvider(t *testing.T) {
 	t.Parallel()
 
 	cfg := Config{
 		Roles: map[string]RoleConfig{
-			"review": {Effort: "medium"},
+			"review": {Provider: "claude", Effort: "medium"},
 		},
 	}
 
-	if got := cfg.EffortForRole("review"); got != "medium" {
-		t.Fatalf("EffortForRole(review) = %q, want %q", got, "medium")
+	if got := cfg.EffortForRoleAndProvider("review", "claude"); got != "medium" {
+		t.Fatalf("EffortForRoleAndProvider(review, claude) = %q, want %q", got, "medium")
 	}
-	if got := cfg.EffortForRole("implement"); got != "" {
-		t.Fatalf("EffortForRole(implement) = %q, want empty string", got)
+	if got := cfg.EffortForRoleAndProvider("review", "codex"); got != "" {
+		t.Fatalf("EffortForRoleAndProvider(review, codex) = %q, want empty string", got)
+	}
+	if got := cfg.EffortForRoleAndProvider("implement", "claude"); got != "" {
+		t.Fatalf("EffortForRoleAndProvider(implement, claude) = %q, want empty string", got)
 	}
 }
 
