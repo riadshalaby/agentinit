@@ -289,3 +289,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-005 — review — 2026-04-17T15:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-005 reviewed and passed; commit present, all acceptance criteria met, 9/9 packages pass; one nit on cmd.Run() vs syscall.Exec (acceptable cross-platform trade-off) |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-005 — implement — 2026-04-17T13:37:07Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added cross-platform `agentinit plan`, `agentinit implement`, and `agentinit review` commands backed by a shared launcher package, plus additive docs for the new entry points |
+| Files Changed | cmd/plan.go, cmd/implement.go, cmd/review.go, cmd/role_launch.go, cmd/launch_test.go, internal/launcher/launcher.go, internal/launcher/launcher_test.go, README.md, AGENTS.md, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/AGENTS.md.tmpl, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./internal/launcher/... ./cmd/...` — pass; `go test ./...` — pass |
+| Commit | `pending feat(cli): add cross-platform role launch commands` |
+| Next Role | review |
+
+---
+
+### T-005 — implement — 2026-04-17T13:47:14Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed T-005 launcher work into the final task commit and marked the task done |
+| Files Changed | cmd/plan.go, cmd/implement.go, cmd/review.go, cmd/role_launch.go, cmd/launch_test.go, internal/launcher/launcher.go, internal/launcher/launcher_test.go, README.md, AGENTS.md, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/AGENTS.md.tmpl, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./internal/launcher/... ./cmd/...` — pass; `go test ./...` — pass |
+| Commit | `pending feat(cli): add cross-platform role launch commands` |
+| Next Role | none |
+
+---

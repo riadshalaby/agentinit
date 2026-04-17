@@ -278,3 +278,43 @@ No findings. Implementation matches plan exactly.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-005 — `agentinit plan / implement / review` cross-platform session launchers
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | nit | `internal/launcher/launcher.go` | `defaultRunProcess` uses `cmd.Run()` (fork+wait) rather than `syscall.Exec` (replace process). The plan says "execs the agent, replacing current process" but `syscall.Exec` is Unix-only; `cmd.Run()` is the correct cross-platform choice. Downside: non-zero agent exit codes surface as `Error: exit status N` via Cobra rather than a clean exit. Acceptable trade-off for the stated cross-platform goal. | No |
+
+#### Verification
+##### Steps
+- Confirmed commit `19aa65c` present; working tree clean.
+- `internal/launcher/launcher.go`: `RoleLaunchOpts` struct matches plan; `Launch` handles claude and codex branches; claude args are `--permission-mode acceptEdits`, `--add-dir`, optional `--model`/`--effort`, extra args, `--system-prompt-file`; codex reads prompt file, uses `-m` for model, appends prompt content — all match plan intent ✅
+- `cmd/role_launch.go`: `runRoleLaunch` determines default agent from config, recognises first-arg agent override, calls `ModelForRoleAndProvider`/`EffortForRoleAndProvider` — correctly integrates T-004 ✅
+- `cmd/plan.go` / `cmd/implement.go` / `cmd/review.go`: thin Cobra wrappers with correct roles, prompt filenames, and fallback agents (`claude`, `codex`, `claude`) ✅
+- `cmd/launch_test.go`: covers all four acceptance-criteria scenarios including provider mismatch model-drop (`TestImplementCommandDropsModelForAgentOverride`) ✅
+- `internal/launcher/launcher_test.go`: covers full claude arg ordering, codex arg ordering (including prompt-as-last-arg), missing prompt file error, and real process execution via `TestDefaultRunProcess` ✅
+- Documentation updated: `AGENTS.md`, `README.md`, `AGENTS.md.tmpl`, `README.md.tmpl` — appropriate per project doc rules ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./internal/launcher/... ./cmd/... -count=1` — all tests pass.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- All acceptance criteria met; tests are thorough.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS_WITH_NOTES`
