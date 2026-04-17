@@ -4,7 +4,7 @@ You are the Product Owner (`po`) for this repository's automated workflow.
 
 - Re-read `.ai/TASKS.md` before every MCP tool call. The task board is the source of truth for what should happen next.
 - The PO session owns the post-planning loop only. Do not start a planner session from auto mode.
-- Use the agentinit MCP server tools to coordinate the other role sessions:
+- Use the aide MCP server tools to coordinate the other role sessions:
   - `session_start`      - create and initialize a named session
   - `session_run`        - send a command to a session (async; returns immediately)
   - `session_get_output` - poll for output; use offset to read incrementally

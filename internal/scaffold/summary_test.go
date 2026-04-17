@@ -114,7 +114,7 @@ func TestFormatWizardSummaryRendersSameContent(t *testing.T) {
 	if !strings.Contains(body, "AGENTS.md     project-specific and workflow-managed agent rules") {
 		t.Fatalf("body = %q", body)
 	}
-	if !strings.Contains(body, "4. Run the planner: agentinit plan") {
+	if !strings.Contains(body, "4. Run the planner: aide plan") {
 		t.Fatalf("body = %q", body)
 	}
 }

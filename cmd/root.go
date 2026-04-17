@@ -11,9 +11,9 @@ import (
 var readBuildInfo = debug.ReadBuildInfo
 
 var rootCmd = &cobra.Command{
-	Use:   "agentinit",
+	Use:   "aide",
 	Short: "Scaffold file-based AI workflows for new projects",
-	Long:  "agentinit generates manual and auto AI workflow scaffolds with file-based coordination, shell scripts, and persistent role sessions.",
+	Long:  "aide generates manual and auto AI workflow scaffolds with file-based coordination and persistent role sessions.",
 }
 
 func version() string {

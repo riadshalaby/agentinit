@@ -50,7 +50,7 @@ func runPOLaunch(args []string) error {
 		return fmt.Errorf("read prompt file %q: %w", promptFile, err)
 	}
 
-	poPromptFile, err := createTempFile("", "agentinit-po-prompt-*.md")
+	poPromptFile, err := createTempFile("", "aide-po-prompt-*.md")
 	if err != nil {
 		return fmt.Errorf("create po prompt tempfile: %w", err)
 	}
@@ -67,7 +67,7 @@ func runPOLaunch(args []string) error {
 
 	launchArgs := append([]string(nil), args...)
 	if agent == "claude" {
-		mcpConfigFile, err := createTempFile("", "agentinit-po-mcp-*.json")
+		mcpConfigFile, err := createTempFile("", "aide-po-mcp-*.json")
 		if err != nil {
 			return fmt.Errorf("create mcp config tempfile: %w", err)
 		}
@@ -86,8 +86,8 @@ func runPOLaunch(args []string) error {
 	}
 	if agent == "codex" {
 		launchArgs = append(launchArgs,
-			"-c", `mcp_servers.agentinit.command="agentinit"`,
-			"-c", `mcp_servers.agentinit.args=["mcp"]`,
+			"-c", `mcp_servers.aide.command="aide"`,
+			"-c", `mcp_servers.aide.args=["mcp"]`,
 		)
 	}
 
@@ -128,5 +128,5 @@ func poRoleAgent(cfg agentmcp.Config, role string) string {
 }
 
 func poMCPConfig() string {
-	return "{\n  \"mcpServers\": {\n    \"agentinit\": {\n      \"command\": \"agentinit\",\n      \"args\": [\"mcp\"],\n      \"env\": {}\n    }\n  }\n}\n"
+	return "{\n  \"mcpServers\": {\n    \"aide\": {\n      \"command\": \"aide\",\n      \"args\": [\"mcp\"],\n      \"env\": {}\n    }\n  }\n}\n"
 }

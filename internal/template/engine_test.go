@@ -91,7 +91,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("README.md should contain persistent-session planner example")
 	}
-	if !strings.Contains(readme, "agentinit cycle end 0.7.0") {
+	if !strings.Contains(readme, "aide cycle end 0.7.0") {
 		t.Error("README.md should contain cycle end example")
 	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
@@ -104,14 +104,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
 		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
-		"Auto mode: run `agentinit po` to start the PO session",
+		"Auto mode: run `aide po` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `aide po` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
-		"| `agentinit po` | Launch the PO orchestration session | yes |",
+		"| `aide po` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
-		"| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
+		"| `aide cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -168,11 +168,11 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`review` role never commits.",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
-		"`agentinit po [agent] [agent-options...]`",
-		"`agentinit po [agent]`",
+		"`aide po [agent] [agent-options...]`",
+		"`aide po [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
-		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
+		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"`status_cycle [TASK_ID]`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
@@ -208,7 +208,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`commit_task [TASK_ID]`") {
 		t.Error("implementer prompt should describe commit_task")
 	}
-	if !strings.Contains(implementerPrompt, "`agentinit cycle end [VERSION]`") {
+	if !strings.Contains(implementerPrompt, "`aide cycle end [VERSION]`") {
 		t.Error("implementer prompt should describe cycle end")
 	}
 	if !strings.Contains(implementerPrompt, "`ready_to_commit`") {
@@ -356,7 +356,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	for _, snippet := range []string{
 		"\"mcpServers\"",
-		"\"agentinit\"",
+		"\"aide\"",
 		"\"mcp\"",
 	} {
 		if !strings.Contains(settings, snippet) {
@@ -369,7 +369,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Bash(gh:*)",
 		"Bash(tree-sitter:*)",
 		"Bash(git:*)",
-		"mcp__agentinit__*",
+		"mcp__aide__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
@@ -426,7 +426,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`agentinit cycle end [VERSION]`",
+		"`aide cycle end [VERSION]`",
 		"Release-As: x.y.z",
 		"`in_review` -> `ready_to_commit` -> `done`",
 		"`review` role never commits.",
@@ -457,7 +457,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 		"Bash(go vet ./...:*)",
 		"Bash(go test ./...:*)",
 		"Bash(git:*)",
-		"mcp__agentinit__*",
+		"mcp__aide__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)
@@ -536,7 +536,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 		"Bash(npm run build:*)",
 		"Bash(npm test:*)",
 		"Bash(git:*)",
-		"mcp__agentinit__*",
+		"mcp__aide__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf(".claude/settings.local.json should contain %q", entry)

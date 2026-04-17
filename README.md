@@ -1,4 +1,4 @@
-# agentinit
+# aide
 
 Scaffold a file-based AI agent coordination framework for any codebase. Every scaffold includes the same PO, planner, implementer, and reviewer artifacts. Manual and auto are runtime modes for using that shared scaffold, not scaffold-time choices.
 
@@ -10,7 +10,7 @@ Scaffold a file-based AI agent coordination framework for any codebase. Every sc
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
-| **PO** | Coordinates the role sessions in auto mode | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |
+| **PO** | Coordinates the role sessions in auto mode | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `aide po` |
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, verifies the implementation, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
@@ -27,7 +27,7 @@ in_planning → ready_for_implement → in_implementation → ready_for_review �
 
 ## Prerequisites
 
-- **Go 1.23+** (to install `agentinit` itself)
+- **Go 1.23+** (to install `aide` itself)
 - **Git**
 - At least one supported AI agent CLI:
   - [Claude Code](https://claude.ai/download) (default for planner and reviewer)
@@ -39,37 +39,37 @@ The interactive wizard can detect and install additional recommended tools (`gh`
 
 ```bash
 # Install
-go install github.com/riadshalaby/agentinit@latest
+go install github.com/riadshalaby/agentinit/aide@latest
 
 # Enable the tracked git hooks for this repo
 git config core.hooksPath scripts/hooks
 
 # Scaffold a project with the interactive wizard
-agentinit init
+aide init
 
 # Or scaffold non-interactively
-agentinit init myapp --type go
+aide init myapp --type go
 
 # Enter the project and edit ROADMAP.md with your goals
 cd myapp
 $EDITOR ROADMAP.md
 
 # Start your first cycle
-agentinit cycle start feature/first-feature
+aide cycle start feature/first-feature
 
 # Launch the persistent role sessions (one terminal each)
-agentinit plan          # terminal 1
-agentinit implement     # terminal 2
-agentinit review        # terminal 3
+aide plan          # terminal 1
+aide implement     # terminal 2
+aide review        # terminal 3
 
 # Role launchers read default agent/model settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
-# Example: agentinit review claude --model sonnet
+# Example: aide review claude --model sonnet
 # Claude starts interactively by default, and the Codex launcher uses
 # interactive `codex` mode so the session stays open for role commands.
 
 # Or start the PO orchestrator for auto mode
-agentinit po
+aide po
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
@@ -78,30 +78,30 @@ reviewer>     next_task
 implementer>  commit_task
 
 # Or use the cross-platform cycle-close and PR helpers
-agentinit cycle end 1.0.0
-agentinit pr --dry-run
-agentinit cycle end 0.7.0
-agentinit pr
+aide cycle end 1.0.0
+aide pr --dry-run
+aide cycle end 0.7.0
+aide pr
 ```
 
 ## Re-running on an Existing Project
 
-`agentinit init` is a create-only scaffold command. It writes into a new target directory and does not merge into an existing project.
+`aide init` is a create-only scaffold command. It writes into a new target directory and does not merge into an existing project.
 
-If the target directory already exists, `agentinit init` stops with an error such as `directory <path> already exists`. That includes projects that already have an `.ai/` directory from a previous scaffold.
+If the target directory already exists, `aide init` stops with an error such as `directory <path> already exists`. That includes projects that already have an `.ai/` directory from a previous scaffold.
 
 To refresh an existing project scaffold in place, use:
 
 ```bash
-agentinit update
+aide update
 ```
 
-`agentinit update` refreshes managed workflow files, removes retired managed files tracked in the manifest, and applies supported migrations to excluded workflow files such as `.ai/config.json` and `.ai/TASKS.template.md` while preserving user-managed content outside the generated surface.
+`aide update` refreshes managed workflow files, removes retired managed files tracked in the manifest, and applies supported migrations to excluded workflow files such as `.ai/config.json` and `.ai/TASKS.template.md` while preserving user-managed content outside the generated surface.
 
 When you need a preview first, use:
 
 ```bash
-agentinit update --dry-run
+aide update --dry-run
 ```
 
 Manual copy-over still works when you want to adopt changes selectively:
@@ -112,17 +112,17 @@ Manual copy-over still works when you want to adopt changes selectively:
 ## Usage
 
 ```bash
-agentinit init [project-name] [--type go|java|node] [--dir .] [--no-git]
+aide init [project-name] [--type go|java|node] [--dir .] [--no-git]
 ```
 
-`agentinit init` has two entry paths:
+`aide init` has two entry paths:
 
-- **Interactive wizard**: run `agentinit init` with no positional argument in a terminal.
-- **Non-interactive flags**: run `agentinit init <project-name>` with the usual flags.
+- **Interactive wizard**: run `aide init` with no positional argument in a terminal.
+- **Non-interactive flags**: run `aide init <project-name>` with the usual flags.
 
 ### Interactive Wizard
 
-When you run `agentinit init` in a TTY, the CLI launches a `huh`-powered setup wizard that:
+When you run `aide init` in a TTY, the CLI launches a `huh`-powered setup wizard that:
 
 1. Scans the current machine for supported tools.
 2. Offers to install missing tools.
@@ -162,16 +162,16 @@ The wizard lets you skip all installs and scaffold the project immediately, or c
 
 ```bash
 # Launch the interactive wizard
-agentinit init
+aide init
 
 # Scaffold a Go project without the wizard
-agentinit init myapp --type go
+aide init myapp --type go
 
 # Scaffold a Java project in a specific directory without the wizard
-agentinit init myservice --type java --dir ~/projects
+aide init myservice --type java --dir ~/projects
 
 # Scaffold without git init
-agentinit init mylib --type node --no-git
+aide init mylib --type node --no-git
 ```
 
 ## Runtime Modes
@@ -193,15 +193,15 @@ In manual mode, you are the coordinator. Start the planner, implementer, and rev
 2. Start a cycle:
 
 ```bash
-agentinit cycle start feature/my-change
+aide cycle start feature/my-change
 ```
 
 3. Launch one persistent role session per terminal:
 
 ```bash
-agentinit plan
-agentinit implement
-agentinit review
+aide plan
+aide implement
+aide review
 ```
 
 Claude starts interactively by default, and the Codex launcher uses interactive `codex` mode so the session stays open for role commands.
@@ -210,19 +210,19 @@ Claude starts interactively by default, and the Codex launcher uses interactive 
 
 ### Auto mode
 
-In auto mode, the PO session coordinates the post-planning implementer/reviewer workflow for you through the `agentinit` MCP server.
+In auto mode, the PO session coordinates the post-planning implementer/reviewer workflow for you through the `aide` MCP server.
 
 1. Scaffold the project and edit `ROADMAP.md`.
 2. Start a cycle:
 
 ```bash
-agentinit cycle start feature/my-change
+aide cycle start feature/my-change
 ```
 
 3. Launch the PO session:
 
 ```bash
-agentinit po
+aide po
 ```
 
 4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `next_task T-001`, `rework_task T-001`, or `commit_task T-001`. If no tasks are in `ready_for_implement` or later, run the planner first.
@@ -248,11 +248,11 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
 | `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
-| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
+| `aide cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 Cross-platform CLI equivalents:
-`agentinit cycle end [VERSION]` closes the cycle outside the persistent role session, and `agentinit pr [--dry-run]` creates or updates the branch PR.
+`aide cycle end [VERSION]` closes the cycle outside the persistent role session, and `aide pr [--dry-run]` creates or updates the branch PR.
 
 **Reviewer**
 
@@ -263,13 +263,13 @@ Cross-platform CLI equivalents:
 
 ### MCP Server
 
-`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, and named session metadata persists in `.ai/sessions.json`; both files should stay gitignored. `agentinit po` creates a temporary MCP config that points a PO session at this command:
+`aide mcp` starts a stdio MCP server named `aide`. It also appends structured debug logs to `.ai/mcp-server.log`, and named session metadata persists in `.ai/sessions.json`; both files should stay gitignored. `aide po` creates a temporary MCP config that points a PO session at this command:
 
 ```json
 {
   "mcpServers": {
-    "agentinit": {
-      "command": "agentinit",
+    "aide": {
+      "command": "aide",
       "args": ["mcp"],
       "env": {}
     }
@@ -281,7 +281,7 @@ The server currently exposes seven tools for the PO session:
 
 | Tool | Purpose |
 |------|---------|
-| `session_start` | Create and initialize a named role session through `agentinit plan|implement|review` |
+| `session_start` | Create and initialize a named role session through `aide plan|implement|review` |
 | `session_run` | Resume a named session, send one command, and return the full output synchronously |
 | `session_status` | Show the current status and metadata for one named session |
 | `session_list` | List all tracked named sessions and their status |
@@ -317,7 +317,7 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |
 
-> **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `agentinit update` to get the updated PO prompt. `session_run` replaces the old `send_command` + `get_output` polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
+> **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `aide update` to get the updated PO prompt. `session_run` replaces the old `send_command` + `get_output` polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
 
 ### Supported Project Types
 
