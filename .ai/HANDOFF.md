@@ -328,3 +328,68 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-006 — review — 2026-04-17T15:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-006 reviewed; FAIL — unused MCP config tempfile created for codex path is dead code and must be removed |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. `cmd/po.go` — MCP config tempfile created unconditionally but unused for codex; restrict to claude path only |
+| Next Role | implement |
+
+---
+
+### T-006 — implement — 2026-04-17T13:57:32Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added cross-platform `agentinit po` launcher with temp MCP config and prompt generation, plus additive docs for the new PO entry point |
+| Files Changed | cmd/po.go, cmd/po_test.go, README.md, AGENTS.md, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/AGENTS.md.tmpl, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./cmd/...` — pass; `go test ./...` — pass |
+| Commit | `pending feat(cli): add cross-platform po launcher` |
+| Next Role | review |
+
+---
+
+### T-006 — implement — 2026-04-17T19:43:34Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the T-006 review finding by restricting MCP config tempfile creation to the claude path and keeping codex on inline MCP overrides only |
+| Files Changed | cmd/po.go, cmd/po_test.go, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `deccd6f fix(cli): address review findings for po launcher` |
+| Next Role | review |
+
+---
+
+### T-006 — review — 2026-04-17T22:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-006 rework; required fix applied — MCP config tempfile now scoped to claude path only; codex assertion added; all 9 packages pass |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-006 — implement — 2026-04-17T19:47:04Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed T-006 PO launcher work into the final task commit and marked the task done |
+| Files Changed | cmd/po.go, cmd/po_test.go, README.md, AGENTS.md, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/AGENTS.md.tmpl, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./cmd/...` — pass; `go test ./...` — pass |
+| Commit | `pending feat(cli): add cross-platform po launcher` |
+| Next Role | none |
+
+---

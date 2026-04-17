@@ -76,6 +76,7 @@ agentinit review
 
 # Or start the PO orchestrator for auto mode
 scripts/ai-po.sh
+agentinit po
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
