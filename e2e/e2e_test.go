@@ -25,18 +25,18 @@ func TestMain(m *testing.M) {
 	}
 
 	repoRoot := filepath.Dir(filepath.Dir(filename))
-	binDir, err := os.MkdirTemp("", "agentinit-e2e-*")
+	binDir, err := os.MkdirTemp("", "aide-e2e-*")
 	if err != nil {
 		os.Exit(1)
 	}
 
-	binaryName := "agentinit"
+	binaryName := "aide"
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
 	}
 	binaryPath = filepath.Join(binDir, binaryName)
 
-	buildCmd := exec.Command("go", "build", "-o", binaryPath, ".")
+	buildCmd := exec.Command("go", "build", "-o", binaryPath, "./aide")
 	buildCmd.Dir = repoRoot
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
@@ -79,10 +79,10 @@ func TestInitValidName(t *testing.T) {
 		"ROADMAP.md",
 		".ai/config.json",
 		".ai/prompts/planner.md",
-		"scripts/ai-plan.sh",
 	} {
 		assertPathExists(t, filepath.Join(projectDir, relPath))
 	}
+	assertPathNotExists(t, filepath.Join(projectDir, "scripts", "ai-plan.sh"))
 }
 
 func TestInitWithTypeOverlay(t *testing.T) {
@@ -255,8 +255,8 @@ func TestMCPInitializeHandshake(t *testing.T) {
 	if err := json.Unmarshal(bytes.TrimSpace(line), &response); err != nil {
 		t.Fatalf("unmarshal response %q: %v", string(line), err)
 	}
-	if response.Result.ServerInfo.Name != "agentinit" {
-		t.Fatalf("server name = %q, want %q", response.Result.ServerInfo.Name, "agentinit")
+	if response.Result.ServerInfo.Name != "aide" {
+		t.Fatalf("server name = %q, want %q", response.Result.ServerInfo.Name, "aide")
 	}
 
 	if err := stdin.Close(); err != nil {
@@ -335,6 +335,14 @@ func assertPathExists(t *testing.T, path string) {
 
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected %s to exist: %v", path, err)
+	}
+}
+
+func assertPathNotExists(t *testing.T, path string) {
+	t.Helper()
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("expected %s to be absent, stat err = %v", path, err)
 	}
 }
 

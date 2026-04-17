@@ -94,8 +94,8 @@ config_role_agent() {
 cat >"$mcp_config" <<'EOF'
 {
   "mcpServers": {
-    "agentinit": {
-      "command": "agentinit",
+    "aide": {
+      "command": "aide",
       "args": ["mcp"],
       "env": {}
     }
@@ -125,8 +125,8 @@ case "$agent" in
     exec codex \
       --sandbox workspace-write \
       -c "sandbox_workspace_write.network_access=true" \
-      -c 'mcp_servers.agentinit.command="agentinit"' \
-      -c 'mcp_servers.agentinit.args=["mcp"]' \
+      -c 'mcp_servers.aide.command="aide"' \
+      -c 'mcp_servers.aide.args=["mcp"]' \
       "$@" "$prompt_text"
     ;;
 esac

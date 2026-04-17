@@ -39,8 +39,8 @@ func BuildSummary(result Result) SummaryModel {
 	nextSteps := []string{
 		fmt.Sprintf("cd %s", result.TargetDir),
 		"Edit ROADMAP.md with your project goals",
-		"Start a development cycle: agentinit cycle start feature/<scope>",
-		"Run the planner: agentinit plan",
+		"Start a development cycle: aide cycle start feature/<scope>",
+		"Run the planner: aide plan",
 	}
 	if len(result.ValidationCommands) > 0 {
 		lines := []string{"Validate the project:"}

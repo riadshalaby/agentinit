@@ -67,7 +67,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
-	if !strings.Contains(readme, "agentinit cycle end 0.7.0") {
+	if !strings.Contains(readme, "aide cycle end 0.7.0") {
 		t.Error("generated README.md should contain cycle end examples in the unified scaffold")
 	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
@@ -77,15 +77,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
 		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
-		"Auto mode: run `agentinit po` to start the PO session",
+		"Auto mode: run `aide po` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
 		"Before `start_plan`, freeform conversation with the planner is the roadmap-refinement phase.",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `aide po` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
-		"| `agentinit po` | Launch the PO orchestration session | yes |",
+		"| `aide po` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
-		"| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
+		"| `aide cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -207,7 +207,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before committing.",
 				"Stage all changes with `git add -A`.",
-				"`agentinit cycle end [VERSION]`",
+				"`aide cycle end [VERSION]`",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
 				"Release-As: VERSION",
@@ -271,13 +271,13 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"go test ./...",
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`agentinit cycle end [VERSION]`",
+		"`aide cycle end [VERSION]`",
 		"Release-As: x.y.z",
-		"`agentinit po [agent] [agent-options...]`",
-		"`agentinit po [agent]`",
+		"`aide po [agent] [agent-options...]`",
+		"`aide po [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
-		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
+		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"conversation with the planner is the roadmap-refinement phase",
 		"`start_plan` is the gate to formal planning",
 		"`review` role never commits.",

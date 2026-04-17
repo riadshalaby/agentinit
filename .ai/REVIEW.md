@@ -570,3 +570,89 @@ No findings. Implementation matches plan exactly.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-010 — Rename binary from `agentinit` to `aide`
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `e2e/e2e_test.go:81–82` | `"scripts/ai-plan.sh"` was replaced with a duplicate `".ai/prompts/planner.md"` instead of being removed; the path already appears on the previous line — test passes but the duplicate masks a coverage gap: after T-009 the E2E test no longer verifies anything about script presence/absence | **Yes** |
+| 2 | nit | `scripts/ai-po.sh` | T-010 updated this file (unplanned scope) to reference `aide`; other scripts in `scripts/` remain stale; the whole directory will be cleaned up when `aide update` is run on this repo (T-009 migration) | No |
+
+#### Verification
+##### Steps
+- Confirmed commit `72ad1ee` present (HANDOFF hash `fa71bef` refers to pre-squash); working tree clean.
+- `aide/main.go`: thin entrypoint calling `cmd.Execute()` — matches plan exactly ✅
+- `main.go` deleted — matches plan ✅
+- `.goreleaser.yml`: `id: aide`, `main: ./aide`, `binary: aide` — matches plan exactly ✅
+- `internal/mcp/server.go`: `const serverName = "aide"` — matches plan ✅
+- `cmd/root.go`: `Use: "aide"`, long description updated ✅
+- `cmd/po.go`: tempfile prefixes and inline MCP config JSON updated to `aide` ✅
+- Templates: `settings.json.tmpl` has `"command": "aide"`; `settings.local.json.tmpl` has `mcp__aide__*`; `AGENTS.md.tmpl` and `README.md.tmpl` reference `aide` ✅
+- `agentinit:managed:start/end` marker comments left unchanged — correct (internal system markers, renaming would break existing projects) ✅
+- This repo's own files: `.claude/settings.json` → `"command": "aide"`, `.claude/settings.local.json` → `mcp__aide__*`, `AGENTS.md`, `README.md`, `.ai/prompts/implementer.md`, `.ai/prompts/po.md` all updated ✅
+- Module path `github.com/riadshalaby/agentinit` unchanged; all imports unchanged ✅
+- Built `aide` binary: `aide --help` outputs `aide` name correctly; `aide --version` reports `aide version v0.7.3-...` ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./... -count=1` — all 10 packages pass (9 + new `aide` package with no test files).
+- Ran `go test ./... -count=1 -race` — all packages pass; `TestManagerStopSession` had one flaky OS-level TempDir cleanup failure in a single sweep; passes 3/3 in isolation; pre-existing environment flakiness, not introduced by T-010.
+##### Findings
+- All acceptance criteria met.
+- E2E duplicate path assertion masks a coverage gap — requires fix before commit.
+##### Risks
+- None.
+
+#### Required Fixes
+1. `e2e/e2e_test.go` — remove the duplicate `".ai/prompts/planner.md"` entry; replace with `assertPathNotExists` for `"scripts/ai-plan.sh"` (or similar negative assertion) to verify T-009 migration behaviour in E2E, OR simply remove the stale entry if a negative assertion helper does not exist.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **complete**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+All Round 1 required fixes addressed.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | — | ✅ Fixed — duplicate `".ai/prompts/planner.md"` removed; `assertPathNotExists` helper added; `assertPathNotExists(t, .../scripts/ai-plan.sh)` called after the existence loop | n/a |
+| 2 | minor | `e2e/mcp_e2e_test.go:51` | Pre-existing (since T-003): `mcp.NewSessionManager` called without the `context.Context` first arg added in T-003; compiles only under `go test ./...` (no `-tags=e2e`); outside T-010 scope and outside plan acceptance criteria | No |
+
+#### Verification
+##### Steps
+- Confirmed commit `bc4fc44` present; working tree clean.
+- `e2e/e2e_test.go` diff: duplicate `".ai/prompts/planner.md"` removed; `assertPathNotExists(t, filepath.Join(projectDir, "scripts", "ai-plan.sh"))` added after the loop; `assertPathNotExists` helper defined at line 338 — correctly reports absence failure ✅
+- `e2e/mcp_e2e_test.go:51` still calls old `NewSessionManager` signature; `go test -tags=e2e ./e2e/...` fails to compile — pre-existing T-003 debt, not introduced or in scope for T-010; `go test ./...` (plan acceptance criterion) passes cleanly ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./... -count=1` — all 10 packages pass.
+##### Findings
+- Required fix correctly applied; no regressions.
+##### Risks
+- `e2e/mcp_e2e_test.go` is silently broken under `-tags=e2e` since T-003; should be addressed in a follow-up task.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS_WITH_NOTES`

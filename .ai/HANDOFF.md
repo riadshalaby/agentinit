@@ -509,6 +509,71 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-010 — implement — 2026-04-17T21:55:54Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Renamed the user-facing binary and MCP server from `agentinit` to `aide` while keeping the Go module path unchanged |
+| Files Changed | .ai/TASKS.md, .ai/prompts/implementer.md, .ai/prompts/po.md, .claude/settings.json, .claude/settings.local.json, .goreleaser.yml, AGENTS.md, README.md, aide/main.go, cmd/mcp.go, cmd/po.go, cmd/po_test.go, cmd/root.go, e2e/e2e_test.go, internal/mcp/server.go, internal/scaffold/scaffold_test.go, internal/scaffold/summary.go, internal/scaffold/summary_test.go, internal/template/engine_test.go, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl, internal/template/templates/base/ai/prompts/po.md.tmpl, internal/template/templates/base/claude/settings.json.tmpl, internal/template/templates/base/claude/settings.local.json.tmpl, scripts/ai-po.sh |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `fa71bef feat(cli): rename the agent binary to aide` |
+| Next Role | review |
+
+---
+
+### T-010 — review — 2026-04-18T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-010 code is correct and all 10 packages pass; FAIL on duplicate `.ai/prompts/planner.md` entry in e2e_test.go that masks missing E2E coverage for scripts-not-generated assertion |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. `e2e/e2e_test.go:82` — remove duplicate `.ai/prompts/planner.md`; replace with negative assertion or remove stale entry |
+| Next Role | implement |
+
+---
+
+### T-010 — implement — 2026-04-17T22:08:52Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the T-010 review finding by restoring the missing negative E2E assertion for the removed legacy script path and returning the task to `ready_for_review` |
+| Files Changed | e2e/e2e_test.go, .ai/REVIEW.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass; `go test -tags=e2e ./e2e/...` — fail on pre-existing `e2e/mcp_e2e_test.go` call to old `mcp.NewSessionManager` signature |
+| Commit | `bc4fc44 fix(cli): address review findings for aide rename coverage` |
+| Next Role | review |
+
+---
+
+### T-010 — review — 2026-04-18T00:15:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-010 rework; required fix applied — duplicate assertion removed, `assertPathNotExists` helper added, negative assertion for `scripts/ai-plan.sh` in place; all 10 packages pass; pre-existing E2E build failure under `-tags=e2e` (T-003 debt) noted but out of scope |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-010 — implement — 2026-04-17T22:16:12Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed `aide` rename work into the final task commit, marked T-010 done, and carried forward the review note about the pre-existing tagged E2E compile failure |
+| Files Changed | aide/main.go, cmd/mcp.go, cmd/po.go, cmd/po_test.go, cmd/root.go, e2e/e2e_test.go, internal/mcp/server.go, internal/scaffold/scaffold_test.go, internal/scaffold/summary.go, internal/scaffold/summary_test.go, internal/template/engine_test.go, .goreleaser.yml, README.md, AGENTS.md, .claude/settings.json, .claude/settings.local.json, .ai/prompts/implementer.md, .ai/prompts/po.md, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl, internal/template/templates/base/ai/prompts/po.md.tmpl, internal/template/templates/base/claude/settings.json.tmpl, internal/template/templates/base/claude/settings.local.json.tmpl, scripts/ai-po.sh, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `pending feat(cli): rename the agent binary to aide` |
+| Next Role | none |
+
+---
+
 ### T-008 — implement — 2026-04-17T20:33:15Z
 
 | Field | Value |

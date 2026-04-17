@@ -69,7 +69,7 @@ func TestPOCommandLaunchesClaudeWithTempFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ReadFile(mcp config) error = %v", err)
 		}
-		if !strings.Contains(string(mcpConfigBytes), `"command": "agentinit"`) {
+		if !strings.Contains(string(mcpConfigBytes), `"command": "aide"`) {
 			t.Fatalf("mcp config = %q", string(mcpConfigBytes))
 		}
 
@@ -135,8 +135,8 @@ func TestPOCommandLaunchesCodexWithInlineMCPConfig(t *testing.T) {
 
 	wantArgs := []string{
 		"--model", "gpt-5.4",
-		"-c", `mcp_servers.agentinit.command="agentinit"`,
-		"-c", `mcp_servers.agentinit.args=["mcp"]`,
+		"-c", `mcp_servers.aide.command="aide"`,
+		"-c", `mcp_servers.aide.args=["mcp"]`,
 	}
 	launchRole = func(opts agentlauncher.RoleLaunchOpts) error {
 		if opts.Agent != "codex" {

@@ -9,7 +9,7 @@ import (
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )
 
-const serverName = "agentinit"
+const serverName = "aide"
 
 var serveStdio = mcpserver.ServeStdio
 
