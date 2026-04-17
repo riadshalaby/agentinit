@@ -483,3 +483,44 @@ All Round 1 required fixes addressed.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-008 — `agentinit cycle end` and `agentinit pr`
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `cmd/cycle.go:82–85`, `cmd/cycle.go:567–571` | `commandResult` struct and `commandError` function are test-helper constructs defined in production code; they are only used by `fakeCycleRunner` in `cycle_test.go` and will be compiled into the production binary unnecessarily | No |
+| 2 | nit | `cmd/cycle_test.go` | Plan specifies a new `cmd/pr_test.go`; pr tests were added to `cmd/cycle_test.go` instead — all coverage present, just in a different file | No |
+| 3 | nit | `README.md:90–93`, `internal/template/templates/base/README.md.tmpl:89,139` | `finish_cycle 0.7.0` and `scripts/ai-pr.sh sync` remain alongside the new commands; T-009 owns this cleanup and the current state is transitional/additive | No |
+
+#### Verification
+##### Steps
+- Confirmed commit `2f61d2c` present; working tree clean.
+- `cmd/cycle.go` `end` subcommand: parses TASKS.md and aborts on undone tasks; stages `.ai/`; commits with `chore(ai): close cycle` and optional `Release-As: VERSION` footer; detects GitHub remote; pushes and calls `runPRSync` if GitHub; prints skip message and exits 0 if not ✅
+- `cmd/pr.go`: `--base`, `--title`, `--dry-run` flags wired correctly; delegates to `runPRSync` ✅
+- `runPRSync` in `cmd/cycle.go`: fetches base; determines merge-base; counts commits; finds existing PR; fetches title; builds commit list and breaking-changes list (Go regex `^[a-z]+(\([^)]+\))?!:`); builds PR body; dry-run prints without calling `gh`; creates or edits PR via `gh` ✅
+- Tests cover all five acceptance-criteria scenarios: undone-tasks abort, release footer + skip PR, push + update existing PR (GitHub remote), dry-run body output, create new PR ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./cmd/... -count=1` — pass.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- All acceptance criteria met; tests are thorough.
+- `commandResult`/`commandError` in production code is a minor smell but does not affect correctness.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS_WITH_NOTES`

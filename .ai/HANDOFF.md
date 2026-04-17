@@ -469,3 +469,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-008 — implement — 2026-04-17T20:33:15Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added cross-platform `agentinit pr` and `agentinit cycle end`, including PR body generation, dry-run output, GitHub-remote detection, and cycle-close commit handling |
+| Files Changed | cmd/cycle.go, cmd/cycle_test.go, cmd/pr.go, README.md, internal/template/templates/base/README.md.tmpl, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `248f72f feat(cli): add cycle close and pull request commands` |
+| Next Role | review |
+
+---
+
+### T-008 — review — 2026-04-17T23:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-008 reviewed and passed; commit present, all five acceptance criteria met, all 9 packages pass; two nits (test helpers in production code, pr_test.go consolidated into cycle_test.go) with no required fixes |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-008 — implement — 2026-04-17T21:10:33Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed `agentinit cycle end` and `agentinit pr` work into the final task commit and marked T-008 done |
+| Files Changed | cmd/cycle.go, cmd/cycle_test.go, cmd/pr.go, README.md, internal/template/templates/base/README.md.tmpl, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `4291774 feat(cli): add cycle close and pull request commands` |
+| Next Role | none |
+
+---

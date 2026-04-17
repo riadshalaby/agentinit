@@ -212,6 +212,213 @@ func TestCycleStartRejectsExistingRemoteBranch(t *testing.T) {
 	}
 }
 
+func TestCycleEndRejectsUndoneTasks(t *testing.T) {
+	repo := t.TempDir()
+	writeCycleTemplate(t, repo, ".ai/TASKS.md", "# TASKS\n\n| Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |\n| --- | --- | --- | --- | --- | --- |\n| T-008 | close cycle | ready_for_review | done | n/a | review |\n")
+
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+	runner := &fakeCycleRunner{}
+	cycleRunCommand = runner.run
+
+	err := cycleEndCmd.RunE(cycleEndCmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "cannot close cycle; tasks not done: T-008 (ready_for_review)") {
+		t.Fatalf("error = %v", err)
+	}
+	if len(runner.runCalls) != 0 {
+		t.Fatalf("run calls = %#v, want none", runner.runCalls)
+	}
+}
+
+func TestCycleEndCommitsReleaseFooterAndSkipsPRWithoutGitHubRemote(t *testing.T) {
+	repo := t.TempDir()
+	writeDoneTaskBoard(t, repo)
+
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	var output bytes.Buffer
+	cliOutput = &output
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git remote get-url origin": {err: commandError("missing remote")},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := cycleEndCmd.RunE(cycleEndCmd, []string{"1.0.0"}); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	wantRunCalls := []string{
+		"git add .ai/",
+		"git commit -m chore(ai): close cycle -m Release-As: 1.0.0",
+	}
+	if !reflect.DeepEqual(runner.runCalls, wantRunCalls) {
+		t.Fatalf("run calls = %#v, want %#v", runner.runCalls, wantRunCalls)
+	}
+	if got := output.String(); got != "No GitHub remote detected — skipping PR.\n" {
+		t.Fatalf("output = %q", got)
+	}
+}
+
+func TestCycleEndPushesBranchAndUpdatesExistingPR(t *testing.T) {
+	repo := t.TempDir()
+	writeDoneTaskBoard(t, repo)
+	if err := os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module example.com/test\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(go.mod) error = %v", err)
+	}
+
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+	var output bytes.Buffer
+	cliOutput = &output
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git remote get-url origin":                               {stdout: "git@github.com:riadshalaby/agentinit.git\n"},
+			"git rev-parse --abbrev-ref HEAD":                         {stdout: "fix/cycle-end\n"},
+			"git rev-parse --verify --quiet refs/remotes/origin/main": {stdout: "abc123\n"},
+			"git merge-base origin/main HEAD":                         {stdout: "base123\n"},
+			"git rev-list --count base123..HEAD":                      {stdout: "2\n"},
+			"gh pr list --head fix/cycle-end --base main --state open --limit 1 --json number --jq .[0].number // empty": {stdout: "42\n"},
+			"gh pr view 42 --json title --jq .title":                       {stdout: "Existing PR title\n"},
+			"git log --reverse --no-merges --format=- %h %s base123..HEAD": {stdout: "- a1 feat(cli): add cycle end\n- b2 fix(cli): polish pr sync\n"},
+			"git log --reverse --no-merges --format=%s base123..HEAD":      {stdout: "feat(cli): add cycle end\nfeat(cli)!: remove legacy close workflow\n"},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := cycleEndCmd.RunE(cycleEndCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	if !containsString(runner.runCalls, "git push -u origin fix/cycle-end") {
+		t.Fatalf("run calls missing cycle push: %#v", runner.runCalls)
+	}
+	if !containsPrefix(runner.runCalls, "gh pr edit 42 --title Existing PR title --body ") {
+		t.Fatalf("run calls missing PR edit: %#v", runner.runCalls)
+	}
+	if strings.Contains(output.String(), "No GitHub remote detected") {
+		t.Fatalf("output = %q", output.String())
+	}
+}
+
+func TestPRCommandDryRunPrintsBodyWithoutCallingGH(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module example.com/test\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(go.mod) error = %v", err)
+	}
+
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	prBaseBranch = "main"
+	prTitle = ""
+	prDryRun = true
+	var output bytes.Buffer
+	cliOutput = &output
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git rev-parse --abbrev-ref HEAD":                         {stdout: "feature/new-pr\n"},
+			"git remote get-url origin":                               {stdout: "git@github.com:riadshalaby/agentinit.git\n"},
+			"git rev-parse --verify --quiet refs/remotes/origin/main": {stdout: "abc123\n"},
+			"git merge-base origin/main HEAD":                         {stdout: "base123\n"},
+			"git rev-list --count base123..HEAD":                      {stdout: "2\n"},
+			"git log -1 --format=%s":                                  {stdout: "feat(cli): add PR sync\n"},
+			"git log --reverse --no-merges --format=- %h %s base123..HEAD": {
+				stdout: "- a1 feat(cli): add PR sync\n- b2 docs: update README\n",
+			},
+			"git log --reverse --no-merges --format=%s base123..HEAD": {
+				stdout: "feat(cli)!: rename command\nfix(cli): tidy output\nfeat(cli)!: rename command\n",
+			},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := prCmd.RunE(prCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	if containsPrefix(runner.runCalls, "gh ") {
+		t.Fatalf("dry-run should not call gh: %#v", runner.runCalls)
+	}
+	if !strings.Contains(output.String(), "Title: feat(cli): add PR sync") {
+		t.Fatalf("output = %q", output.String())
+	}
+	for _, snippet := range []string{
+		"## Summary",
+		"- source branch: feature/new-pr",
+		"## Breaking Changes",
+		"- rename command",
+		"## Included Commits",
+		"- a1 feat(cli): add PR sync",
+		"## Test Plan",
+		"- [ ] go test",
+		"- [ ] go vet",
+	} {
+		if !strings.Contains(output.String(), snippet) {
+			t.Fatalf("output missing %q in %q", snippet, output.String())
+		}
+	}
+}
+
+func TestPRCommandCreatesPRWhenNoneExists(t *testing.T) {
+	repo := t.TempDir()
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	prBaseBranch = "main"
+	prTitle = "Custom title"
+	prDryRun = false
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git rev-parse --abbrev-ref HEAD":                         {stdout: "feature/new-pr\n"},
+			"git remote get-url origin":                               {stdout: "https://github.com/riadshalaby/agentinit.git\n"},
+			"git rev-parse --verify --quiet refs/remotes/origin/main": {stdout: "abc123\n"},
+			"git merge-base origin/main HEAD":                         {stdout: "base123\n"},
+			"git rev-list --count base123..HEAD":                      {stdout: "1\n"},
+			"gh pr list --head feature/new-pr --base main --state open --limit 1 --json number --jq .[0].number // empty": {stdout: "\n"},
+			"git log --reverse --no-merges --format=- %h %s base123..HEAD":                                                {stdout: "- a1 feat(cli): add PR sync\n"},
+			"git log --reverse --no-merges --format=%s base123..HEAD":                                                     {stdout: "feat(cli): add PR sync\n"},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := prCmd.RunE(prCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	if !containsString(runner.runCalls, "git fetch origin main") {
+		t.Fatalf("run calls missing fetch: %#v", runner.runCalls)
+	}
+	if !containsString(runner.runCalls, "git push -u origin feature/new-pr") {
+		t.Fatalf("run calls missing push: %#v", runner.runCalls)
+	}
+	if !containsPrefix(runner.runCalls, "gh pr create --base main --head feature/new-pr --title Custom title --body ") {
+		t.Fatalf("run calls missing gh create: %#v", runner.runCalls)
+	}
+}
+
 func stubCycleEnvironment(t *testing.T) func() {
 	t.Helper()
 
@@ -265,18 +472,29 @@ func writeCycleTemplate(t *testing.T, repoRoot, relativePath, contents string) {
 }
 
 type fakeCycleRunner struct {
-	runCalls    []string
-	outputCalls []string
+	runCalls      []string
+	outputCalls   []string
+	runErrs       map[string]error
+	outputResults map[string]commandResult
 }
 
 func (f *fakeCycleRunner) run(ctx context.Context, name string, args ...string) error {
-	f.runCalls = append(f.runCalls, strings.Join(append([]string{name}, args...), " "))
-	return nil
+	command := strings.Join(append([]string{name}, args...), " ")
+	f.runCalls = append(f.runCalls, command)
+	if f.runErrs == nil {
+		return nil
+	}
+	return f.runErrs[command]
 }
 
 func (f *fakeCycleRunner) output(ctx context.Context, name string, args ...string) ([]byte, error) {
 	command := strings.Join(append([]string{name}, args...), " ")
 	f.outputCalls = append(f.outputCalls, command)
+	if f.outputResults != nil {
+		if result, ok := f.outputResults[command]; ok {
+			return []byte(result.stdout), result.err
+		}
+	}
 	switch command {
 	case "git rev-parse --verify --quiet refs/heads/fix/windows-launcher":
 		return nil, errors.New("missing")
@@ -285,4 +503,27 @@ func (f *fakeCycleRunner) output(ctx context.Context, name string, args ...strin
 	default:
 		return nil, nil
 	}
+}
+
+func writeDoneTaskBoard(t *testing.T, repoRoot string) {
+	t.Helper()
+	writeCycleTemplate(t, repoRoot, ".ai/TASKS.md", "# TASKS\n\n| Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |\n| --- | --- | --- | --- | --- | --- |\n| T-001 | done task | done | ok | PASS | none |\n")
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPrefix(values []string, prefix string) bool {
+	for _, value := range values {
+		if strings.HasPrefix(value, prefix) {
+			return true
+		}
+	}
+	return false
 }
