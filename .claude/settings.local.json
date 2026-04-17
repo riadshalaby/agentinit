@@ -15,7 +15,9 @@
       "Bash(go test ./...:*)",
       "Bash(git:*)",
       "Bash(git reset:*)",
-      "mcp__agentinit__*"
+      "mcp__agentinit__*",
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ]
   }
 }

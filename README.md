@@ -83,6 +83,10 @@ planner>      start_plan
 implementer>  next_task
 reviewer>     next_task
 implementer>  commit_task
+
+# Or use the cross-platform cycle-close and PR helpers
+agentinit cycle end 1.0.0
+agentinit pr --dry-run
 implementer>  finish_cycle 0.7.0
 
 # Create or update the PR
@@ -255,6 +259,9 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
 | `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
+
+Cross-platform CLI equivalents:
+`agentinit cycle end [VERSION]` closes the cycle outside the persistent role session, and `agentinit pr [--dry-run]` creates or updates the branch PR.
 
 **Reviewer**
 
