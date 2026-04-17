@@ -318,3 +318,83 @@ Reviewed: 2026-04-17
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-006 — `agentinit po` cross-platform PO session launcher
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `cmd/po.go:55–70` | For codex, an MCP config tempfile is created and written but its path is never used (codex gets inline `-c` args instead). The file is cleaned up, but dead code that creates and writes a file with no purpose is noise. Skip the tempfile creation entirely when agent is codex, or restructure so the MCP config tempfile is only created for the claude path. | **Yes** |
+
+#### Verification
+##### Steps
+- Confirmed commit `b2c84ee` present; working tree clean.
+- `cmd/po.go` — five plan steps all implemented: reads `po.md`, builds MCP config JSON in memory (`poMCPConfig()`), appends session-defaults block via `buildPOPrompt`, writes both to `os.CreateTemp` files with `defer removeFile(...)`, execs via `launchRole` ✅
+- Claude path: passes `--mcp-config <tempfile>` in `ExtraArgs`; prompt tempfile used as `PromptFile` ✅
+- Codex path: passes inline `-c mcp_servers.*` overrides; codex doesn't support `--mcp-config` flag ✅
+- Temp cleanup: defers fire after `launchRole` returns (uses `cmd.Run()`, so defers are guaranteed to execute — this is a feature relative to `syscall.Exec`) ✅
+- `TestPOCommandLaunchesClaudeWithTempFiles`: verifies agent, `--mcp-config` arg, MCP config content, prompt content including session-defaults block; asserts both tempfiles are removed after `RunE` returns ✅
+- `TestPOCommandLaunchesCodexWithInlineMCPConfig`: verifies codex gets inline `-c` args and extra user args in correct order ✅
+- `TestBuildPOPromptUsesRoleDefaults`: verifies fallback agents when config has no roles ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./cmd/... -count=1` — all 21 tests pass.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- All acceptance criteria met; tempfile cleanup verified by test.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Required Fixes
+1. `cmd/po.go` — skip MCP config tempfile creation when agent is codex; only create it for the claude path.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+All Round 1 required fixes addressed.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | — | ✅ Fixed — MCP config tempfile creation moved inside `if agent == "claude"` block; codex path now creates only the prompt tempfile (commit `deccd6f`) | n/a |
+
+#### Verification
+##### Steps
+- Confirmed rework commit `deccd6f` (`fix(cli): address review findings for po launcher`) present; working tree clean.
+- `cmd/po.go` diff: entire MCP config tempfile create/write/close block relocated from before `launchArgs` initialisation into the `if agent == "claude"` branch; codex branch unchanged ✅
+- `cmd/po_test.go` diff: `TestPOCommandLaunchesCodexWithInlineMCPConfig` now stubs `createTempFile` with a counter and asserts `tempCreates == 1` (prompt only) ✅
+- Ran `go fmt ./...` — clean (no output).
+- Ran `go vet ./...` — clean (no output).
+- Ran `go test ./cmd/... -count=1 -v` — all 20 tests pass including `TestPOCommandLaunchesCodexWithInlineMCPConfig`.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- Required fix correctly applied; no regressions.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
