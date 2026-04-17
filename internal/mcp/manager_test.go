@@ -13,7 +13,8 @@ import (
 func TestManagerStartSession(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	adapter := &testAdapter{}
+	manager := newTestManager(t, adapter)
 	info, output, err := manager.StartSession(context.Background(), "implementer", "implement", "codex")
 	if err != nil {
 		t.Fatalf("StartSession() error = %v", err)
@@ -23,6 +24,12 @@ func TestManagerStartSession(t *testing.T) {
 	}
 	if info.Name != "implementer" {
 		t.Fatalf("StartSession() name = %q, want %q", info.Name, "implementer")
+	}
+	if adapter.startOpts.Model != "gpt-5.4" {
+		t.Fatalf("StartSession() model = %q, want %q", adapter.startOpts.Model, "gpt-5.4")
+	}
+	if adapter.startOpts.Effort != "" {
+		t.Fatalf("StartSession() effort = %q, want empty string", adapter.startOpts.Effort)
 	}
 
 	list, err := manager.ListSessions()
@@ -34,10 +41,34 @@ func TestManagerStartSession(t *testing.T) {
 	}
 }
 
+func TestManagerStartSessionClearsModelAndEffortForProviderMismatch(t *testing.T) {
+	t.Parallel()
+
+	adapter := &testAdapter{}
+	manager := newTestManager(t, adapter)
+	_, _, err := manager.StartSession(context.Background(), "reviewer", "review", "codex")
+	if err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	session, err := manager.store.Get("reviewer")
+	if err != nil {
+		t.Fatalf("store.Get() error = %v", err)
+	}
+	if session.Model != "" {
+		t.Fatalf("stored session model = %q, want empty string", session.Model)
+	}
+	if adapter.startOpts.Model != "" {
+		t.Fatalf("StartSession() adapter model = %q, want empty string", adapter.startOpts.Model)
+	}
+	if adapter.startOpts.Effort != "" {
+		t.Fatalf("StartSession() adapter effort = %q, want empty string", adapter.startOpts.Effort)
+	}
+}
+
 func TestManagerStartDuplicateName(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("first StartSession() error = %v", err)
 	}
@@ -49,7 +80,7 @@ func TestManagerStartDuplicateName(t *testing.T) {
 func TestManagerRunSession(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -92,7 +123,7 @@ func TestManagerRunSessionIgnoresRequestContextCancellation(t *testing.T) {
 
 	blockCh := make(chan struct{})
 	startedCh := make(chan struct{}, 1)
-	manager := newTestManagerWithContext(t, context.Background(), testAdapter{runBlock: blockCh, runStarted: startedCh})
+	manager := newTestManagerWithContext(t, context.Background(), &testAdapter{runBlock: blockCh, runStarted: startedCh})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -125,7 +156,7 @@ func TestManagerRunConcurrent(t *testing.T) {
 
 	blockCh := make(chan struct{})
 	startedCh := make(chan struct{}, 1)
-	manager := newTestManager(t, testAdapter{runBlock: blockCh, runStarted: startedCh})
+	manager := newTestManager(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -149,7 +180,7 @@ func TestManagerStopSession(t *testing.T) {
 
 	blockCh := make(chan struct{})
 	startedCh := make(chan struct{}, 1)
-	manager := newTestManager(t, testAdapter{runBlock: blockCh, runStarted: startedCh})
+	manager := newTestManager(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -180,7 +211,7 @@ func TestManagerRunSessionStopsWhenLifecycleContextCanceled(t *testing.T) {
 
 	blockCh := make(chan struct{})
 	startedCh := make(chan struct{}, 1)
-	manager := newTestManagerWithContext(t, lifecycleCtx, testAdapter{runBlock: blockCh, runStarted: startedCh})
+	manager := newTestManagerWithContext(t, lifecycleCtx, &testAdapter{runBlock: blockCh, runStarted: startedCh})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -199,7 +230,7 @@ func TestManagerRunSessionStopsWhenLifecycleContextCanceled(t *testing.T) {
 func TestManagerGetOutput(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -223,7 +254,7 @@ func TestManagerGetOutput(t *testing.T) {
 func TestManagerResetSession(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -248,7 +279,7 @@ func TestManagerResetSession(t *testing.T) {
 func TestManagerDeleteSession(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
@@ -274,7 +305,7 @@ func TestManagerRestartRecovery(t *testing.T) {
 		t.Fatalf("store.Put() error = %v", err)
 	}
 
-	manager := NewSessionManager(context.Background(), store, map[string]Adapter{"codex": testAdapter{}}, Config{}, testCWD(t), nil)
+	manager := NewSessionManager(context.Background(), store, map[string]Adapter{"codex": &testAdapter{}}, Config{}, testCWD(t), nil)
 	info, err := manager.GetSession("implementer")
 	if err != nil {
 		t.Fatalf("GetSession() error = %v", err)
@@ -287,7 +318,7 @@ func TestManagerRestartRecovery(t *testing.T) {
 func TestManagerStartInvalidRole(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "planner", "plan", "codex"); err == nil {
 		t.Fatal("StartSession() error = nil, want invalid-role error")
 	}
@@ -296,7 +327,7 @@ func TestManagerStartInvalidRole(t *testing.T) {
 func TestManagerStartInvalidProvider(t *testing.T) {
 	t.Parallel()
 
-	manager := newTestManager(t, testAdapter{})
+	manager := newTestManager(t, &testAdapter{})
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "unknown"); err == nil {
 		t.Fatal("StartSession() error = nil, want invalid-provider error")
 	}
@@ -305,14 +336,16 @@ func TestManagerStartInvalidProvider(t *testing.T) {
 type testAdapter struct {
 	runBlock   <-chan struct{}
 	runStarted chan<- struct{}
+	startOpts  StartOpts
 }
 
-func (a testAdapter) Start(_ context.Context, session *Session, _ StartOpts) (string, error) {
+func (a *testAdapter) Start(_ context.Context, session *Session, opts StartOpts) (string, error) {
+	a.startOpts = opts
 	session.ProviderState.SessionID = "test-session-id"
 	return "WAIT_FOR_USER_START", nil
 }
 
-func (a testAdapter) RunStream(ctx context.Context, _ *Session, command string, _ RunOpts, w io.Writer) error {
+func (a *testAdapter) RunStream(ctx context.Context, _ *Session, command string, _ RunOpts, w io.Writer) error {
 	if a.runStarted != nil {
 		select {
 		case a.runStarted <- struct{}{}:
@@ -330,7 +363,7 @@ func (a testAdapter) RunStream(ctx context.Context, _ *Session, command string, 
 	return err
 }
 
-func (a testAdapter) Stop(_ context.Context, _ *Session) error {
+func (a *testAdapter) Stop(_ context.Context, _ *Session) error {
 	return nil
 }
 

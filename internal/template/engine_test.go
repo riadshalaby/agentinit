@@ -294,6 +294,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	for _, snippet := range []string{
 		"config_file=\".ai/config.json\"",
 		".roles[$role][$field] // empty",
+		"role_configured_agent=\"$(config_value \"$role\" \"agent\")\"",
+		"if [[ -n \"$role_configured_agent\" && \"$agent\" != \"$role_configured_agent\" ]]; then",
+		"role_model=\"\"",
+		"role_effort=\"\"",
 		"agent_args+=(--model \"$role_model\")",
 		"agent_args+=(--effort \"$role_effort\")",
 		"agent_args+=(-m \"$role_model\")",
