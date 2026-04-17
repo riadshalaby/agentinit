@@ -393,3 +393,68 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-007 — implement — 2026-04-17T19:54:10Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the cross-platform `agentinit cycle start <branch>` command, covered its git/bootstrap flow with command tests, and updated immediate workflow docs to point at the new entry point |
+| Files Changed | cmd/cycle.go, cmd/cycle_test.go, README.md, internal/scaffold/summary.go, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./cmd/...` — pass; `go test ./...` — pass |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-007 — review — 2026-04-17T22:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-007 code is correct and all 9 packages pass; FAIL on missing commit (blocker) and spurious `gh` prerequisite check that breaks `cycle start` for users without the GitHub CLI (major) |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. No commit created before ready_for_review; 2. Remove `requireCycleCommand("gh")` from `runCycleStart` — `cycle start` does not use `gh` |
+| Next Role | implement |
+
+---
+
+### T-007 — implement — 2026-04-17T20:14:12Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the T-007 review findings by removing the unused `gh` prerequisite from `cycle start`, updating the launcher test expectation, and preparing the required rework commit |
+| Files Changed | cmd/cycle.go, cmd/cycle_test.go, README.md, internal/scaffold/summary.go, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `891ba67 fix(cli): address review findings for cycle start` |
+| Next Role | review |
+
+---
+
+### T-007 — review — 2026-04-17T22:45:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-007 rework; both required fixes resolved — `gh` check removed, commit present, working tree clean, all 9 packages pass |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-007 — implement — 2026-04-17T20:19:18Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed `agentinit cycle start` work into the final task commit and marked T-007 done |
+| Files Changed | cmd/cycle.go, cmd/cycle_test.go, README.md, internal/scaffold/summary.go, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `98499de feat(cli): add cross-platform cycle bootstrap command` |
+| Next Role | none |
+
+---

@@ -55,7 +55,7 @@ cd myapp
 $EDITOR ROADMAP.md
 
 # Start your first cycle
-scripts/ai-start-cycle.sh feature/first-feature
+agentinit cycle start feature/first-feature
 
 # Launch the persistent role sessions (one terminal each)
 scripts/ai-plan.sh          # terminal 1
@@ -198,7 +198,7 @@ In manual mode, you are the coordinator. Start the planner, implementer, and rev
 2. Start a cycle:
 
 ```bash
-scripts/ai-start-cycle.sh feature/my-change
+agentinit cycle start feature/my-change
 ```
 
 3. Launch one persistent role session per terminal:
@@ -221,7 +221,7 @@ In auto mode, the PO session coordinates the post-planning implementer/reviewer 
 2. Start a cycle:
 
 ```bash
-scripts/ai-start-cycle.sh feature/my-change
+agentinit cycle start feature/my-change
 ```
 
 3. Launch the PO session:
