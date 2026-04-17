@@ -398,3 +398,88 @@ All Round 1 required fixes addressed.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-007 — `agentinit cycle start` cross-platform cycle bootstrap
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | blocker | working tree | No commit created before `ready_for_review`; HANDOFF entry confirms `Commit: none`; all T-007 changes are in the working tree unstaged — fourth recurrence of this protocol violation | **Yes** |
+| 2 | major | `cmd/cycle.go:72–76` | `requireCycleCommand("gh")` called in `runCycleStart`; `cycle start` does not use `gh` at any step (only `git` operations); silently breaks the command for users without the GitHub CLI, violating the acceptance criterion. The `gh` check belongs in T-008's `cycle end` / `pr` commands | **Yes** |
+
+#### Verification
+##### Steps
+- Confirmed HANDOFF entry `Commit: none`; `git status` shows `cmd/cycle.go`, `cmd/cycle_test.go`, `internal/scaffold/summary.go`, and `README.md` as untracked/modified — no commit created.
+- Read `cmd/cycle.go` in full: plan steps 1–5 all implemented correctly (`validateCycleBranchName`, `ensureCycleWorkingTreeClean`, `checkoutCycleBranch`, `copyCycleBootstrapFiles`, `commitCycleBootstrap`); all git operations wired to `os.Stdout`/`os.Stderr` ✅
+- `requireCycleCommand("gh")` called unconditionally in `runCycleStart`; no `gh` command is invoked anywhere in T-007 scope ❌
+- Branch name validation: prefix check and git ref-format check match plan; bare-prefix cases caught via `switch` before `HasPrefix` check ✅
+- Working-tree cleanliness: `git diff --quiet` + `git diff --cached --quiet` + `git ls-files --others --exclude-standard` — full coverage of tracked and untracked state ✅
+- Commit message: `"chore: start cycle " + filepath.Base(branchName)` — `filepath.Base("fix/windows-launcher")` = `"windows-launcher"` — matches plan and test ✅
+- `copyCycleBootstrapFiles` preserves source file permissions via `cycleStat` ✅
+- Tests: `TestCycleStartCopiesTemplatesAndRunsGitWorkflow` verifies full happy path including git call sequence; 5 error-path tests cover invalid prefix, bare prefix, dirty tree, untracked files, existing local branch, existing remote branch ✅
+- `README.md`: three `scripts/ai-start-cycle.sh` references updated to `agentinit cycle start` ✅
+- `internal/scaffold/summary.go`: cycle-start reference updated; `scripts/ai-plan.sh` on the next line left unchanged — acceptable, T-009 owns remaining script references ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./cmd/... -count=1` — 25/25 pass.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- All code logic is correct except the spurious `gh` prerequisite check.
+- No commit exists; working tree is dirty.
+##### Risks
+- The `gh` check causes `agentinit cycle start` to fail immediately on machines without the GitHub CLI, even though `cycle start` uses only `git`. Real usability regression.
+
+#### Open Questions
+- None.
+
+#### Required Fixes
+1. Remove `requireCycleCommand("gh")` from `runCycleStart` in `cmd/cycle.go`; the `gh` check belongs in T-008's `cycle end` and/or `pr` commands.
+2. Stage all T-007 changes and create a Conventional Commit with a release-note-ready subject.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+All Round 1 required fixes addressed.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | blocker | — | ✅ Fixed — commit `891ba67` created; working tree clean | n/a |
+| 2 | major | — | ✅ Fixed — `requireCycleCommand("gh")` removed from `runCycleStart`; only `git` is checked; test updated to assert `[]string{"git"}` for LookPath calls | n/a |
+
+#### Verification
+##### Steps
+- Confirmed commit `891ba67` (`fix(cli): address review findings for cycle start`) present; working tree clean.
+- `cmd/cycle.go` diff: `requireCycleCommand("gh")` call removed; only `requireCycleCommand("git")` remains in `runCycleStart` ✅
+- `cmd/cycle_test.go` diff: LookPath assertion updated from `[]string{"git", "gh"}` to `[]string{"git"}` ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- Both required fixes correctly applied; no regressions.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
