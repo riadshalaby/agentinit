@@ -141,6 +141,258 @@ Thread the server-lifecycle context from `Server.Run` into `SessionManager`.
 
 ---
 
+## T-004 — Fix model/effort applied to wrong agent in scripts and MCP sessions
+
+### Problem
+`ai-launch.sh` reads `role_model` and `role_effort` from the role config and passes them unconditionally to the CLI agent. `Config.ModelForRole(role)` in `manager.go` returns the role model without checking whether the requested provider matches the configured one.
+
+Scenario: `implement.agent = "codex"`, `implement.model = "gpt-5.4"`.
+- `./scripts/ai-implement.sh claude` → `claude --model gpt-5.4` ✗
+- `session_start(role: "implement", provider: "claude")` → `session.Model = "gpt-5.4"` passed to claude ✗
+
+### Fix (Option A — agent's built-in default when provider mismatches)
+
+**`internal/template/templates/base/scripts/ai-launch.sh.tmpl`**
+```bash
+role_configured_agent="$(config_value "$role" "agent")"
+# Only carry over model/effort when the agent matches what the role was configured for
+if [[ -n "$role_configured_agent" && "$agent" != "$role_configured_agent" ]]; then
+  role_model=""
+  role_effort=""
+fi
+```
+
+**`internal/mcp/config.go`** — add two provider-aware accessors:
+```go
+func (c Config) ModelForRoleAndProvider(role, provider string) string {
+    rc, ok := c.Roles[role]
+    if !ok {
+        return ""
+    }
+    if rc.Provider != "" && rc.Provider != provider {
+        return ""
+    }
+    return rc.Model
+}
+
+func (c Config) EffortForRoleAndProvider(role, provider string) string {
+    rc, ok := c.Roles[role]
+    if !ok {
+        return ""
+    }
+    if rc.Provider != "" && rc.Provider != provider {
+        return ""
+    }
+    return rc.Effort
+}
+```
+
+**`internal/mcp/manager.go`** — update `StartSession`:
+```go
+session.Model  = m.config.ModelForRoleAndProvider(role, provider)
+// pass effort through StartOpts similarly
+```
+
+### Files to change
+| File | Change |
+|------|--------|
+| `internal/template/templates/base/scripts/ai-launch.sh.tmpl` | Zero `role_model`/`role_effort` when agent ≠ role's configured agent |
+| `internal/mcp/config.go` | Add `ModelForRoleAndProvider` and `EffortForRoleAndProvider` |
+| `internal/mcp/manager.go` | Use provider-aware accessors in `StartSession` |
+| `internal/mcp/config_test.go` | Cover mismatch and match cases for both new methods |
+
+### Acceptance criteria
+- `./scripts/ai-implement.sh claude` on a codex-configured role starts claude with no `--model` flag.
+- `./scripts/ai-implement.sh codex` on the same repo still passes the configured model.
+- `session_start(role: "implement", provider: "claude")` with a codex-configured role sets `session.Model = ""`.
+- `go test ./internal/mcp/...` passes.
+
+---
+
+## T-005 — `agentinit plan`, `agentinit implement`, `agentinit review`
+
+### Problem
+`ai-plan.sh`, `ai-implement.sh`, `ai-review.sh` and `ai-launch.sh` are bash-only, requiring Git Bash or WSL on Windows.
+
+### Fix
+Add three Cobra subcommands that replicate the script logic in Go. Shared exec logic lives in a new `internal/launcher` package.
+
+**`internal/launcher/launcher.go`**
+```go
+type RoleLaunchOpts struct {
+    Role       string   // "plan" | "implement" | "review"
+    Agent      string   // "claude" | "codex"
+    Model      string   // empty → agent default
+    Effort     string   // empty → agent default
+    PromptFile string
+    RepoRoot   string
+    ExtraArgs  []string
+}
+func Launch(opts RoleLaunchOpts) error  // execs the agent, replacing current process
+```
+
+Each command (`cmd/plan.go`, `cmd/implement.go`, `cmd/review.go`):
+1. Determine default agent from `config.json` for the role.
+2. If first positional arg is `"claude"` or `"codex"`, use it and shift.
+3. Use `ModelForRoleAndProvider` / `EffortForRoleAndProvider` (T-004) to select model/effort.
+4. Call `launcher.Launch`.
+
+### Files to change
+| File | Change |
+|------|--------|
+| `internal/launcher/launcher.go` | New: shared exec logic for role sessions |
+| `internal/launcher/launcher_test.go` | New: unit tests using exec stub |
+| `cmd/plan.go` | New: `agentinit plan` |
+| `cmd/implement.go` | New: `agentinit implement` |
+| `cmd/review.go` | New: `agentinit review` |
+
+### Acceptance criteria
+- `agentinit plan claude` execs `claude --permission-mode acceptEdits --system-prompt-file .ai/prompts/planner.md`.
+- `agentinit implement` (no arg) uses configured role agent and model.
+- `agentinit implement claude` on a codex-configured role passes no `--model` flag.
+- `go test ./internal/launcher/... ./cmd/...` passes.
+
+---
+
+## T-006 — `agentinit po`
+
+### Problem
+`ai-po.sh` uses `mktemp`, heredocs, and `trap` — none available on Windows natively.
+
+### Fix
+Add `agentinit po [agent] [opts...]` as a Cobra subcommand.
+
+**`cmd/po.go`**:
+1. Read `.ai/prompts/po.md`.
+2. Build MCP config JSON string in memory.
+3. Append session-defaults block (plan/implement/review agent from config) to prompt.
+4. Write both to `os.CreateTemp` files; defer removal.
+5. Exec claude or codex with the assembled args.
+
+### Files to change
+| File | Change |
+|------|--------|
+| `cmd/po.go` | New: `agentinit po` |
+| `cmd/po_test.go` | New: unit tests using exec stub |
+
+### Acceptance criteria
+- `agentinit po` execs claude with `--mcp-config <tempfile>` and `--system-prompt-file <tempfile>`.
+- Temp files are cleaned up on exit.
+- `go test ./cmd/...` passes.
+
+---
+
+## T-007 — `agentinit cycle start`
+
+### Problem
+`ai-start-cycle.sh` uses bash idioms and POSIX tools, not available natively on Windows.
+
+### Fix
+Add `agentinit cycle start <branch>` as a Cobra subcommand (`cmd/cycle.go`, `start` sub-subcommand).
+
+Logic mirrors the shell script exactly:
+1. Validate branch name format (`feature/`, `fix/`, `chore/` prefix).
+2. Check clean working tree (`git status --porcelain`).
+3. `git checkout main` → `git pull --ff-only origin main` → `git checkout -b <branch>`.
+4. Copy `.ai/*.template.md` → `.ai/*.md`, `ROADMAP.template.md` → `ROADMAP.md`.
+5. `git add` the copied files → `git commit -m "chore: start cycle <name>"` → `git push -u origin <branch>`.
+
+All git operations via `exec.Command("git", ...)` with stdout/stderr wired to `os.Stdout`/`os.Stderr`.
+
+### Files to change
+| File | Change |
+|------|--------|
+| `cmd/cycle.go` | New: `agentinit cycle` with `start` and `end` subcommands |
+| `cmd/cycle_test.go` | New: unit tests using git stub |
+
+### Acceptance criteria
+- `agentinit cycle start fix/foo` creates branch, copies templates, commits, pushes — identical behaviour to the bash script.
+- Invalid branch names, dirty working tree, already-existing branches all produce clear error messages and exit non-zero.
+- `go test ./cmd/...` passes.
+
+---
+
+## T-008 — `agentinit cycle end` and `agentinit pr`
+
+### Problem
+`ai-pr.sh sync` uses `awk` for breaking-changes parsing and is bash-only. `finish_cycle` is a session command that requires the implementer LLM to do git work.
+
+### Fix
+
+**`agentinit cycle end [VERSION]`** (adds `end` sub-subcommand to `cmd/cycle.go`):
+1. Parse `.ai/TASKS.md`; abort if any task row is not `done`.
+2. `git add .ai/`; build commit message `chore(ai): close cycle` with optional `Release-As: VERSION` footer; `git commit`.
+3. Detect GitHub remote: `git remote get-url origin`; check for `github.com` in URL.
+4. If GitHub: `git push -u origin <branch>`, then run PR logic (same as `agentinit pr`).
+5. If no GitHub: print `No GitHub remote detected — skipping PR.` and exit 0.
+
+**`agentinit pr [--base <branch>] [--title <title>] [--dry-run]`** (`cmd/pr.go`):
+1. `git fetch origin <base>`.
+2. `git merge-base`, `git log --no-merges --format=...` for commit list.
+3. Parse breaking changes in Go (replace `awk`): scan subjects for `!:` pattern.
+4. `gh pr list` → create or edit PR with assembled body.
+
+### Files to change
+| File | Change |
+|------|--------|
+| `cmd/cycle.go` | Add `end` subcommand |
+| `cmd/pr.go` | New: `agentinit pr` |
+| `cmd/pr_test.go` | New: unit tests with git/gh stubs |
+| `cmd/cycle_test.go` | Add `end` tests |
+
+### Acceptance criteria
+- `agentinit cycle end` aborts with a clear message when tasks are not all `done`.
+- `agentinit cycle end 1.0.0` commits with `Release-As: 1.0.0` footer.
+- On a repo with a GitHub remote, `cycle end` creates or updates the PR.
+- On a repo with no GitHub remote (or `origin` absent), `cycle end` exits 0 with the skip message.
+- `agentinit pr --dry-run` prints the PR title and body without calling `gh`.
+- `go test ./cmd/...` passes.
+
+---
+
+## T-009 — Remove generated bash scripts; migrate existing projects; update prompts and AGENTS.md
+
+### Problem
+After T-005–T-008, the generated `scripts/*.sh` files and their templates are superseded. Existing projects still have them on disk.
+
+### Fix
+
+**Template layer**:
+- Delete all `internal/template/templates/base/scripts/*.sh.tmpl` files.
+- Remove `scripts/` from the manifest's tracked paths.
+
+**`internal/scaffold/manifest.go`**:
+- Remove `scripts/` paths from any hardcoded lists if present.
+
+**`internal/update/update.go` — migration**:
+- Add `migrateScripts(targetDir, dryRun)`: for each `scripts/ai-*.sh` path currently in the manifest or on disk, delete the file; remove `scripts/` dir if empty.
+
+**Prompt templates** (`.ai/prompts/implementer.md.tmpl`, `AGENTS.md.tmpl`):
+- Replace all `scripts/ai-plan.sh` → `agentinit plan`, etc.
+- Replace `finish_cycle [VERSION]` instructions → `agentinit cycle end [VERSION]`.
+- Remove references to `scripts/ai-pr.sh sync` → `agentinit pr`.
+
+### Files to change
+| File | Change |
+|------|--------|
+| `internal/template/templates/base/scripts/*.sh.tmpl` | Delete all 7 files |
+| `internal/template/templates/base/AGENTS.md.tmpl` | Update command references |
+| `internal/template/templates/base/ai/prompts/implementer.md.tmpl` | Remove `finish_cycle`, add `agentinit cycle end` |
+| `internal/template/templates/base/ai/prompts/po.md.tmpl` | Update session-start references |
+| `internal/template/templates/base/ai/prompts/planner.md.tmpl` | Update script references if any |
+| `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` | Update script references if any |
+| `internal/update/update.go` | Add `migrateScripts` |
+| `internal/update/update_test.go` | Add migration test |
+| `AGENTS.md` (this repo) | Update to match new commands |
+
+### Acceptance criteria
+- `agentinit init` on a new project writes no `scripts/` directory.
+- `agentinit update` on an existing project deletes `scripts/ai-*.sh` and removes the empty `scripts/` dir.
+- All prompt templates reference `agentinit <command>` instead of `scripts/ai-*.sh`.
+- `go test ./...` passes.
+
+---
+
 ## Validation
 ```
 go fmt ./...
@@ -149,4 +401,8 @@ go test ./...
 ```
 
 ## Task order
-T-001 → T-002 → T-003 (each is independent; this order goes simplest-to-most-complex).
+T-001 (done) → T-002 → T-003 → T-004 → T-005 → T-006 → T-007 → T-008 → T-009.
+T-002/T-003/T-004 are independent of each other and of T-005–T-009.
+T-005 must precede T-006 (shared launcher package).
+T-007 and T-008 are independent of T-005/T-006.
+T-009 must follow T-005–T-008 (removes what they replace).

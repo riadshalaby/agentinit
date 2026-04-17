@@ -6,12 +6,7 @@ func init() {
 	register(Overlay{
 		Name: "go",
 		ToolPermissions: []string{
-			"go fmt",
-			"go vet",
-			"go test",
-			"go build",
-			"go run",
-			"go mod",
+			"go",
 		},
 		ValidationCommands: []template.ValidationCommand{
 			{Label: "Format", Command: "go fmt ./..."},

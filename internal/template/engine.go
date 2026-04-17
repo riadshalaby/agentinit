@@ -98,7 +98,7 @@ func renderTemplate(tmplContent, name string, data any) (string, error) {
 		},
 		"permissionRules": func(data *ProjectData) string {
 			seen := make(map[string]struct{})
-			commands := make([]string, 0, len(data.ToolPermissions)+len(data.ValidationCommands)+2)
+			commands := make([]string, 0, len(data.ToolPermissions)+len(data.ValidationCommands)+1)
 
 			add := func(command string) {
 				if _, ok := seen[command]; ok {
@@ -114,8 +114,7 @@ func renderTemplate(tmplContent, name string, data any) (string, error) {
 			for _, validation := range data.ValidationCommands {
 				add(validation.Command)
 			}
-			add("git add")
-			add("git commit")
+			add("git")
 			rules := make([]string, 0, len(commands))
 			for _, command := range commands {
 				rules = append(rules, fmt.Sprintf("\"Bash(%s:*)\"", command))
