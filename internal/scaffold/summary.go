@@ -40,7 +40,7 @@ func BuildSummary(result Result) SummaryModel {
 		fmt.Sprintf("cd %s", result.TargetDir),
 		"Edit ROADMAP.md with your project goals",
 		"Start a development cycle: agentinit cycle start feature/<scope>",
-		"Run the planner: scripts/ai-plan.sh",
+		"Run the planner: agentinit plan",
 	}
 	if len(result.ValidationCommands) > 0 {
 		lines := []string{"Validate the project:"}

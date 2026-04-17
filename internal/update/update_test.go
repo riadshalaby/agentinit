@@ -33,9 +33,9 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatalf("write implementer prompt: %v", err)
 	}
 
-	deletedScriptPath := filepath.Join(projectDir, "scripts/ai-po.sh")
-	if err := os.Remove(deletedScriptPath); err != nil {
-		t.Fatalf("remove ai-po.sh: %v", err)
+	deletedPromptPath := filepath.Join(projectDir, ".ai/prompts/po.md")
+	if err := os.Remove(deletedPromptPath); err != nil {
+		t.Fatalf("remove po prompt: %v", err)
 	}
 
 	configPath := filepath.Join(projectDir, ".ai/config.json")
@@ -78,8 +78,8 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 		t.Fatal("implementer prompt should be updated to current template content")
 	}
 
-	if _, err := os.Stat(deletedScriptPath); err != nil {
-		t.Fatalf("deleted managed script should be recreated: %v", err)
+	if _, err := os.Stat(deletedPromptPath); err != nil {
+		t.Fatalf("deleted managed prompt should be recreated: %v", err)
 	}
 
 	configBytes, err := os.ReadFile(configPath)
@@ -207,6 +207,9 @@ func TestRunDeletesRemovedManagedFiles(t *testing.T) {
 	if err := os.WriteFile(legacyPromptPath, []byte("legacy tester prompt"), 0o644); err != nil {
 		t.Fatalf("write legacy tester prompt: %v", err)
 	}
+	if err := os.MkdirAll(filepath.Join(projectDir, "scripts"), 0o755); err != nil {
+		t.Fatalf("mkdir scripts: %v", err)
+	}
 	legacyScriptPath := filepath.Join(projectDir, "scripts/ai-test.sh")
 	if err := os.WriteFile(legacyScriptPath, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatalf("write legacy ai-test.sh: %v", err)
@@ -237,6 +240,60 @@ func TestRunDeletesRemovedManagedFiles(t *testing.T) {
 	}
 	assertHasChange(t, result.Changes, ".ai/prompts/tester.md", actionDelete)
 	assertHasChange(t, result.Changes, "scripts/ai-test.sh", actionDelete)
+}
+
+func TestRunMigratesLegacyScriptsAndRemovesEmptyScriptsDir(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	scriptPaths := []string{
+		"scripts/ai-implement.sh",
+		"scripts/ai-launch.sh",
+		"scripts/ai-plan.sh",
+		"scripts/ai-po.sh",
+		"scripts/ai-pr.sh",
+		"scripts/ai-review.sh",
+		"scripts/ai-start-cycle.sh",
+	}
+	if err := os.MkdirAll(filepath.Join(projectDir, "scripts"), 0o755); err != nil {
+		t.Fatalf("mkdir scripts: %v", err)
+	}
+	for _, relPath := range scriptPaths {
+		if err := os.WriteFile(filepath.Join(projectDir, relPath), []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatalf("write %s: %v", relPath, err)
+		}
+	}
+
+	manifest, err := scaffold.ReadManifest(projectDir)
+	if err != nil {
+		t.Fatalf("ReadManifest() error = %v", err)
+	}
+	manifest.Files = append(manifest.Files, scaffold.ManifestFile{
+		Path:       "scripts/ai-po.sh",
+		Management: "full",
+	})
+	if err := scaffold.WriteManifest(projectDir, manifest); err != nil {
+		t.Fatalf("WriteManifest() error = %v", err)
+	}
+
+	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	for _, relPath := range scriptPaths {
+		if _, err := os.Stat(filepath.Join(projectDir, relPath)); !os.IsNotExist(err) {
+			t.Fatalf("%s should be deleted, stat err = %v", relPath, err)
+		}
+		assertHasChange(t, result.Changes, relPath, actionDelete)
+	}
+	if _, err := os.Stat(filepath.Join(projectDir, "scripts")); !os.IsNotExist(err) {
+		t.Fatalf("scripts directory should be removed, stat err = %v", err)
+	}
+	assertHasChange(t, result.Changes, "scripts", actionDelete)
 }
 
 func TestRunMigratesObsoleteTaskStates(t *testing.T) {

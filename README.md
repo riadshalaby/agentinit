@@ -10,7 +10,7 @@ Scaffold a file-based AI agent coordination framework for any codebase. Every sc
 
 | Role | Responsibility | Reads | Writes |
 |------|---------------|-------|--------|
-| **PO** | Coordinates the role sessions in auto mode | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |
+| **PO** | Coordinates the role sessions in auto mode | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |
 | **Planner** | Breaks down the roadmap into tasks and writes the plan | `ROADMAP.md` | `.ai/PLAN.md`, `.ai/TASKS.md` |
 | **Implementer** | Writes code according to the plan, commits | `.ai/PLAN.md`, `.ai/REVIEW.md` | source code, `.ai/TASKS.md` |
 | **Reviewer** | Reviews commits, verifies the implementation, accepts or requests changes | `.ai/PLAN.md`, commits | `.ai/REVIEW.md`, `.ai/TASKS.md` |
@@ -58,24 +58,17 @@ $EDITOR ROADMAP.md
 agentinit cycle start feature/first-feature
 
 # Launch the persistent role sessions (one terminal each)
-scripts/ai-plan.sh          # terminal 1
-scripts/ai-implement.sh     # terminal 2
-scripts/ai-review.sh        # terminal 3
+agentinit plan          # terminal 1
+agentinit implement     # terminal 2
+agentinit review        # terminal 3
 
-# Cross-platform equivalents
-agentinit plan
-agentinit implement
-agentinit review
-
-# Wrappers read default agent/model settings from .ai/config.json.
+# Role launchers read default agent/model settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
-# Example: scripts/ai-review.sh claude --model sonnet
-# The `agentinit plan|implement|review` commands accept the same override pattern.
-# Claude starts interactively by default, and the Codex wrappers use
+# Example: agentinit review claude --model sonnet
+# Claude starts interactively by default, and the Codex launcher uses
 # interactive `codex` mode so the session stays open for role commands.
 
 # Or start the PO orchestrator for auto mode
-scripts/ai-po.sh
 agentinit po
 
 # Drive the cycle with text commands inside those sessions
@@ -87,10 +80,8 @@ implementer>  commit_task
 # Or use the cross-platform cycle-close and PR helpers
 agentinit cycle end 1.0.0
 agentinit pr --dry-run
-implementer>  finish_cycle 0.7.0
-
-# Create or update the PR
-scripts/ai-pr.sh sync
+agentinit cycle end 0.7.0
+agentinit pr
 ```
 
 ## Re-running on an Existing Project
@@ -116,7 +107,7 @@ agentinit update --dry-run
 Manual copy-over still works when you want to adopt changes selectively:
 
 - Generate a fresh scaffold in a temporary directory and copy over the tracked workflow files you actually want to adopt.
-- Or update the existing `.ai/`, `scripts/`, and documentation files manually in the current repository.
+- Or update the existing `.ai/`, documentation, and config files manually in the current repository.
 
 ## Usage
 
@@ -185,7 +176,7 @@ agentinit init mylib --type node --no-git
 
 ## Runtime Modes
 
-Manual and auto are two ways to use the same scaffold. Both modes use the same generated scripts, prompts, `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review artifacts, and status transitions. The only difference is who drives the role sessions.
+Manual and auto are two ways to use the same scaffold. Both modes use the same generated prompts, `.ai/TASKS.md` board, `.ai/PLAN.md` plan, review artifacts, and status transitions. The only difference is who drives the role sessions.
 
 ### Runtime mode comparison
 
@@ -208,12 +199,12 @@ agentinit cycle start feature/my-change
 3. Launch one persistent role session per terminal:
 
 ```bash
-scripts/ai-plan.sh
-scripts/ai-implement.sh
-scripts/ai-review.sh
+agentinit plan
+agentinit implement
+agentinit review
 ```
 
-Claude starts interactively by default, and the Codex wrappers use interactive `codex` mode so the session stays open for role commands.
+Claude starts interactively by default, and the Codex launcher uses interactive `codex` mode so the session stays open for role commands.
 
 4. Drive the workflow through the session commands documented in the generated README and `AGENTS.md`.
 
@@ -231,7 +222,7 @@ agentinit cycle start feature/my-change
 3. Launch the PO session:
 
 ```bash
-scripts/ai-po.sh
+agentinit po
 ```
 
 4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `next_task T-001`, `rework_task T-001`, or `commit_task T-001`. If no tasks are in `ready_for_implement` or later, run the planner first.
@@ -257,7 +248,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 | `next_task [TASK_ID]` | Pick up the next `ready_for_implement` task (or a specific one) |
 | `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |
 | `rework_task [TASK_ID]` | Address `changes_requested` findings from `.ai/REVIEW.md` |
-| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
+| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |
 | `status_cycle [TASK_ID]` | Show task status, owner, and recommended next action |
 
 Cross-platform CLI equivalents:
@@ -272,7 +263,7 @@ Cross-platform CLI equivalents:
 
 ### MCP Server
 
-`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, and named session metadata persists in `.ai/sessions.json`; both files should stay gitignored. The generated `scripts/ai-po.sh` wrapper creates a temporary MCP config that points a PO session at this command:
+`agentinit mcp` starts a stdio MCP server named `agentinit`. It also appends structured debug logs to `.ai/mcp-server.log`, and named session metadata persists in `.ai/sessions.json`; both files should stay gitignored. `agentinit po` creates a temporary MCP config that points a PO session at this command:
 
 ```json
 {
@@ -290,7 +281,7 @@ The server currently exposes seven tools for the PO session:
 
 | Tool | Purpose |
 |------|---------|
-| `session_start` | Create and initialize a named role session through `scripts/ai-launch.sh` |
+| `session_start` | Create and initialize a named role session through `agentinit plan|implement|review` |
 | `session_run` | Resume a named session, send one command, and return the full output synchronously |
 | `session_status` | Show the current status and metadata for one named session |
 | `session_list` | List all tracked named sessions and their status |
@@ -321,11 +312,10 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `.ai/TASKS.md` | Task board with status per task | yes |
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | yes (tracked cycle log) |
-| `.ai/config.json` | Per-role agent/model settings plus provider defaults for launch scripts and MCP sessions | yes |
+| `.ai/config.json` | Per-role agent/model settings plus provider defaults for role launchers and MCP sessions | yes |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |
-| `scripts/` | Launcher, cycle bootstrap, gate, and PR scripts | yes |
 
 > **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `agentinit update` to get the updated PO prompt. `session_run` replaces the old `send_command` + `get_output` polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
 

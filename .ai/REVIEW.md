@@ -524,3 +524,49 @@ Reviewed: 2026-04-17
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-009 — Remove generated bash scripts; migrate existing projects; update prompts and AGENTS.md
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+No findings. Implementation matches plan exactly.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| — | — | — | No findings | — |
+
+#### Verification
+##### Steps
+- Confirmed commit `67ffdcf` present; working tree clean.
+- All 7 `internal/template/templates/base/scripts/*.sh.tmpl` files deleted ✅
+- `internal/update/update.go` — `migrateScripts` added as last step in `migrateExcludedFiles`; iterates all 7 known script paths via `deleteIfExists`; removes empty `scripts/` dir; idempotent (double-deletion safe via `fileExists` guard in `deleteIfExists`) ✅
+- `internal/update/update_test.go` — `TestRunMigratesLegacyScriptsAndRemovesEmptyScriptsDir`: scaffolds project, creates scripts directory with all 7 files + one in manifest, runs update, asserts all 7 files deleted and dir removed ✅
+- `TestRunUpdatesManagedFilesAndWritesManifest` updated to use `.ai/prompts/po.md` instead of `scripts/ai-po.sh` (scripts no longer managed/recreated) ✅
+- `TestRunDoesNotCreateScriptsDirectory` confirms `agentinit init` produces no `scripts/` directory ✅
+- `internal/scaffold/manifest_test.go` — `scripts/ai-launch.sh` removed from test fixtures ✅
+- Template references: zero remaining `scripts/ai-*` or `finish_cycle` references in `AGENTS.md.tmpl`, `README.md.tmpl`, `implementer.md.tmpl`, `planner.md.tmpl`, `po.md.tmpl`, `reviewer.md.tmpl` ✅
+- `planner.md.tmpl` + `.ai/prompts/planner.md`: documentation rule added to Critical Rules section ✅
+- `AGENTS.md.tmpl` + `AGENTS.md` (this repo): all script and `finish_cycle` references replaced with `agentinit` equivalents; Documentation Rules extended with planner clause ✅
+- `README.md`: all `scripts/ai-*.sh` references replaced; only remaining `scripts/` reference is `git config core.hooksPath scripts/hooks` (git hooks, unrelated) ✅
+- `internal/update/fallback.go`: script paths retained in `fallbackKnownPaths` — correct; enables deletion of scripts on pre-manifest projects via `deleteRemovedManagedFiles`; `deleteIfExists` idempotency prevents double-deletion for manifest-aware projects ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./... -count=1` — all 9 packages pass.
+##### Findings
+- All acceptance criteria met; migration covers both manifest-aware and pre-manifest projects; test coverage is complete.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

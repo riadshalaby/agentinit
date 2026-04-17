@@ -315,6 +315,62 @@ func migrateExcludedFiles(targetDir string, dryRun bool) ([]Change, error) {
 	}
 	changes = append(changes, testReportChanges...)
 
+	scriptChanges, err := migrateScripts(targetDir, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	changes = append(changes, scriptChanges...)
+
+	return changes, nil
+}
+
+func migrateScripts(targetDir string, dryRun bool) ([]Change, error) {
+	scriptPaths := []string{
+		"scripts/ai-implement.sh",
+		"scripts/ai-launch.sh",
+		"scripts/ai-plan.sh",
+		"scripts/ai-po.sh",
+		"scripts/ai-pr.sh",
+		"scripts/ai-review.sh",
+		"scripts/ai-start-cycle.sh",
+	}
+
+	changes := make([]Change, 0, len(scriptPaths)+1)
+	for _, relPath := range scriptPaths {
+		fileChanges, err := deleteIfExists(targetDir, relPath, dryRun)
+		if err != nil {
+			return nil, err
+		}
+		changes = append(changes, fileChanges...)
+	}
+
+	scriptsDir := filepath.Join(targetDir, "scripts")
+	info, err := os.Stat(scriptsDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return changes, nil
+		}
+		return nil, fmt.Errorf("stat %s: %w", scriptsDir, err)
+	}
+	if !info.IsDir() {
+		return changes, nil
+	}
+
+	entries, err := os.ReadDir(scriptsDir)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", scriptsDir, err)
+	}
+	if len(entries) != 0 {
+		return changes, nil
+	}
+
+	changes = append(changes, Change{Path: "scripts", Action: actionDelete})
+	if dryRun {
+		return changes, nil
+	}
+	if err := os.Remove(scriptsDir); err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("delete %s: %w", scriptsDir, err)
+	}
 	return changes, nil
 }
 

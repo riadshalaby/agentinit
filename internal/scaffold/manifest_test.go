@@ -27,7 +27,6 @@ func TestGenerateManifestClassifiesManagedFiles(t *testing.T) {
 		".ai/PLAN.template.md":       "plan template",
 		".ai/prompts/implementer.md": "prompt",
 		".gitignore":                 "ignore",
-		"scripts/ai-launch.sh":       "script",
 	}, "v1.2.3")
 
 	if manifest.Version != "v1.2.3" {
@@ -42,7 +41,6 @@ func TestGenerateManifestClassifiesManagedFiles(t *testing.T) {
 		{Path: ".gitignore", Management: managementFull},
 		{Path: "AGENTS.md", Management: managementMarker},
 		{Path: "ROADMAP.template.md", Management: managementFull},
-		{Path: "scripts/ai-launch.sh", Management: managementFull},
 	}
 	if !reflect.DeepEqual(manifest.Files, want) {
 		t.Fatalf("Files = %#v, want %#v", manifest.Files, want)
@@ -56,7 +54,6 @@ func TestWriteReadManifestRoundTrip(t *testing.T) {
 		GeneratedAt: "2026-04-10T00:00:00Z",
 		Files: []ManifestFile{
 			{Path: "AGENTS.md", Management: managementMarker},
-			{Path: "scripts/ai-launch.sh", Management: managementFull},
 		},
 	}
 

@@ -12,7 +12,6 @@ func assertUnifiedWorkflowArtifacts(t *testing.T, files map[string]string) {
 
 	for _, path := range []string{
 		".ai/prompts/po.md",
-		"scripts/ai-po.sh",
 	} {
 		if _, ok := files[path]; !ok {
 			t.Errorf("missing unified workflow artifact: %s", path)
@@ -65,13 +64,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/prompts/reviewer.md",
 		".claude/settings.json",
 		".claude/settings.local.json",
-		"scripts/ai-po.sh",
-		"scripts/ai-launch.sh",
-		"scripts/ai-start-cycle.sh",
-		"scripts/ai-plan.sh",
-		"scripts/ai-implement.sh",
-		"scripts/ai-review.sh",
-		"scripts/ai-pr.sh",
 		"AGENTS.md",
 		"CLAUDE.md",
 		"README.md",
@@ -99,8 +91,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("README.md should contain persistent-session planner example")
 	}
-	if !strings.Contains(readme, "implementer> finish_cycle") {
-		t.Error("README.md should contain finish_cycle example")
+	if !strings.Contains(readme, "agentinit cycle end 0.7.0") {
+		t.Error("README.md should contain cycle end example")
 	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
 		t.Error("README.md should contain commit_task example")
@@ -112,14 +104,14 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
 		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
-		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
+		"Auto mode: run `agentinit po` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
-		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
+		"| `agentinit po` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
-		"| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
+		"| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -138,8 +130,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 			t.Errorf("README.md should contain %q", snippet)
 		}
 	}
-	if !strings.Contains(readme, "Wrapper scripts read default agent/model settings from `.ai/config.json`.") {
-		t.Error("README.md should mention wrapper defaults from .ai/config.json")
+	if !strings.Contains(readme, "Role launchers read default agent/model settings from `.ai/config.json`.") {
+		t.Error("README.md should mention launcher defaults from .ai/config.json")
 	}
 	for _, snippet := range []string{
 		"| `AGENTS.md` | Project-specific and workflow-managed agent rules | yes |",
@@ -176,8 +168,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`review` role never commits.",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
-		"`scripts/ai-po.sh [agent] [agent-options...]`",
-		"`scripts/ai-po.sh [agent]`",
+		"`agentinit po [agent] [agent-options...]`",
+		"`agentinit po [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
 		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
@@ -216,8 +208,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "`commit_task [TASK_ID]`") {
 		t.Error("implementer prompt should describe commit_task")
 	}
-	if !strings.Contains(implementerPrompt, "`finish_cycle [VERSION]`") {
-		t.Error("implementer prompt should describe finish_cycle")
+	if !strings.Contains(implementerPrompt, "`agentinit cycle end [VERSION]`") {
+		t.Error("implementer prompt should describe cycle end")
 	}
 	if !strings.Contains(implementerPrompt, "`ready_to_commit`") {
 		t.Error("implementer prompt should mention ready_to_commit")
@@ -227,9 +219,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "Release-As: VERSION") {
 		t.Error("implementer prompt should describe the cycle-close artifact commit")
-	}
-	if !strings.Contains(implementerPrompt, "amend HEAD") {
-		t.Error("implementer prompt should describe amending HEAD when nothing is dirty")
 	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
@@ -284,50 +273,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 	})
 
-	launchScript := files["scripts/ai-launch.sh"]
-	if !strings.Contains(launchScript, "plan | implement | review") {
-		t.Error("ai-launch.sh should list the supported roles")
-	}
-	if strings.Contains(launchScript, "prompt_file=\".ai/prompts/tester.md\"") {
-		t.Error("ai-launch.sh should not route a removed test role")
-	}
-	for _, snippet := range []string{
-		"config_file=\".ai/config.json\"",
-		".roles[$role][$field] // empty",
-		"role_configured_agent=\"$(config_value \"$role\" \"agent\")\"",
-		"if [[ -n \"$role_configured_agent\" && \"$agent\" != \"$role_configured_agent\" ]]; then",
-		"role_model=\"\"",
-		"role_effort=\"\"",
-		"agent_args+=(--model \"$role_model\")",
-		"agent_args+=(--effort \"$role_effort\")",
-		"agent_args+=(-m \"$role_model\")",
-		"prompt_text=\"$(<\"$prompt_file\")\"",
-		"\"$@\" \"$prompt_text\"",
-	} {
-		if !strings.Contains(launchScript, snippet) {
-			t.Errorf("ai-launch.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(launchScript, "exec codex exec") {
-		t.Error("ai-launch.sh should start codex interactively")
-	}
-	if strings.Contains(launchScript, "--full-auto") {
-		t.Error("ai-launch.sh should not use the codex --full-auto alias")
-	}
-	startCycleScript := files["scripts/ai-start-cycle.sh"]
-	for _, snippet := range []string{
-		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
-		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
-		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
-	} {
-		if !strings.Contains(startCycleScript, snippet) {
-			t.Errorf("ai-start-cycle.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(startCycleScript, "git rm --cached \"$runtime_artifact\"") {
-		t.Error("ai-start-cycle.sh should not untrack cycle log artifacts")
-	}
-
 	reviewTemplate := files[".ai/REVIEW.template.md"]
 	for _, snippet := range []string{"# Review Log", "## Task: T-XXX", "### Review Round 1", "#### Verification"} {
 		if !strings.Contains(reviewTemplate, snippet) {
@@ -360,35 +305,6 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if strings.Contains(poPrompt, "## Run Modes") {
 		t.Error("PO prompt should not contain the legacy Run Modes section")
-	}
-
-	poScript := files["scripts/ai-po.sh"]
-	if !strings.Contains(poScript, "--mcp-config") {
-		t.Error("ai-po.sh should pass --mcp-config to claude")
-	}
-	if !strings.Contains(poScript, "\"command\": \"agentinit\"") || !strings.Contains(poScript, "\"args\": [\"mcp\"]") {
-		t.Error("ai-po.sh should configure the agentinit mcp server")
-	}
-	for _, snippet := range []string{
-		"config_file=\".ai/config.json\"",
-		"Use these default agents when calling `start_session`",
-		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
-		"agent=\"claude\"",
-		"scripts/ai-po.sh [agent] [agent-options...]",
-		"error: unsupported PO agent",
-		"prompt_text=\"$(<\"$po_prompt\")\"",
-		"mcp_servers.agentinit.command=\"agentinit\"",
-		"mcp_servers.agentinit.args=[\"mcp\"]",
-	} {
-		if !strings.Contains(poScript, snippet) {
-			t.Errorf("ai-po.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(poScript, "exec codex exec") {
-		t.Error("ai-po.sh should start codex interactively")
-	}
-	if strings.Contains(poScript, "--full-auto") {
-		t.Error("ai-po.sh should not use the codex --full-auto alias")
 	}
 
 	config := files[".ai/config.json"]
@@ -460,19 +376,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		}
 	}
 
-	for _, tc := range []struct {
-		path    string
-		snippet string
-	}{
-		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
-		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
-		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
-	} {
-		if !strings.Contains(files[tc.path], tc.snippet) {
-			t.Errorf("%s should contain %q", tc.path, tc.snippet)
-		}
-		if !strings.Contains(files[tc.path], "if [[ ${1:-} == \"claude\" || ${1:-} == \"codex\" ]]; then") {
-			t.Errorf("%s should allow agent overrides without consuming CLI flags", tc.path)
+	for path := range files {
+		if strings.HasPrefix(path, "scripts/") {
+			t.Errorf("rendered files should not contain retired script %s", path)
 		}
 	}
 }
@@ -520,7 +426,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 	for _, snippet := range []string{
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`finish_cycle [VERSION]`",
+		"`agentinit cycle end [VERSION]`",
 		"Release-As: x.y.z",
 		"`in_review` -> `ready_to_commit` -> `done`",
 		"`review` role never commits.",
