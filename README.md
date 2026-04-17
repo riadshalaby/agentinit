@@ -62,9 +62,15 @@ scripts/ai-plan.sh          # terminal 1
 scripts/ai-implement.sh     # terminal 2
 scripts/ai-review.sh        # terminal 3
 
+# Cross-platform equivalents
+agentinit plan
+agentinit implement
+agentinit review
+
 # Wrappers read default agent/model settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
 # Example: scripts/ai-review.sh claude --model sonnet
+# The `agentinit plan|implement|review` commands accept the same override pattern.
 # Claude starts interactively by default, and the Codex wrappers use
 # interactive `codex` mode so the session stays open for role commands.
 
