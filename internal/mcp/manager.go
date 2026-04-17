@@ -16,6 +16,7 @@ import (
 // SessionManager owns the named session registry.
 // It is the single entry point for all session lifecycle operations.
 type SessionManager struct {
+	ctx      context.Context
 	store    *Store
 	adapters map[string]Adapter
 	config   Config
@@ -26,7 +27,10 @@ type SessionManager struct {
 	logger   *slog.Logger
 }
 
-func NewSessionManager(store *Store, adapters map[string]Adapter, config Config, cwd string, logger *slog.Logger) *SessionManager {
+func NewSessionManager(ctx context.Context, store *Store, adapters map[string]Adapter, config Config, cwd string, logger *slog.Logger) *SessionManager {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if logger == nil {
 		logger = newDiscardLogger()
 	}
@@ -35,6 +39,7 @@ func NewSessionManager(store *Store, adapters map[string]Adapter, config Config,
 	}
 
 	m := &SessionManager{
+		ctx:      ctx,
 		store:    store,
 		adapters: adapters,
 		config:   config,
@@ -144,7 +149,7 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 		return SessionInfo{}, fmt.Errorf("adapter %q is not configured", session.Provider)
 	}
 
-	runCtx, cancel := context.WithCancel(ctx)
+	runCtx, cancel := context.WithCancel(m.ctx)
 	m.mu.Lock()
 	if _, exists := m.running[name]; exists {
 		m.mu.Unlock()

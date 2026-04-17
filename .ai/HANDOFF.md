@@ -198,3 +198,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — review — 2026-04-17T12:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-003 code is correct and race-clean; FAIL solely on missing commit (blocker) — third recurrence of this protocol violation |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. No commit created before ready_for_review; stage all changes and create a Conventional Commit |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-17T12:28:35Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Threaded the server lifecycle context into MCP session runs so request-scoped cancellation no longer stops sessions, and added coverage for request and lifecycle cancellation |
+| Files Changed | cmd/mcp.go, internal/mcp/manager.go, internal/mcp/manager_test.go, internal/mcp/server.go, internal/mcp/server_test.go, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go test ./internal/mcp/... ./cmd/...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-003 — implement — 2026-04-17T12:50:17Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the review blocker by preserving the verified T-003 MCP context fix, restoring the task to `ready_for_review`, and preparing the required rework commit |
+| Files Changed | cmd/mcp.go, internal/mcp/manager.go, internal/mcp/manager_test.go, internal/mcp/server.go, internal/mcp/server_test.go, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `bef5fc9 fix(mcp): address review findings for session lifecycle context` |
+| Next Role | review |
+
+---

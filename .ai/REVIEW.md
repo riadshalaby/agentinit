@@ -74,6 +74,50 @@ No new findings. All Round 1 required fixes addressed.
 
 ---
 
+## Task: T-003 — Fix RunSession using request-scoped context causing zero-output stops
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-17
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | blocker | working tree | No commit created before `ready_for_review`; HANDOFF entry confirms `Commit: none`; all T-003 changes are in the working tree unstaged — third occurrence of this protocol violation | **Yes** |
+
+#### Verification
+##### Steps
+- Inspected working-tree diff for all 5 changed files against the plan prescription in `.ai/PLAN.md`.
+- `internal/mcp/manager.go`: `ctx` field added; `NewSessionManager` signature gains `ctx context.Context` as first param with nil-guard; `RunSession` now uses `context.WithCancel(m.ctx)` instead of the request `ctx` — matches plan exactly ✅
+- `internal/mcp/server.go`: `NewServer` and `newServer` gain `ctx context.Context` param with nil-guards; `Server.Run` stores the lifecycle `ctx` on both `s.ctx` and `s.manager.ctx` before blocking on `serveStdio` — matches plan intent ✅
+- `cmd/mcp.go`: `agentmcp.NewServer(ctx, version)` — matches plan exactly ✅
+- `cmd/mcp_test.go`: mock already had `func(ctx context.Context, serverVersion string) error` signature; no change needed — confirmed ✅
+- `internal/mcp/manager_test.go`: new `newTestManagerWithContext` helper; `NewSessionManager` call sites updated; two new tests added — `TestManagerRunSessionIgnoresRequestContextCancellation` (request cancel → session reaches `idle`) and `TestManagerRunSessionStopsWhenLifecycleContextCanceled` (lifecycle cancel → session reaches `stopped`) ✅
+- `internal/mcp/server_test.go`: all `NewServer` / `newServer` / `NewSessionManager` call sites updated ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test ./internal/mcp/... ./cmd/... -count=1` — all tests pass.
+- Ran `go test ./... -count=1 -race` — all 8 packages pass, no data races detected.
+##### Findings
+- All code changes are correct and complete; both new tests directly exercise the bug fix and the SIGTERM-cancels-sessions requirement.
+- No data races detected under the race detector.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Required Fixes
+1. Stage all T-003 changes and create a Conventional Commit with a release-note-ready subject.
+
+#### Verdict
+`FAIL`
+
+---
+
 ## Task: T-002 — Broaden tool permissions: `go *` and `git *`
 
 ### Review Round 1

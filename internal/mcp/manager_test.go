@@ -87,6 +87,39 @@ func TestManagerRunSession(t *testing.T) {
 	}
 }
 
+func TestManagerRunSessionIgnoresRequestContextCancellation(t *testing.T) {
+	t.Parallel()
+
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	manager := newTestManagerWithContext(t, context.Background(), testAdapter{runBlock: blockCh, runStarted: startedCh})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+
+	requestCtx, requestCancel := context.WithCancel(context.Background())
+	if _, err := manager.RunSession(requestCtx, "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	<-startedCh
+	requestCancel()
+	close(blockCh)
+
+	output := waitForOutput(t, manager, "implementer")
+	if output != "response: next_task T-005" {
+		t.Fatalf("RunSession() output = %q", output)
+	}
+
+	info, err := manager.GetSession("implementer")
+	if err != nil {
+		t.Fatalf("GetSession() error = %v", err)
+	}
+	if info.Status != StatusIdle {
+		t.Fatalf("status = %q, want %q", info.Status, StatusIdle)
+	}
+}
+
 func TestManagerRunConcurrent(t *testing.T) {
 	t.Parallel()
 
@@ -137,6 +170,30 @@ func TestManagerStopSession(t *testing.T) {
 
 	close(blockCh)
 	waitForStatus(t, manager, "implementer", StatusStopped)
+}
+
+func TestManagerRunSessionStopsWhenLifecycleContextCanceled(t *testing.T) {
+	t.Parallel()
+
+	lifecycleCtx, lifecycleCancel := context.WithCancel(context.Background())
+	t.Cleanup(lifecycleCancel)
+
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	manager := newTestManagerWithContext(t, lifecycleCtx, testAdapter{runBlock: blockCh, runStarted: startedCh})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	<-startedCh
+	lifecycleCancel()
+	waitForStatus(t, manager, "implementer", StatusStopped)
+
+	close(blockCh)
 }
 
 func TestManagerGetOutput(t *testing.T) {
@@ -217,7 +274,7 @@ func TestManagerRestartRecovery(t *testing.T) {
 		t.Fatalf("store.Put() error = %v", err)
 	}
 
-	manager := NewSessionManager(store, map[string]Adapter{"codex": testAdapter{}}, Config{}, testCWD(t), nil)
+	manager := NewSessionManager(context.Background(), store, map[string]Adapter{"codex": testAdapter{}}, Config{}, testCWD(t), nil)
 	info, err := manager.GetSession("implementer")
 	if err != nil {
 		t.Fatalf("GetSession() error = %v", err)
@@ -279,7 +336,13 @@ func (a testAdapter) Stop(_ context.Context, _ *Session) error {
 
 func newTestManager(t *testing.T, adapter Adapter) *SessionManager {
 	t.Helper()
+	return newTestManagerWithContext(t, context.Background(), adapter)
+}
+
+func newTestManagerWithContext(t *testing.T, ctx context.Context, adapter Adapter) *SessionManager {
+	t.Helper()
 	return NewSessionManager(
+		ctx,
 		NewStore(filepath.Join(t.TempDir(), "sessions.json")),
 		map[string]Adapter{
 			"codex":  adapter,

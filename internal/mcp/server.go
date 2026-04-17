@@ -14,13 +14,17 @@ const serverName = "agentinit"
 var serveStdio = mcpserver.ServeStdio
 
 type Server struct {
+	ctx     context.Context
 	server  *mcpserver.MCPServer
 	manager *SessionManager
 	config  Config
 	logger  *slog.Logger
 }
 
-func NewServer(version string) *Server {
+func NewServer(ctx context.Context, version string) *Server {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	logger, err := NewFileLogger(defaultMCPLogPath)
 	if err != nil {
 		logger = newDiscardLogger()
@@ -33,12 +37,15 @@ func NewServer(version string) *Server {
 		"claude": NewClaudeAdapter(cwd, cfg.Defaults.Claude),
 		"codex":  NewCodexAdapter(cwd, cfg.Defaults.Codex),
 	}
-	manager := NewSessionManager(store, adapters, cfg, cwd, logger)
+	manager := NewSessionManager(ctx, store, adapters, cfg, cwd, logger)
 
-	return newServer(version, manager, cfg, logger)
+	return newServer(ctx, version, manager, cfg, logger)
 }
 
-func newServer(version string, manager *SessionManager, cfg Config, logger *slog.Logger) *Server {
+func newServer(ctx context.Context, version string, manager *SessionManager, cfg Config, logger *slog.Logger) *Server {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if logger == nil {
 		logger = newDiscardLogger()
 	}
@@ -49,10 +56,15 @@ func newServer(version string, manager *SessionManager, cfg Config, logger *slog
 		mcpserver.WithToolCapabilities(false),
 	)
 	registerTools(srv, manager, cfg, logger)
-	return &Server{server: srv, manager: manager, config: cfg, logger: logger}
+	return &Server{ctx: ctx, server: srv, manager: manager, config: cfg, logger: logger}
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	_ = ctx
+	if ctx != nil {
+		s.ctx = ctx
+		if s.manager != nil {
+			s.manager.ctx = ctx
+		}
+	}
 	return serveStdio(s.server)
 }
