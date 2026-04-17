@@ -394,6 +394,17 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-010 — plan — 2026-04-17T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Added T-010: rename binary and Go module from `agentinit` to `aide`; updated ROADMAP.md, PLAN.md, TASKS.md with full rename scope including module path, MCP server name, and all templates |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
+
 ### T-007 — implement — 2026-04-17T19:54:10Z
 
 | Field | Value |
@@ -454,7 +465,7 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Squashed the reviewed `agentinit cycle start` work into the final task commit and marked T-007 done |
 | Files Changed | cmd/cycle.go, cmd/cycle_test.go, README.md, internal/scaffold/summary.go, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
 | Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
-| Commit | `98499de feat(cli): add cross-platform cycle bootstrap command` |
+| Commit | `e398520 feat(cli): add cross-platform cycle bootstrap command` |
 | Next Role | none |
 
 ---

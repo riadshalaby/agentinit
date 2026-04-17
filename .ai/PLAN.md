@@ -372,6 +372,20 @@ After T-005–T-008, the generated `scripts/*.sh` files and their templates are 
 - Replace `finish_cycle [VERSION]` instructions → `agentinit cycle end [VERSION]`.
 - Remove references to `scripts/ai-pr.sh sync` → `agentinit pr`.
 
+**Documentation rules — extend to planner** (`AGENTS.md.tmpl` + `planner.md.tmpl`):
+
+The existing Documentation Rules section reads:
+> Every change to behavior, interfaces, workflows, or configuration must include corresponding updates to affected documentation and code comments in the same commit.
+> Documentation accuracy is part of implementation scope, not a follow-up task.
+
+These rules bind the implementer at commit time. The planner must enforce them at plan time. Add to the `## Documentation Rules` section in `AGENTS.md.tmpl`:
+
+> - The planner must include documentation update scope explicitly in the plan whenever behavior, interfaces, workflows, or configuration change. Documentation updates are implementation scope, not a follow-up task.
+
+Add to the `## Critical Rules` section in `planner.md.tmpl`:
+
+> - When planning changes to behavior, interfaces, workflows, or configuration: include explicit documentation update entries in the affected task's files-to-change list. Do not leave documentation as an implicit follow-up.
+
 ### Files to change
 | File | Change |
 |------|--------|
@@ -379,11 +393,14 @@ After T-005–T-008, the generated `scripts/*.sh` files and their templates are 
 | `internal/template/templates/base/AGENTS.md.tmpl` | Update command references |
 | `internal/template/templates/base/ai/prompts/implementer.md.tmpl` | Remove `finish_cycle`, add `agentinit cycle end` |
 | `internal/template/templates/base/ai/prompts/po.md.tmpl` | Update session-start references |
-| `internal/template/templates/base/ai/prompts/planner.md.tmpl` | Update script references if any |
+| `internal/template/templates/base/ai/prompts/planner.md.tmpl` | Update script references; add documentation rule to Critical Rules |
 | `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` | Update script references if any |
 | `internal/update/update.go` | Add `migrateScripts` |
 | `internal/update/update_test.go` | Add migration test |
-| `AGENTS.md` (this repo) | Update to match new commands |
+| `AGENTS.md` (this repo) | Update commands; extend Documentation Rules to cover planner |
+| `AGENTS.md.tmpl` | Extend Documentation Rules to cover planner |
+| `.ai/prompts/planner.md` (this repo) | Add documentation rule to Critical Rules |
+| `README.md` (this repo) | Replace `scripts/ai-*.sh` references with `agentinit <command>` equivalents |
 
 ### Acceptance criteria
 - `agentinit init` on a new project writes no `scripts/` directory.
@@ -400,9 +417,88 @@ go vet ./...
 go test ./...
 ```
 
+## T-010 — Rename binary from `agentinit` to `aide`
+
+### Problem
+The binary name `agentinit` is too long. New name: `aide`. The Go module path and GitHub repo stay as `agentinit`.
+
+### Fix
+
+**`aide/main.go`** (new file at repo root):
+```go
+package main
+
+import "github.com/riadshalaby/agentinit/cmd"
+
+func main() { cmd.Execute() }
+```
+This gives `go install github.com/riadshalaby/agentinit/aide@latest` → binary `aide`.
+
+**Root `main.go`** — remove (replaced by `aide/main.go`).
+
+**`.goreleaser.yml`**:
+```yaml
+builds:
+  - id: aide
+    main: ./aide
+    binary: aide
+```
+
+**`internal/mcp/server.go`**:
+```go
+const serverName = "aide"   // was "agentinit"
+```
+
+**Templates** — replace `agentinit` → `aide` in:
+- `internal/template/templates/base/claude/settings.json.tmpl` (`"command": "aide"`)
+- `internal/template/templates/base/claude/settings.local.json.tmpl` (`mcp__aide__*`)
+- `internal/template/templates/base/AGENTS.md.tmpl`
+- All `internal/template/templates/base/ai/prompts/*.tmpl`
+- `internal/template/templates/base/README.md.tmpl`
+
+**This repo's own generated files**:
+- `.claude/settings.json`: `"command": "aide"`
+- `.claude/settings.local.json`: `mcp__aide__*`
+- `AGENTS.md`: command references
+- `.ai/prompts/*.md`: command references
+
+### Files to change
+| File | Change |
+|------|--------|
+| `aide/main.go` | New: thin entrypoint calling `cmd.Execute()` |
+| `main.go` | Delete |
+| `.goreleaser.yml` | `id`, `main`, `binary` → `aide` |
+| `internal/mcp/server.go` | `serverName = "aide"` |
+| `internal/template/templates/base/claude/settings.json.tmpl` | `"command": "aide"` |
+| `internal/template/templates/base/claude/settings.local.json.tmpl` | `mcp__aide__*` |
+| `internal/template/templates/base/AGENTS.md.tmpl` | `agentinit` → `aide` |
+| `internal/template/templates/base/ai/prompts/*.tmpl` | `agentinit` → `aide` |
+| `internal/template/templates/base/README.md.tmpl` | `agentinit` → `aide` |
+| `README.md` (this repo) | `agentinit` → `aide` in title, install instructions, and command examples |
+| `.claude/settings.json` | `"command": "aide"` |
+| `.claude/settings.local.json` | `mcp__aide__*` |
+| `AGENTS.md` | `agentinit` → `aide` |
+| `.ai/prompts/*.md` | `agentinit` → `aide` |
+
+### Acceptance criteria
+- `go install github.com/riadshalaby/agentinit/aide@latest` produces binary `aide`.
+- Go module path and all internal imports remain `github.com/riadshalaby/agentinit` — no import changes.
+- Goreleaser archives contain `aide`.
+- `const serverName = "aide"` — MCP permissions use `mcp__aide__*`.
+- Generated `settings.json` has `"command": "aide"`.
+- `go test ./...` passes.
+
+---
+
+## Validation
+```
+go fmt ./...
+go vet ./...
+go test ./...
+```
+
 ## Task order
-T-001 (done) → T-002 → T-003 → T-004 → T-005 → T-006 → T-007 → T-008 → T-009.
-T-002/T-003/T-004 are independent of each other and of T-005–T-009.
-T-005 must precede T-006 (shared launcher package).
-T-007 and T-008 are independent of T-005/T-006.
+T-001 (done) → T-002 (done) → T-003 (done) → T-004 (done) → T-005 (done) → T-006 (done) → T-007 → T-008 → T-009 → T-010.
+T-007 and T-008 are independent of each other.
 T-009 must follow T-005–T-008 (removes what they replace).
+T-010 must be last: it renames all identifiers and module path; applying it earlier would cause merge conflicts in every other task.
