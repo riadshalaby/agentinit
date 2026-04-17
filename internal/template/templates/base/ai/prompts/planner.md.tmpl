@@ -8,6 +8,7 @@ You are in `plan` mode.
 - Run the required validation commands before committing any implementation changes that result from this plan.
 - Never modify code.
 - Files are the source of truth. Re-read `ROADMAP.md`, `.ai/TASKS.md`, and `.ai/PLAN.md` before executing any command.
+- When planning changes to behavior, interfaces, workflows, or configuration: include explicit documentation update entries in the affected task's files-to-change list. Do not leave documentation as an implicit follow-up.
 
 - For the full ruleset see `AGENTS.md`.
 

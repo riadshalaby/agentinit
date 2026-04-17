@@ -418,6 +418,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-009 — implement — 2026-04-17T21:34:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed script-removal and migration work into the final task commit and marked T-009 done |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md, .ai/prompts/implementer.md, .ai/prompts/planner.md, AGENTS.md, README.md, internal/scaffold/manifest_test.go, internal/scaffold/scaffold_test.go, internal/scaffold/summary.go, internal/scaffold/summary_test.go, internal/template/engine_test.go, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl, internal/template/templates/base/ai/prompts/planner.md.tmpl, internal/template/templates/base/scripts/ai-implement.sh.tmpl, internal/template/templates/base/scripts/ai-launch.sh.tmpl, internal/template/templates/base/scripts/ai-plan.sh.tmpl, internal/template/templates/base/scripts/ai-po.sh.tmpl, internal/template/templates/base/scripts/ai-pr.sh.tmpl, internal/template/templates/base/scripts/ai-review.sh.tmpl, internal/template/templates/base/scripts/ai-start-cycle.sh.tmpl, internal/update/update.go, internal/update/update_test.go |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `67ffdcf feat(scaffold): replace generated shell scripts with agentinit commands` |
+| Next Role | none |
+
+---
+
 ### T-007 — review — 2026-04-17T22:30:00Z
 
 | Field | Value |
@@ -427,6 +440,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
 | Verdict | FAIL |
 | Blocking Findings | 1. No commit created before ready_for_review; 2. Remove `requireCycleCommand("gh")` from `runCycleStart` — `cycle start` does not use `gh` |
+| Next Role | implement |
+
+---
+
+### T-009 — implement — 2026-04-17T21:26:35Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Removed generated workflow shell scripts, added update-time cleanup for legacy `scripts/ai-*.sh`, and switched generated docs and prompts to `agentinit` commands |
+| Files Changed | .ai/TASKS.md, .ai/prompts/implementer.md, .ai/prompts/planner.md, AGENTS.md, README.md, internal/scaffold/manifest_test.go, internal/scaffold/scaffold_test.go, internal/scaffold/summary.go, internal/scaffold/summary_test.go, internal/template/engine_test.go, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl, internal/template/templates/base/ai/prompts/planner.md.tmpl, internal/template/templates/base/scripts/ai-implement.sh.tmpl, internal/template/templates/base/scripts/ai-launch.sh.tmpl, internal/template/templates/base/scripts/ai-plan.sh.tmpl, internal/template/templates/base/scripts/ai-po.sh.tmpl, internal/template/templates/base/scripts/ai-pr.sh.tmpl, internal/template/templates/base/scripts/ai-review.sh.tmpl, internal/template/templates/base/scripts/ai-start-cycle.sh.tmpl, internal/update/update.go, internal/update/update_test.go |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `67ffdcf feat(scaffold): replace generated shell scripts with agentinit commands` |
+| Next Role | review |
+
+---
+
+### T-009 — review — 2026-04-17T23:15:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-009 reviewed and passed; all 7 script templates deleted, migration function correct and idempotent, test coverage complete, all docs and prompts reference `agentinit` commands, all 9 packages pass |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
 | Next Role | implement |
 
 ---

@@ -31,13 +31,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/prompts/reviewer.md",
 		".claude/settings.json",
 		".claude/settings.local.json",
-		"scripts/ai-po.sh",
-		"scripts/ai-launch.sh",
-		"scripts/ai-start-cycle.sh",
-		"scripts/ai-plan.sh",
-		"scripts/ai-implement.sh",
-		"scripts/ai-review.sh",
-		"scripts/ai-pr.sh",
 		"AGENTS.md",
 		"CLAUDE.md",
 		"README.md",
@@ -74,8 +67,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(readme, "planner> start_plan") {
 		t.Error("generated README.md should contain persistent-session examples")
 	}
-	if !strings.Contains(readme, "implementer> finish_cycle") {
-		t.Error("generated README.md should contain finish_cycle examples in the unified scaffold")
+	if !strings.Contains(readme, "agentinit cycle end 0.7.0") {
+		t.Error("generated README.md should contain cycle end examples in the unified scaffold")
 	}
 	if !strings.Contains(readme, "implementer> commit_task T-001") {
 		t.Error("generated README.md should contain commit_task examples in the unified scaffold")
@@ -84,15 +77,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"Manual and auto are two runtime modes for the same scaffold",
 		"### Runtime modes",
 		"Manual mode: start the planner, implementer, and reviewer in separate terminals",
-		"Auto mode: run `scripts/ai-po.sh` to start the PO session",
+		"Auto mode: run `agentinit po` to start the PO session",
 		"### Start the PO orchestrator (auto mode)",
 		"Before `start_plan`, freeform conversation with the planner is the roadmap-refinement phase.",
-		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `scripts/ai-po.sh` |",
+		"| PO | `.ai/TASKS.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/prompts/po.md` | MCP session commands via `agentinit po` |",
 		"| `.ai/prompts/po.md` | PO orchestration prompt for auto mode | yes |",
-		"| `scripts/ai-po.sh` | Launch the PO orchestration session | yes |",
+		"| `agentinit po` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
-		"| `finish_cycle [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
+		"| `agentinit cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -108,8 +101,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			t.Errorf("generated README.md should contain %q", snippet)
 		}
 	}
-	if !strings.Contains(readme, "Wrapper scripts read default agent/model settings from `.ai/config.json`.") {
-		t.Error("generated README.md should mention wrapper defaults from .ai/config.json")
+	if !strings.Contains(readme, "Role launchers read default agent/model settings from `.ai/config.json`.") {
+		t.Error("generated README.md should mention launcher defaults from .ai/config.json")
 	}
 	if strings.Contains(readme, "@next") || strings.Contains(readme, "@rework") || strings.Contains(readme, "@finish") || strings.Contains(readme, "@status") {
 		t.Error("generated README.md should not contain legacy @ command aliases")
@@ -214,7 +207,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Never include `Co-Authored-By` trailers in commit messages.",
 				"Run the required validation commands before committing.",
 				"Stage all changes with `git add -A`.",
-				"`finish_cycle [VERSION]`",
+				"`agentinit cycle end [VERSION]`",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
 				"Release-As: VERSION",
@@ -278,10 +271,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"go test ./...",
 		"`ready_to_commit`",
 		"`commit_task [TASK_ID]`",
-		"`finish_cycle [VERSION]`",
+		"`agentinit cycle end [VERSION]`",
 		"Release-As: x.y.z",
-		"`scripts/ai-po.sh [agent] [agent-options...]`",
-		"`scripts/ai-po.sh [agent]`",
+		"`agentinit po [agent] [agent-options...]`",
+		"`agentinit po [agent]`",
 		"`work_task [TASK_ID]`",
 		"`work_all`",
 		"`codex` PO runs use inline `-c mcp_servers.agentinit.*` overrides",
@@ -361,99 +354,8 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		}
 	}
 
-	startCycleBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-start-cycle.sh"))
-	if err != nil {
-		t.Fatalf("read scripts/ai-start-cycle.sh: %v", err)
-	}
-	startCycle := string(startCycleBytes)
-	for _, snippet := range []string{
-		"cp .ai/REVIEW.template.md .ai/REVIEW.md",
-		"cp .ai/HANDOFF.template.md .ai/HANDOFF.md",
-		"git add .ai/PLAN.md .ai/REVIEW.md .ai/TASKS.md .ai/HANDOFF.md ROADMAP.md",
-	} {
-		if !strings.Contains(startCycle, snippet) {
-			t.Errorf("generated ai-start-cycle.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(startCycle, "git rm --cached \"$runtime_artifact\"") {
-		t.Error("generated ai-start-cycle.sh should not untrack cycle log artifacts")
-	}
-
-	launchBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-launch.sh"))
-	if err != nil {
-		t.Fatalf("read scripts/ai-launch.sh: %v", err)
-	}
-	launch := string(launchBytes)
-	for _, snippet := range []string{
-		"config_file=\".ai/config.json\"",
-		".roles[$role][$field] // empty",
-		"role_configured_agent=\"$(config_value \"$role\" \"agent\")\"",
-		"if [[ -n \"$role_configured_agent\" && \"$agent\" != \"$role_configured_agent\" ]]; then",
-		"role_model=\"\"",
-		"role_effort=\"\"",
-		"agent_args+=(--model \"$role_model\")",
-		"agent_args+=(--effort \"$role_effort\")",
-		"agent_args+=(-m \"$role_model\")",
-		"prompt_text=\"$(<\"$prompt_file\")\"",
-		"\"$@\" \"$prompt_text\"",
-	} {
-		if !strings.Contains(launch, snippet) {
-			t.Errorf("generated ai-launch.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(launch, "exec codex exec") {
-		t.Error("generated ai-launch.sh should start codex interactively")
-	}
-	if strings.Contains(launch, "--full-auto") {
-		t.Error("generated ai-launch.sh should not use the codex --full-auto alias")
-	}
-
-	for _, tc := range []struct {
-		path    string
-		snippet string
-	}{
-		{"scripts/ai-plan.sh", ".roles.plan.agent // empty"},
-		{"scripts/ai-implement.sh", ".roles.implement.agent // empty"},
-		{"scripts/ai-review.sh", ".roles.review.agent // empty"},
-	} {
-		scriptBytes, err := os.ReadFile(filepath.Join(projectDir, tc.path))
-		if err != nil {
-			t.Fatalf("read %s: %v", tc.path, err)
-		}
-		script := string(scriptBytes)
-		if !strings.Contains(script, tc.snippet) {
-			t.Errorf("generated %s should contain %q", tc.path, tc.snippet)
-		}
-		if !strings.Contains(script, "if [[ ${1:-} == \"claude\" || ${1:-} == \"codex\" ]]; then") {
-			t.Errorf("generated %s should allow agent overrides without consuming CLI flags", tc.path)
-		}
-	}
-
-	poScriptBytes, err := os.ReadFile(filepath.Join(projectDir, "scripts/ai-po.sh"))
-	if err != nil {
-		t.Fatalf("read scripts/ai-po.sh: %v", err)
-	}
-	poScript := string(poScriptBytes)
-	for _, snippet := range []string{
-		"config_file=\".ai/config.json\"",
-		"Use these default agents when calling `start_session`",
-		"jq -r --arg role \"$role_name\" '.roles[$role].agent // empty'",
-		"agent=\"claude\"",
-		"scripts/ai-po.sh [agent] [agent-options...]",
-		"error: unsupported PO agent",
-		"prompt_text=\"$(<\"$po_prompt\")\"",
-		"mcp_servers.agentinit.command=\"agentinit\"",
-		"mcp_servers.agentinit.args=[\"mcp\"]",
-	} {
-		if !strings.Contains(poScript, snippet) {
-			t.Errorf("generated ai-po.sh should contain %q", snippet)
-		}
-	}
-	if strings.Contains(poScript, "exec codex exec") {
-		t.Error("generated ai-po.sh should start codex interactively")
-	}
-	if strings.Contains(poScript, "--full-auto") {
-		t.Error("generated ai-po.sh should not use the codex --full-auto alias")
+	if _, err := os.Stat(filepath.Join(projectDir, "scripts")); !os.IsNotExist(err) {
+		t.Error("generated scaffold should not create a scripts directory")
 	}
 
 	reviewTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/REVIEW.template.md"))
@@ -468,7 +370,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 }
 
-func TestRunScriptsAreExecutable(t *testing.T) {
+func TestRunDoesNotCreateScriptsDirectory(t *testing.T) {
 	dir := t.TempDir()
 
 	_, err := Run("testproj", "", dir, false)
@@ -477,27 +379,8 @@ func TestRunScriptsAreExecutable(t *testing.T) {
 	}
 
 	projectDir := filepath.Join(dir, "testproj")
-	scripts := []string{
-		"scripts/ai-po.sh",
-		"scripts/ai-launch.sh",
-		"scripts/ai-plan.sh",
-		"scripts/ai-implement.sh",
-		"scripts/ai-review.sh",
-		"scripts/ai-start-cycle.sh",
-		"scripts/ai-pr.sh",
-	}
-
-	for _, s := range scripts {
-		path := filepath.Join(projectDir, s)
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Errorf("stat %s: %v", s, err)
-			continue
-		}
-		mode := info.Mode()
-		if mode&0o111 == 0 {
-			t.Errorf("%s should be executable, mode: %v", s, mode)
-		}
+	if _, err := os.Stat(filepath.Join(projectDir, "scripts")); !os.IsNotExist(err) {
+		t.Error("generated scaffold should not create a scripts directory")
 	}
 }
 
