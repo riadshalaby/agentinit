@@ -18,7 +18,7 @@ import (
 func TestNewServerRespondsToInitialize(t *testing.T) {
 	t.Chdir(t.TempDir())
 
-	srv := NewServer("1.2.3-test")
+	srv := NewServer(context.Background(), "1.2.3-test")
 
 	mcpClient, err := client.NewInProcessClient(srv.server)
 	if err != nil {
@@ -59,7 +59,7 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
-	srv := NewServer("1.2.3-test")
+	srv := NewServer(context.Background(), "1.2.3-test")
 
 	if got := len(srv.server.ListTools()); got != 8 {
 		t.Fatalf("registered tools = %d, want 8", got)
@@ -72,6 +72,7 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 func TestServerSessionToolsLifecycle(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewSessionManager(
+		context.Background(),
 		NewStore(filepath.Join(tempDir, "sessions.json")),
 		map[string]Adapter{
 			"codex":  testToolAdapter{},
@@ -81,7 +82,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 		filepath.Clean(filepath.Join("..", "..")),
 		testLogger(),
 	)
-	srv := newServer("1.2.3-test", manager, Config{}, testLogger())
+	srv := newServer(context.Background(), "1.2.3-test", manager, Config{}, testLogger())
 
 	mcpClient, err := client.NewInProcessClient(srv.server)
 	if err != nil {

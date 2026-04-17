@@ -8,7 +8,7 @@ import (
 )
 
 var runMCPServer = func(ctx context.Context, version string) error {
-	return agentmcp.NewServer(version).Run(ctx)
+	return agentmcp.NewServer(ctx, version).Run(ctx)
 }
 
 var mcpCmd = &cobra.Command{
