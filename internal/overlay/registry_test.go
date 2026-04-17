@@ -28,13 +28,13 @@ func TestGetGo(t *testing.T) {
 	if len(o.ValidationCommands) != 3 {
 		t.Errorf("go overlay should have 3 validation commands, got %d", len(o.ValidationCommands))
 	}
-	if len(o.ToolPermissions) != 14 {
-		t.Errorf("go overlay should have 14 tool permissions including base tools, got %d", len(o.ToolPermissions))
+	if len(o.ToolPermissions) != 9 {
+		t.Errorf("go overlay should have 9 tool permissions including base tools, got %d", len(o.ToolPermissions))
 	}
 	if o.ValidationCommands[0].Command != "go fmt ./..." {
 		t.Errorf("first command = %q, want \"go fmt ./...\"", o.ValidationCommands[0].Command)
 	}
-	if o.ToolPermissions[0] != "gh" || o.ToolPermissions[8] != "go fmt" {
+	if o.ToolPermissions[0] != "gh" || o.ToolPermissions[8] != "go" {
 		t.Errorf("go overlay tool permissions = %v, want base tools followed by go tools", o.ToolPermissions)
 	}
 }

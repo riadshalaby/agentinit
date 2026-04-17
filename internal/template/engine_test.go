@@ -448,8 +448,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	for _, entry := range []string{
 		"Bash(gh:*)",
 		"Bash(tree-sitter:*)",
-		"Bash(git add:*)",
-		"Bash(git commit:*)",
+		"Bash(git:*)",
 		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
@@ -479,7 +478,7 @@ func TestRenderAllGoOverlay(t *testing.T) {
 		ProjectName: "goapp",
 		ProjectType: "go",
 		ToolPermissions: append(append([]string(nil), baseToolPermissions...),
-			"go fmt", "go vet", "go test", "go build", "go run", "go mod"),
+			"go"),
 		ValidationCommands: []ValidationCommand{
 			{Label: "Format", Command: "go fmt ./..."},
 			{Label: "Vet", Command: "go vet ./..."},
@@ -543,14 +542,11 @@ func TestRenderAllGoOverlay(t *testing.T) {
 		"Bash(sg:*)",
 		"Bash(fzf:*)",
 		"Bash(tree-sitter:*)",
+		"Bash(go:*)",
 		"Bash(go fmt ./...:*)",
 		"Bash(go vet ./...:*)",
 		"Bash(go test ./...:*)",
-		"Bash(go build:*)",
-		"Bash(go run:*)",
-		"Bash(go mod:*)",
-		"Bash(git add:*)",
-		"Bash(git commit:*)",
+		"Bash(git:*)",
 		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
@@ -629,8 +625,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 		"Bash(npm run lint:*)",
 		"Bash(npm run build:*)",
 		"Bash(npm test:*)",
-		"Bash(git add:*)",
-		"Bash(git commit:*)",
+		"Bash(git:*)",
 		"mcp__agentinit__*",
 	} {
 		if !strings.Contains(localSettings, entry) {
@@ -651,7 +646,7 @@ func TestRenderAllNodeOverlay(t *testing.T) {
 func TestRenderAllDeduplicatesClaudePermissionRules(t *testing.T) {
 	data := &ProjectData{
 		ProjectName:     "dedupe",
-		ToolPermissions: []string{"gh", "go test ./...", "git add"},
+		ToolPermissions: []string{"gh", "go test ./...", "git"},
 		ValidationCommands: []ValidationCommand{
 			{Label: "Test", Command: "go test ./..."},
 		},
@@ -666,8 +661,7 @@ func TestRenderAllDeduplicatesClaudePermissionRules(t *testing.T) {
 	localSettings := files[".claude/settings.local.json"]
 	for _, entry := range []string{
 		"Bash(go test ./...:*)",
-		"Bash(git add:*)",
-		"Bash(git commit:*)",
+		"Bash(git:*)",
 	} {
 		if strings.Count(localSettings, entry) != 1 {
 			t.Errorf(".claude/settings.local.json should contain %q exactly once, got %d", entry, strings.Count(localSettings, entry))

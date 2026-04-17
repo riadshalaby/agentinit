@@ -111,3 +111,90 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-004 — plan — 2026-04-16T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Added T-004: fix model/effort being passed to wrong agent when CLI agent differs from role's configured agent; same fix applied to MCP session_start path |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
+
+### T-005–T-009 — plan — 2026-04-17T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Merged 0.8.x Go-subcommands feature into cycle 0.7.3 as T-005–T-009: plan/implement/review launchers, po launcher, cycle start, cycle end + pr, and bash-script removal with migration |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
+
+### T-002 — review — 2026-04-17T09:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-002 code changes are correct and all tests pass; FAIL on missing commit (blocker) and absolute-path debugging entry in `settings.local.json` (major) |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. No commit created before ready_for_review; 2. `"Bash(ls /Users/riadshalaby/localrepos/agentinit/logo*)"` in tracked settings.local.json; 3. Run `agentinit update` to produce clean settings.local.json |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-17T08:58:32Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Broadened generated permissions to `Bash(go:*)` and `Bash(git:*)`, updated affected render/scaffold assertions, and refreshed this repo's generated local settings without dropping extra local allowances |
+| Files Changed | internal/overlay/go.go, internal/overlay/registry_test.go, internal/template/engine.go, internal/template/engine_test.go, internal/scaffold/scaffold_test.go, .claude/settings.local.json, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go test ./internal/template/... ./internal/overlay/...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | none |
+| Next Role | review |
+
+---
+
+### T-002 — review — 2026-04-17T09:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-002 rework; all three required fixes resolved — commit present, absolute-path entry gone, personal additions gone; tests pass |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-17T09:07:47Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed review findings by removing non-generated local/debug entries from tracked settings, rerunning validation, and creating the required rework commit |
+| Files Changed | .claude/settings.local.json, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md, .ai/PLAN.md, ROADMAP.md, internal/overlay/go.go, internal/overlay/registry_test.go, internal/scaffold/scaffold_test.go, internal/template/engine.go, internal/template/engine_test.go |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `7af87e2 fix(template): address review findings for tool permission rules` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-17T09:14:33Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-002 work into one final task commit and marked the task done after review passed |
+| Files Changed | internal/overlay/go.go, internal/overlay/registry_test.go, internal/scaffold/scaffold_test.go, internal/template/engine.go, internal/template/engine_test.go, .claude/settings.local.json, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go vet ./...` — pass; `go test ./...` — pass |
+| Commit | `pending fix(template): broaden generated go and git tool permissions` |
+| Next Role | none |
+
+---

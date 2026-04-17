@@ -155,14 +155,11 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"Bash(sg:*)",
 		"Bash(fzf:*)",
 		"Bash(tree-sitter:*)",
+		"Bash(go:*)",
 		"Bash(go fmt ./...:*)",
 		"Bash(go vet ./...:*)",
 		"Bash(go test ./...:*)",
-		"Bash(go build:*)",
-		"Bash(go run:*)",
-		"Bash(go mod:*)",
-		"Bash(git add:*)",
-		"Bash(git commit:*)",
+		"Bash(git:*)",
 	} {
 		if !strings.Contains(localSettings, entry) {
 			t.Errorf("generated .claude/settings.local.json should contain %q", entry)
