@@ -15,6 +15,7 @@ var validProviders = map[string]struct{}{
 
 var validRoles = map[string]struct{}{
 	"implement": {},
+	"po":        {},
 	"review":    {},
 }
 
@@ -80,12 +81,26 @@ func (c Config) ProviderForRole(role string) string {
 func (c Config) ModelForRoleAndProvider(role, provider string) string {
 	rc, ok := c.Roles[role]
 	if !ok {
-		return ""
+		return c.DefaultModelForRole(role, provider)
 	}
 	if rc.Provider != "" && rc.Provider != provider {
 		return ""
 	}
-	return rc.Model
+	if rc.Model != "" {
+		return rc.Model
+	}
+	return c.DefaultModelForRole(role, provider)
+}
+
+func (c Config) DefaultModelForRole(role, provider string) string {
+	switch {
+	case role == "po" && provider == "claude":
+		return "haiku"
+	case role == "po" && provider == "codex":
+		return "gpt-5.4-mini"
+	default:
+		return ""
+	}
 }
 
 // EffortForRoleAndProvider returns the configured effort for a role when it

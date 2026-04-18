@@ -57,6 +57,9 @@ func TestPOCommandLaunchesClaudeWithTempFiles(t *testing.T) {
 		if opts.Agent != "claude" {
 			t.Fatalf("Agent = %q, want %q", opts.Agent, "claude")
 		}
+		if opts.Model != "haiku" {
+			t.Fatalf("Model = %q, want %q", opts.Model, "haiku")
+		}
 		if opts.RepoRoot != repo {
 			t.Fatalf("RepoRoot = %q, want %q", opts.RepoRoot, repo)
 		}
@@ -133,14 +136,16 @@ func TestPOCommandLaunchesCodexWithInlineMCPConfig(t *testing.T) {
 		return os.CreateTemp(dir, pattern)
 	}
 
-	wantArgs := []string{
-		"--model", "gpt-5.4",
-		"-c", `mcp_servers.aide.command="aide"`,
-		"-c", `mcp_servers.aide.args=["mcp"]`,
-	}
 	launchRole = func(opts agentlauncher.RoleLaunchOpts) error {
 		if opts.Agent != "codex" {
 			t.Fatalf("Agent = %q, want %q", opts.Agent, "codex")
+		}
+		if opts.Model != "gpt-5.4-mini" {
+			t.Fatalf("Model = %q, want %q", opts.Model, "gpt-5.4-mini")
+		}
+		wantArgs := []string{
+			"-c", `mcp_servers.aide.command="aide"`,
+			"-c", `mcp_servers.aide.args=["mcp"]`,
 		}
 		if !reflect.DeepEqual(opts.ExtraArgs, wantArgs) {
 			t.Fatalf("ExtraArgs = %#v, want %#v", opts.ExtraArgs, wantArgs)
@@ -148,11 +153,55 @@ func TestPOCommandLaunchesCodexWithInlineMCPConfig(t *testing.T) {
 		return nil
 	}
 
-	if err := poCmd.RunE(poCmd, []string{"codex", "--model", "gpt-5.4"}); err != nil {
+	if err := poCmd.RunE(poCmd, []string{"codex"}); err != nil {
 		t.Fatalf("RunE() error = %v", err)
 	}
 	if tempCreates != 1 {
 		t.Fatalf("CreateTemp() calls = %d, want 1 prompt tempfile only", tempCreates)
+	}
+}
+
+func TestPOCommandExplicitModelOverridesDefault(t *testing.T) {
+	originalGetWorkingDir := getWorkingDir
+	originalLoadLaunchConfig := loadLaunchConfig
+	originalLaunchRole := launchRole
+	t.Cleanup(func() {
+		getWorkingDir = originalGetWorkingDir
+		loadLaunchConfig = originalLoadLaunchConfig
+		launchRole = originalLaunchRole
+	})
+
+	repo := t.TempDir()
+	promptDir := filepath.Join(repo, ".ai", "prompts")
+	if err := os.MkdirAll(promptDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(promptDir, "po.md"), []byte("# PO Prompt"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	loadLaunchConfig = func(dir string) (agentmcp.Config, error) { return agentmcp.Config{}, nil }
+
+	launchRole = func(opts agentlauncher.RoleLaunchOpts) error {
+		if opts.Agent != "claude" {
+			t.Fatalf("Agent = %q, want %q", opts.Agent, "claude")
+		}
+		if opts.Model != "" {
+			t.Fatalf("Model = %q, want empty string when --model is passed explicitly", opts.Model)
+		}
+		if len(opts.ExtraArgs) != 4 {
+			t.Fatalf("ExtraArgs = %#v", opts.ExtraArgs)
+		}
+		wantArgs := []string{"--model", "opus", "--mcp-config"}
+		if !reflect.DeepEqual(opts.ExtraArgs[:3], wantArgs) {
+			t.Fatalf("ExtraArgs = %#v", opts.ExtraArgs)
+		}
+		return nil
+	}
+
+	if err := poCmd.RunE(poCmd, []string{"claude", "--model", "opus"}); err != nil {
+		t.Fatalf("RunE() error = %v", err)
 	}
 }
 
