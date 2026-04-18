@@ -129,6 +129,46 @@ func TestConfigModelForRoleAndProvider(t *testing.T) {
 	}
 }
 
+func TestDefaultModelForPOClaude(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{}
+	if got := cfg.DefaultModelForRole("po", "claude"); got != "haiku" {
+		t.Fatalf("DefaultModelForRole(po, claude) = %q, want %q", got, "haiku")
+	}
+}
+
+func TestDefaultModelForPOCodex(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{}
+	if got := cfg.DefaultModelForRole("po", "codex"); got != "gpt-5.4-mini" {
+		t.Fatalf("DefaultModelForRole(po, codex) = %q, want %q", got, "gpt-5.4-mini")
+	}
+}
+
+func TestConfigOverridesDefaultModel(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		Roles: map[string]RoleConfig{
+			"po": {Model: "opus"},
+		},
+	}
+	if got := cfg.ModelForRoleAndProvider("po", "claude"); got != "opus" {
+		t.Fatalf("ModelForRoleAndProvider(po, claude) = %q, want %q", got, "opus")
+	}
+}
+
+func TestDefaultModelForImplement(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{}
+	if got := cfg.DefaultModelForRole("implement", "codex"); got != "" {
+		t.Fatalf("DefaultModelForRole(implement, codex) = %q, want empty string", got)
+	}
+}
+
 func TestConfigEffortForRoleAndProvider(t *testing.T) {
 	t.Parallel()
 

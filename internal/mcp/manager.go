@@ -354,7 +354,7 @@ func validateProvider(provider string) error {
 
 func validateRole(role string) error {
 	if _, ok := validRoles[role]; !ok {
-		return fmt.Errorf("unsupported role %q: must be one of: implement, review", role)
+		return fmt.Errorf("unsupported role %q: must be one of: implement, po, review", role)
 	}
 	return nil
 }

@@ -119,3 +119,42 @@ No issues found.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-004
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+No issues found.
+
+#### Verification
+
+##### Steps
+- Read `internal/mcp/config.go` — `"po"` added to `validRoles` map. `DefaultModelForRole` method returns `"haiku"` for `po`+`claude`, `"gpt-5.4-mini"` for `po`+`codex`, `""` for all others. `ModelForRoleAndProvider` falls back to `DefaultModelForRole` when role is absent from config or when model is not set. ✅
+- Read `internal/mcp/config_test.go` — All four plan-required tests present: `TestDefaultModelForPOClaude` (haiku), `TestDefaultModelForPOCodex` (gpt-5.4-mini), `TestConfigOverridesDefaultModel` (opus via config), `TestDefaultModelForImplement` (empty for non-PO). ✅
+- Read `cmd/po.go` — `model := cfg.ModelForRoleAndProvider("po", agent)` called immediately after agent determination (line 46). `hasExplicitModelArg` helper checks for `--model` / `-m` in the assembled arg list; clears `model` when found (lines 94–96). `Model: model` flows into `launchRole`. ✅ Precedence chain: CLI flag → config → hardcoded default, all correct.
+- Read `cmd/po_test.go` — `TestPOCommandLaunchesClaudeWithTempFiles` asserts `opts.Model == "haiku"` with a config that has no po model set. `TestPOCommandLaunchesCodexWithInlineMCPConfig` asserts `opts.Model == "gpt-5.4-mini"` with an empty config. `TestPOCommandExplicitModelOverridesDefault` passes `--model opus` and asserts `opts.Model == ""` (model cleared; flag forwarded via ExtraArgs). ✅
+- Checked `README.md` and `README.md.tmpl` diffs — Documentation accurately describes the new default behavior and override mechanism; consistent with AGENTS.md doc-update rule. ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test -count=1 ./...` — all packages pass.
+- Ran targeted tests (7 tests across cmd and internal/mcp) — all pass.
+
+##### Findings
+- None.
+
+##### Risks
+- None. Adding `"po"` to `validRoles` allows `session_start` to accept `"po"` as a role, which the plan explicitly acknowledges as acceptable and potentially useful.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

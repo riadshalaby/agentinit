@@ -70,6 +70,9 @@ aide review        # terminal 3
 
 # Or start the PO orchestrator for auto mode
 aide po
+# Default PO models: `haiku` for Claude, `gpt-5.4-mini` for Codex.
+# Override with `.ai/config.json` or an explicit CLI flag such as:
+# aide po claude --model sonnet
 
 # Drive the cycle with text commands inside those sessions
 planner>      start_plan
@@ -224,6 +227,8 @@ aide cycle start feature/my-change
 ```bash
 aide po
 ```
+
+By default, `aide po` launches Claude with `--model haiku`, and `aide po codex` launches Codex with `-m gpt-5.4-mini`. `.ai/config.json` can override those defaults, and an explicit CLI `--model` or `-m` flag takes precedence over both.
 
 4. Let the PO session read `.ai/TASKS.md`, start supported role sessions, and send deterministic commands such as `next_task T-001`, `rework_task T-001`, or `commit_task T-001`. If no tasks are in `ready_for_implement` or later, run the planner first.
 5. Keep `.ai/TASKS.md`, `.ai/PLAN.md`, and `.ai/REVIEW.md` as the source of truth for progress and blockers.

@@ -147,3 +147,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-004 — review — 2026-04-18T21:05:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Verified `DefaultModelForRole`, `ModelForRoleAndProvider` fallback, `runPOLaunch` model selection and override logic, all four config tests, three cmd tests, and README documentation updates |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-18T20:57:37Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added PO model defaults for claude and codex, preserved explicit CLI override precedence, updated tests, and documented the defaults in the README surfaces |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, README.md, cmd/po.go, cmd/po_test.go, internal/mcp/config.go, internal/mcp/config_test.go, internal/mcp/manager.go, internal/template/templates/base/README.md.tmpl |
+| Validation | `go fmt ./...` PASS; `go test ./cmd ./internal/mcp -run 'TestPOCommandLaunchesClaudeWithTempFiles|TestPOCommandLaunchesCodexWithInlineMCPConfig|TestPOCommandExplicitModelOverridesDefault|TestDefaultModelForPOClaude|TestDefaultModelForPOCodex|TestConfigOverridesDefaultModel|TestDefaultModelForImplement'` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending implementation commit` |
+| Next Role | review |
+
+---
+
+### T-004 — implement — 2026-04-18T21:03:31Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-004 implementation and review artifacts into the final task commit and closed the task as done |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/REVIEW.md, README.md, cmd/po.go, cmd/po_test.go, internal/mcp/config.go, internal/mcp/config_test.go, internal/mcp/manager.go, internal/template/templates/base/README.md.tmpl |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending final squash commit` |
+| Next Role | none |
+
+---

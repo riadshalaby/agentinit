@@ -43,6 +43,7 @@ func runPOLaunch(args []string) error {
 		agent = args[0]
 		args = args[1:]
 	}
+	model := cfg.ModelForRoleAndProvider("po", agent)
 
 	promptFile := filepath.Join(cwd, ".ai", "prompts", "po.md")
 	promptData, err := os.ReadFile(promptFile)
@@ -90,14 +91,27 @@ func runPOLaunch(args []string) error {
 			"-c", `mcp_servers.aide.args=["mcp"]`,
 		)
 	}
+	if hasExplicitModelArg(launchArgs) {
+		model = ""
+	}
 
 	return launchRole(agentlauncher.RoleLaunchOpts{
 		Role:       "po",
 		Agent:      agent,
+		Model:      model,
 		PromptFile: poPromptPath,
 		RepoRoot:   cwd,
 		ExtraArgs:  launchArgs,
 	})
+}
+
+func hasExplicitModelArg(args []string) bool {
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--model" || args[i] == "-m" {
+			return true
+		}
+	}
+	return false
 }
 
 func buildPOPrompt(prompt string, cfg agentmcp.Config) string {
