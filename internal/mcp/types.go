@@ -15,6 +15,13 @@ type ProviderState struct {
 	SessionID string `json:"session_id,omitempty"`
 }
 
+type RunResult struct {
+	Status       SessionStatus `json:"status"`
+	Error        string        `json:"error,omitempty"`
+	ExitSummary  string        `json:"exit_summary,omitempty"`
+	DurationSecs float64       `json:"duration_secs"`
+}
+
 type Session struct {
 	Name          string        `json:"name"`
 	Role          string        `json:"role"`
@@ -22,6 +29,7 @@ type Session struct {
 	Model         string        `json:"model,omitempty"`
 	Status        SessionStatus `json:"status"`
 	ProviderState ProviderState `json:"provider_state"`
+	Result        *RunResult    `json:"result,omitempty"`
 	CreatedAt     time.Time     `json:"created_at"`
 	LastActiveAt  time.Time     `json:"last_active_at"`
 	RunCount      int           `json:"run_count"`

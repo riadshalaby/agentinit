@@ -75,3 +75,47 @@ No issues found.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+No issues found.
+
+#### Verification
+
+##### Steps
+- Read `internal/mcp/types.go` — `RunResult` struct defined (`Status`, `Error`, `ExitSummary`, `DurationSecs`); `Session.Result *RunResult` field added with `omitempty`. ✅
+- Read `internal/mcp/output_buffer.go` — `Tail(n int) string` method added; correctly handles `n <= 0` and `n >= len(data)` edge cases. ✅
+- Read `internal/mcp/manager.go` — `RunSession` goroutine: `session.Result = nil` cleared at run start; `Result` populated post-run with correct status, error, `buf.Tail(500)`, and duration. `GetResult(name)` method added. `ResetSession` now clears `session.Result = nil`. Constant `runResultExitSummaryLimit = 500` defined. ✅
+- Read `internal/mcp/tools.go` — `session_get_result` tool registered (9th tool); returns "no completed result yet" message when `Result` is nil; returns `RunResult` as JSON when present. `session_run` description updated to mention `session_status`/`session_get_result` workflow. ✅
+- Read `internal/mcp/server_test.go` (`TestNewServerRegistersSessionTools`) — tool count updated to 9. ✅
+- Read `internal/mcp/server_test.go` (`TestServerSessionGetResultTool`) — covers: nil result before run, structured result after run, result cleared after reset. ✅
+- Read `internal/mcp/manager_test.go` (`TestGetResultAfterSuccessfulRun`) — asserts status=idle, no error, correct ExitSummary, DurationSecs > 0. ✅
+- Read `internal/mcp/manager_test.go` (`TestGetResultAfterFailedRun`) — writes 600+4 bytes; asserts status=errored, error="boom", ExitSummary is last 500 bytes exactly, DurationSecs > 0. ✅
+- Read `internal/mcp/manager_test.go` (`TestManagerResetSession`) — updated to assert `session.Result == nil` after reset. ✅
+- Read `.ai/prompts/po.md` — `session_get_result` added to tool list; `session_get_output` demoted to debug-only use; interaction pattern updated to `session_status` poll → `session_get_result`; "signs complete" updated to reference `session_get_result` status field. ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test -count=1 ./...` — all packages pass.
+- Ran targeted tests (5 tests) — all pass in 0.344s.
+
+##### Findings
+- None.
+
+##### Risks
+- None. `ExitSummary` is capped at 500 bytes; total `RunResult` JSON payload for a typical run is well under 2KB. The nil-before-first-run path is tested. `session_reset` clears the result, preventing stale data. All constraints from the plan are satisfied.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

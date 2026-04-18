@@ -42,3 +42,17 @@ func (b *outputBuffer) StringFromLimit(off, limit int) (chunk string, total int)
 	}
 	return string(b.data[off:end]), total
 }
+
+// Tail returns the last n bytes of the buffered output.
+func (b *outputBuffer) Tail(n int) string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if n <= 0 || len(b.data) == 0 {
+		return ""
+	}
+	start := 0
+	if n < len(b.data) {
+		start = len(b.data) - n
+	}
+	return string(b.data[start:])
+}
