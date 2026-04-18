@@ -145,7 +145,7 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	}
 	assertStructuredToolResult(t, runResult, "run started", `"message":"run started"`, `"status":"running"`)
 
-	output := pollToolOutput(t, ctx, mcpClient, "implementer")
+	output := pollToolOutput(t, ctx, mcpClient, "implementer", 20000)
 	if !strings.Contains(output, "response: next_task T-001") {
 		t.Fatalf("session_get_output accumulated output = %q", output)
 	}
@@ -290,7 +290,7 @@ func assertStructuredToolResult(t *testing.T, result *mcpproto.CallToolResult, t
 	}
 }
 
-func pollToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client, name string) string {
+func pollToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client, name string, limit int) string {
 	t.Helper()
 	var output strings.Builder
 	offset := 0
@@ -302,6 +302,7 @@ func pollToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client,
 				Arguments: map[string]any{
 					"name":   name,
 					"offset": offset,
+					"limit":  limit,
 				},
 			},
 		})

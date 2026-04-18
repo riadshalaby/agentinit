@@ -242,9 +242,38 @@ func TestManagerGetOutput(t *testing.T) {
 	if !strings.Contains(output, "response: next_task T-005") {
 		t.Fatalf("GetOutput() output = %q", output)
 	}
-	_, _, running, err := manager.GetOutput("implementer", len(output))
+	_, _, running, err := manager.GetOutput("implementer", len(output), 0)
 	if err != nil {
 		t.Fatalf("GetOutput() error = %v", err)
+	}
+	if running {
+		t.Fatal("GetOutput() running = true, want false")
+	}
+}
+
+func TestManagerGetOutputLimit(t *testing.T) {
+	t.Parallel()
+
+	largeOutput := strings.Repeat("x", 21050)
+	manager := newTestManager(t, &testAdapter{runOutput: largeOutput})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	chunk, total, _ := waitForLimitedOutput(t, manager, "implementer", 0, 100)
+	waitForStatus(t, manager, "implementer", StatusIdle)
+	_, _, running, err := manager.GetOutput("implementer", 0, 100)
+	if err != nil {
+		t.Fatalf("GetOutput() error = %v", err)
+	}
+	if len(chunk) != 100 {
+		t.Fatalf("GetOutput() chunk length = %d, want 100", len(chunk))
+	}
+	if total != len(largeOutput) {
+		t.Fatalf("GetOutput() total = %d, want %d", total, len(largeOutput))
 	}
 	if running {
 		t.Fatal("GetOutput() running = true, want false")
@@ -337,6 +366,7 @@ type testAdapter struct {
 	runBlock   <-chan struct{}
 	runStarted chan<- struct{}
 	startOpts  StartOpts
+	runOutput  string
 }
 
 func (a *testAdapter) Start(_ context.Context, session *Session, opts StartOpts) (string, error) {
@@ -359,7 +389,11 @@ func (a *testAdapter) RunStream(ctx context.Context, _ *Session, command string,
 		case <-a.runBlock:
 		}
 	}
-	_, err := fmt.Fprintf(w, "response: %s", command)
+	output := a.runOutput
+	if output == "" {
+		output = fmt.Sprintf("response: %s", command)
+	}
+	_, err := io.WriteString(w, output)
 	return err
 }
 
@@ -403,7 +437,7 @@ func waitForOutput(t *testing.T, manager *SessionManager, name string) string {
 	offset := 0
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		chunk, total, running, err := manager.GetOutput(name, offset)
+		chunk, total, running, err := manager.GetOutput(name, offset, 0)
 		if err != nil {
 			t.Fatalf("GetOutput() error = %v", err)
 		}
@@ -416,6 +450,23 @@ func waitForOutput(t *testing.T, manager *SessionManager, name string) string {
 	}
 	t.Fatal("timed out waiting for session output")
 	return ""
+}
+
+func waitForLimitedOutput(t *testing.T, manager *SessionManager, name string, offset, limit int) (string, int, bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		chunk, total, running, err := manager.GetOutput(name, offset, limit)
+		if err != nil {
+			t.Fatalf("GetOutput() error = %v", err)
+		}
+		if total > offset || !running {
+			return chunk, total, running
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("timed out waiting for limited session output")
+	return "", 0, false
 }
 
 func waitForStatus(t *testing.T, manager *SessionManager, name string, want SessionStatus) {

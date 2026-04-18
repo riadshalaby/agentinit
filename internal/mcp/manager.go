@@ -216,7 +216,7 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 	return session.info(), nil
 }
 
-func (m *SessionManager) GetOutput(name string, offset int) (chunk string, totalBytes int, running bool, err error) {
+func (m *SessionManager) GetOutput(name string, offset, limit int) (chunk string, totalBytes int, running bool, err error) {
 	session, err := m.store.Get(name)
 	if err != nil {
 		return "", 0, false, err
@@ -227,7 +227,7 @@ func (m *SessionManager) GetOutput(name string, offset int) (chunk string, total
 	if buf == nil {
 		return "", 0, session.Status == StatusRunning, nil
 	}
-	chunk, total := buf.StringFrom(offset)
+	chunk, total := buf.StringFromLimit(offset, limit)
 	return chunk, total, session.Status == StatusRunning, nil
 }
 
