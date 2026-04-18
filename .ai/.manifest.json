@@ -1,6 +1,6 @@
 {
-  "version": "v0.7.1",
-  "generated_at": "2026-04-16T08:23:10Z",
+  "version": "(dev)",
+  "generated_at": "2026-04-18T18:58:30Z",
   "files": [
     {
       "path": ".ai/prompts/implementer.md",
@@ -40,34 +40,6 @@
     },
     {
       "path": "ROADMAP.template.md",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-implement.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-launch.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-plan.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-po.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-pr.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-review.sh",
-      "management": "full"
-    },
-    {
-      "path": "scripts/ai-start-cycle.sh",
       "management": "full"
     }
   ]

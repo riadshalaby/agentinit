@@ -83,7 +83,7 @@
     - `aide plan [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
     - `aide implement [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `codex`)
     - `aide review [agent] [agent-options...]` (default agent from `.ai/config.json`, fallback: `claude`)
-    - `aide po [agent] [agent-options...]` (cross-platform launcher for the PO orchestration session)
+    - `aide po [agent] [agent-options...]` (launcher for the PO orchestration session)
 - No `.ai/MODE` file is used.
 
 ## Runtime Modes
@@ -170,8 +170,8 @@ Use these text commands inside the already-running role sessions.
   - `aide cycle end [VERSION]`
     - verify all tasks are `done`
     - if the completion condition is not met, report the blocking task states and abort
-    - stage and commit any remaining `.ai/` artifacts with a `chore(ai): close cycle` subject
-    - if a version argument is provided (for example `aide cycle end 0.7.0`), add `Release-As: x.y.z` to the commit body; if no version is supplied, ask the user for it before committing
+    - if no version is supplied, ask the user for it before proceeding
+    - close the cycle with a `chore(ai): close cycle` commit and a `Release-As: x.y.z` footer
     - then run `aide pr` to update the PR
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action
@@ -194,7 +194,7 @@ Use these text commands inside the already-running role sessions.
   - `review` role never commits.
   - `implement` role must stage all changes and create a Conventional Commit after validations pass.
   - `.ai/` artifact changes produced by a task are staged and committed as part of that task's Conventional Commit via `commit_task`.
-  - `aide cycle end` commits any remaining dirty `.ai/` artifacts as the cycle-close commit and always includes a `Release-As: x.y.z` footer.
+  - `aide cycle end` commits the cycle-close artifacts with a `Release-As: x.y.z` footer and can be followed by `aide pr`.
 - Conventional Commit subjects must be release-note ready: describe the user-visible change or outcome, not just the implementation mechanism.
 - Prefer subjects in the form `<type>(<scope>): <user-facing change>`; if the subject alone would be too vague in release notes, add a short body summarizing the key changes.
 
