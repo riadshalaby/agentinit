@@ -122,6 +122,19 @@ The existing Documentation Rules in `AGENTS.md` bind the implementer at commit t
 
 ---
 
+## Bug: E2E build broken — `mcp_e2e_test.go` uses stale `NewSessionManager` signature
+
+**Root cause**: T-003 added `context.Context` as the first parameter and `*slog.Logger` as the last parameter to `NewSessionManager`. The unit tests and production callers were updated, but `e2e/mcp_e2e_test.go` line 51 was not, leaving it calling the old five-argument signature. Building with `-tags e2e` fails to compile.
+
+**Fix**: Pass `context.Background()` as the first argument in the `NewSessionManager` call in `e2e/mcp_e2e_test.go`.
+
+**Acceptance criteria**:
+- `go build -tags e2e ./e2e/...` succeeds.
+- `go test -tags e2e ./e2e/...` compiles and runs (skipping when `claude`/`codex` are absent from PATH).
+- No other tests regress: `go test ./...` passes.
+
+---
+
 ## Rename: binary `agentinit` → `aide`
 
 **Decision**: Only the binary name changes to `aide`. The GitHub repo and Go module path (`github.com/riadshalaby/agentinit`) stay as-is.

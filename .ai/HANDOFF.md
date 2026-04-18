@@ -612,3 +612,79 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-011 — plan — 2026-04-18T18:44:10Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Diagnosed e2e build failure (stale `NewSessionManager` call in `mcp_e2e_test.go`) and planned single-line fix to add `context.Background()` as first argument |
+| Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
+
+### T-011 — implement — 2026-04-18T18:53:35Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the T-011 review finding by formatting the tagged E2E test file with `gofmt` and revalidating the tagged E2E build and lifecycle test |
+| Files Changed | e2e/mcp_e2e_test.go, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `gofmt -l e2e/mcp_e2e_test.go` — pass; `go build -tags e2e ./e2e/...` — pass; `go test -tags e2e -run TestMCPSessionLifecycle ./e2e/...` — pass; `go test ./...` — pass |
+| Commit | `54fa32a fix(e2e): address review findings for tagged session manager test` |
+| Next Role | review |
+
+---
+
+### T-011 — review — 2026-04-18T21:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-011 rework; required fix applied — `gofmt -l e2e/mcp_e2e_test.go` produces no output; `go build -tags e2e` and all 10 packages pass |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-011 — implement — 2026-04-18T19:02:03Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the reviewed tagged E2E session-manager fix into the final task commit and marked T-011 done |
+| Files Changed | e2e/mcp_e2e_test.go, ROADMAP.md, .ai/PLAN.md, .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `gofmt -l e2e/mcp_e2e_test.go` — pass; `go build -tags e2e ./e2e/...` — pass; `go test -tags e2e -run TestMCPSessionLifecycle ./e2e/...` — pass; `go test ./...` — pass |
+| Commit | `pending fix(e2e): restore tagged session manager test build` |
+| Next Role | none |
+
+---
+
+### T-011 — implement — 2026-04-18T18:46:45Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Fixed the stale `NewSessionManager` call in the tagged E2E session lifecycle test so the E2E package builds and runs again |
+| Files Changed | e2e/mcp_e2e_test.go, ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Validation | `go fmt ./...` — pass; `go build -tags e2e ./e2e/...` — pass; `go test -tags e2e -run TestMCPSessionLifecycle ./e2e/...` — pass; `go test ./...` — pass |
+| Commit | `d52671b fix(e2e): restore tagged session manager test build` |
+| Next Role | review |
+
+---
+
+### T-011 — review — 2026-04-18T20:55:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | T-011 fix is correct and all E2E subtests pass with live agents; FAIL on space indentation on the changed line — `go fmt ./...` misses `e2e/` due to `//go:build e2e` constraint, `gofmt -l` flags the file |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. `e2e/mcp_e2e_test.go:51` — run `gofmt -w e2e/mcp_e2e_test.go` to fix 4-space indent to tab |
+| Next Role | implement |
+
+---

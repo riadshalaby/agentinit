@@ -48,7 +48,7 @@ func TestMCPSessionLifecycle(t *testing.T) {
 		"claude": mcp.NewClaudeAdapter(tmpDir, mcp.ClaudeDefaults{PermissionMode: "acceptEdits"}),
 		"codex":  mcp.NewCodexAdapter(tmpDir, mcp.CodexDefaults{Sandbox: "workspace-write"}),
 	}
-	mgr := mcp.NewSessionManager(store, adapters, mcp.Config{}, tmpDir, nil)
+	mgr := mcp.NewSessionManager(context.Background(), store, adapters, mcp.Config{}, tmpDir, nil)
 
 	t.Run("codex implementer session", func(t *testing.T) {
 		ctx := context.Background()

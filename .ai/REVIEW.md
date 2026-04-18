@@ -656,3 +656,79 @@ All Round 1 required fixes addressed.
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-011 — Fix e2e build: update stale `NewSessionManager` call
+
+### Review Round 1
+
+Status: **complete**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | `e2e/mcp_e2e_test.go:51` | Line uses 4 spaces for indentation instead of a tab; `gofmt -l e2e/mcp_e2e_test.go` flags the file; `go fmt ./...` misses it because the `//go:build e2e` constraint excludes the file from the standard scan | **Yes** |
+
+#### Verification
+##### Steps
+- Confirmed commit `d52671b` present; working tree clean.
+- `e2e/mcp_e2e_test.go:51` — `context.Background()` added as first argument to `NewSessionManager`; call now matches the T-003 signature `(ctx, store, adapters, config, dir, logger)` ✅
+- `gofmt -l e2e/mcp_e2e_test.go` — outputs the filename; line 51 uses `0x20 0x20 0x20 0x20` (4 spaces) instead of a tab ❌
+- `go fmt ./...` — clean (file excluded by `//go:build e2e` constraint — not a sign the file is clean)
+- `go vet ./...` — clean.
+- `go build -tags e2e ./e2e/...` — succeeds ✅
+- `go test -tags e2e -run TestMCPSessionLifecycle ./e2e/... -v` — both subtests pass (`codex implementer session` 26.5s, `claude reviewer session` 6.2s) ✅
+- `go test ./... -count=1` — all 10 packages pass ✅
+##### Findings
+- Fix is correct; the signature mismatch is resolved and both E2E subtests pass with live agents.
+- One space-indented line on the changed line that `go fmt ./...` misses due to build tag exclusion.
+##### Risks
+- None.
+
+#### Required Fixes
+1. `e2e/mcp_e2e_test.go:51` — run `gofmt -w e2e/mcp_e2e_test.go` to replace the 4-space indent with a tab; re-validate with `gofmt -l e2e/mcp_e2e_test.go` (should produce no output).
+
+#### Open Questions
+- None.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **complete**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+All Round 1 required fixes addressed.
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | minor | — | ✅ Fixed — `gofmt -w e2e/mcp_e2e_test.go` applied in commit `54fa32a`; `gofmt -l e2e/mcp_e2e_test.go` now produces no output | n/a |
+
+#### Verification
+##### Steps
+- Confirmed commit `54fa32a` present; working tree clean.
+- `gofmt -l e2e/mcp_e2e_test.go` — no output (file is clean) ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go build -tags e2e ./e2e/...` — succeeds ✅
+- Ran `go test ./... -count=1` — all 10 packages pass ✅
+##### Findings
+- Required fix correctly applied; no regressions.
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
