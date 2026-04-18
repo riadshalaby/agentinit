@@ -18,16 +18,6 @@ Command expectations:
 - reviewer moves tasks into `in_review`, `ready_to_commit`, or `changes_requested`
 - `status_cycle` should report deterministic task status, current owner role, and next recommended action based on this board
 
-| Task ID | Scope | Status              | Acceptance Criteria | Evidence | Next Role |
-| --- | --- |---------------------| --- | --- |-----------|
-| T-001 | Fix `managedPaths` skipping desired-only files that exist on disk | done                | `agentinit update` writes `.claude/settings.json` and `.claude/settings.local.json` on projects whose manifest predates those entries; no regression on already-tracked files; `go test ./internal/update/...` passes | PASS | none      |
-| T-002 | Broaden tool permissions: `go *` and `git *` | done                | Rendered `settings.local.json` contains `"Bash(go:*)"` for Go projects and `"Bash(git:*)"` for all projects; `go test ./internal/template/... ./internal/overlay/...` passes | PASS | none      |
-| T-003 | Fix RunSession using request-scoped context causing zero-output stops | done                | `session_run` + `session_get_output` returns non-empty output; `StopSession` still works; SIGTERM cancels running sessions; `go test ./...` passes | PASS | none      |
-| T-004 | Fix model/effort passed to wrong agent in scripts and MCP sessions | done | `./scripts/ai-implement.sh claude` on a codex-configured role passes no `--model` flag; `session_start` with a mismatched provider sets `session.Model = ""`; `go test ./internal/mcp/...` passes | PASS | none |
-| T-005 | `agentinit plan / implement / review` — cross-platform session launchers | done | All three commands exec the correct agent with correct args; agent-override drops role model/effort; `go test ./internal/launcher/... ./cmd/...` passes | PASS_WITH_NOTES | none |
-| T-006 | `agentinit po` — cross-platform PO session launcher | done | `agentinit po` execs claude/codex with assembled MCP config and prompt tempfiles; tempfiles cleaned up on exit; `go test ./cmd/...` passes | PASS | none |
-| T-007 | `agentinit cycle start` — cross-platform cycle bootstrap | done | Creates branch, copies templates, commits, pushes; invalid inputs produce clear errors; `go test ./cmd/...` passes | PASS | none |
-| T-008 | `agentinit cycle end` + `agentinit pr` — cycle close and PR management | done | `cycle end` aborts on undone tasks, commits `.ai/` artifacts, creates/updates PR when GitHub remote present, skips PR otherwise; `pr --dry-run` prints body without calling `gh`; `go test ./cmd/...` passes | PASS_WITH_NOTES | none |
-| T-009 | Remove generated bash scripts; migrate existing projects; update prompts and AGENTS.md | done | `agentinit init` writes no `scripts/` dir; `agentinit update` deletes old `scripts/*.sh`; all prompts reference `agentinit` commands; `go test ./...` passes | PASS | none |
-| T-010 | Rename binary from `agentinit` to `aide` (module path unchanged) | done | `go install github.com/riadshalaby/agentinit/aide@latest` produces `aide`; MCP server name is `"aide"`; generated settings use `mcp__aide__*`; module path and imports unchanged; `go test ./...` passes | PASS_WITH_NOTES | none |
-| T-011 | Fix e2e build: update stale `NewSessionManager` call in `mcp_e2e_test.go` | done | `go build -tags e2e ./e2e/...` succeeds; `go test -tags e2e ./e2e/...` compiles and skips cleanly when agents absent; `go test ./...` passes | PASS | none |
+| Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
+| --- | --- | --- | --- | --- | --- |
+| T-001 | replace with task scope | in_planning | replace with measurable acceptance criteria | n/a | planner |
