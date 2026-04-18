@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.1](https://github.com/riadshalaby/agentinit/compare/v0.8.0...v0.8.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* **mcp:** add structured session run results ([3eebbec](https://github.com/riadshalaby/agentinit/commit/3eebbec7413085d8f702470be6bd8d12e59ea72b))
+* **mcp:** cap session output chunks ([94fb93e](https://github.com/riadshalaby/agentinit/commit/94fb93e155617f8ba3643dc739c8bfc86a4bb779))
+* **mcp:** resume claude session runs ([9b910c3](https://github.com/riadshalaby/agentinit/commit/9b910c35896f3a76edf221713a47877866fdfe58))
+* **po:** default the coordinator to cheaper models ([6861a20](https://github.com/riadshalaby/agentinit/commit/6861a20e0f49bc65b2d41d58e50c7e34033fdaa5))
+
 ## [0.8.0](https://github.com/riadshalaby/agentinit/compare/v0.7.2...v0.8.0) (2026-04-18)
 
 
