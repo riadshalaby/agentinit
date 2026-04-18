@@ -109,3 +109,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — review — 2026-04-18T20:55:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Verified `RunResult` struct, `Tail` method, `GetResult` manager method, `session_get_result` MCP tool, reset/nil-before-run semantics, test coverage, and po.md workflow update |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-18T20:45:46Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added structured run results to sessions, exposed them through `session_get_result`, updated tests, and switched the PO prompt to use status polling plus structured results |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/prompts/po.md, internal/mcp/types.go, internal/mcp/output_buffer.go, internal/mcp/manager.go, internal/mcp/tools.go, internal/mcp/manager_test.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS; `go test ./internal/mcp -run 'TestGetResultAfterSuccessfulRun|TestGetResultAfterFailedRun|TestServerSessionGetResultTool|TestNewServerRegistersSessionTools|TestManagerResetSession'` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending implementation commit` |
+| Next Role | review |
+
+---
+
+### T-003 — implement — 2026-04-18T20:50:40Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-003 implementation and review artifacts into the final task commit and closed the task as done |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/REVIEW.md, .ai/prompts/po.md, internal/mcp/types.go, internal/mcp/output_buffer.go, internal/mcp/manager.go, internal/mcp/tools.go, internal/mcp/manager_test.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending final squash commit` |
+| Next Role | none |
+
+---

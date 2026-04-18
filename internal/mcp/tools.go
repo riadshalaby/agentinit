@@ -69,7 +69,7 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 	server.AddTool(
 		mcpproto.NewTool(
 			"session_run",
-			mcpproto.WithDescription("Send a command to a named session. Returns immediately; use session_get_output to poll for results."),
+			mcpproto.WithDescription("Send a command to a named session. Returns immediately; use session_status to poll for completion and session_get_result for the structured outcome."),
 			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
 			mcpproto.WithString("command", mcpproto.Required(), mcpproto.Description("Command to execute.")),
 		),
@@ -119,6 +119,29 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 				Running    bool          `json:"running"`
 				Status     SessionStatus `json:"status"`
 			}{Chunk: chunk, TotalBytes: totalBytes, Running: running, Status: info.Status}, chunk)
+		}),
+	)
+
+	server.AddTool(
+		mcpproto.NewTool(
+			"session_get_result",
+			mcpproto.WithDescription("Get the structured result for the most recent completed run of a named session."),
+			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
+		),
+		mcpproto.NewTypedToolHandler(func(_ context.Context, _ mcpproto.CallToolRequest, args sessionNameArgs) (*mcpproto.CallToolResult, error) {
+			logger.Info("tool call started", "tool", "session_get_result", "args", args)
+			result, err := manager.GetResult(args.Name)
+			if err != nil {
+				logger.Error("tool call failed", "tool", "session_get_result", "args", args, "error", err)
+				return mcpproto.NewToolResultErrorf("session_get_result failed: %v", err), nil
+			}
+			if result == nil {
+				message := "no completed result yet"
+				logger.Info("tool call completed", "tool", "session_get_result", "name", args.Name, "message", message)
+				return jsonResult(map[string]any{"message": message}, message)
+			}
+			logger.Info("tool call completed", "tool", "session_get_result", "name", args.Name, "status", result.Status)
+			return jsonResult(result, fmt.Sprintf("%+v", *result))
 		}),
 	)
 

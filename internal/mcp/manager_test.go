@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -251,6 +252,81 @@ func TestManagerGetOutput(t *testing.T) {
 	}
 }
 
+func TestGetResultAfterSuccessfulRun(t *testing.T) {
+	t.Parallel()
+
+	manager := newTestManager(t, &testAdapter{runOutput: "response: next_task T-005", runDelay: 10 * time.Millisecond})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	waitForStatus(t, manager, "implementer", StatusIdle)
+	result, err := manager.GetResult("implementer")
+	if err != nil {
+		t.Fatalf("GetResult() error = %v", err)
+	}
+	if result == nil {
+		t.Fatal("GetResult() = nil, want result")
+	}
+	if result.Status != StatusIdle {
+		t.Fatalf("GetResult() status = %q, want %q", result.Status, StatusIdle)
+	}
+	if result.Error != "" {
+		t.Fatalf("GetResult() error = %q, want empty", result.Error)
+	}
+	if result.ExitSummary != "response: next_task T-005" {
+		t.Fatalf("GetResult() exit summary = %q", result.ExitSummary)
+	}
+	if result.DurationSecs <= 0 {
+		t.Fatalf("GetResult() duration = %f, want > 0", result.DurationSecs)
+	}
+}
+
+func TestGetResultAfterFailedRun(t *testing.T) {
+	t.Parallel()
+
+	runOutput := strings.Repeat("x", 600) + "tail"
+	manager := newTestManager(t, &testAdapter{
+		runOutput: runOutput,
+		runErr:    errors.New("boom"),
+		runDelay:  10 * time.Millisecond,
+	})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	waitForStatus(t, manager, "implementer", StatusErrored)
+	result, err := manager.GetResult("implementer")
+	if err != nil {
+		t.Fatalf("GetResult() error = %v", err)
+	}
+	if result == nil {
+		t.Fatal("GetResult() = nil, want result")
+	}
+	if result.Status != StatusErrored {
+		t.Fatalf("GetResult() status = %q, want %q", result.Status, StatusErrored)
+	}
+	if result.Error != "boom" {
+		t.Fatalf("GetResult() error = %q, want %q", result.Error, "boom")
+	}
+	wantTail := runOutput[len(runOutput)-runResultExitSummaryLimit:]
+	if result.ExitSummary != wantTail {
+		t.Fatalf("GetResult() exit summary = %q, want %q", result.ExitSummary, wantTail)
+	}
+	if len(result.ExitSummary) != runResultExitSummaryLimit {
+		t.Fatalf("GetResult() exit summary length = %d, want %d", len(result.ExitSummary), runResultExitSummaryLimit)
+	}
+	if result.DurationSecs <= 0 {
+		t.Fatalf("GetResult() duration = %f, want > 0", result.DurationSecs)
+	}
+}
+
 func TestManagerGetOutputLimit(t *testing.T) {
 	t.Parallel()
 
@@ -287,6 +363,10 @@ func TestManagerResetSession(t *testing.T) {
 	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
 		t.Fatalf("StartSession() error = %v", err)
 	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+	waitForStatus(t, manager, "implementer", StatusIdle)
 
 	info, err := manager.ResetSession("implementer")
 	if err != nil {
@@ -302,6 +382,9 @@ func TestManagerResetSession(t *testing.T) {
 	}
 	if session.ProviderState.SessionID != "" {
 		t.Fatalf("ProviderState.SessionID = %q, want empty", session.ProviderState.SessionID)
+	}
+	if session.Result != nil {
+		t.Fatalf("Result = %+v, want nil", session.Result)
 	}
 }
 
@@ -367,6 +450,8 @@ type testAdapter struct {
 	runStarted chan<- struct{}
 	startOpts  StartOpts
 	runOutput  string
+	runErr     error
+	runDelay   time.Duration
 }
 
 func (a *testAdapter) Start(_ context.Context, session *Session, opts StartOpts) (string, error) {
@@ -389,12 +474,25 @@ func (a *testAdapter) RunStream(ctx context.Context, _ *Session, command string,
 		case <-a.runBlock:
 		}
 	}
+	if a.runDelay > 0 {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(a.runDelay):
+		}
+	}
 	output := a.runOutput
 	if output == "" {
 		output = fmt.Sprintf("response: %s", command)
 	}
 	_, err := io.WriteString(w, output)
-	return err
+	if err != nil {
+		return err
+	}
+	if a.runErr != nil {
+		return a.runErr
+	}
+	return nil
 }
 
 func (a *testAdapter) Stop(_ context.Context, _ *Session) error {

@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const runResultExitSummaryLimit = 500
+
 // SessionManager owns the named session registry.
 // It is the single entry point for all session lifecycle operations.
 type SessionManager struct {
@@ -166,6 +168,7 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 	m.outputs[name] = buf
 	m.mu.Unlock()
 
+	session.Result = nil
 	session.Status = StatusRunning
 	session.Error = ""
 	if err := m.store.Put(session); err != nil {
@@ -177,6 +180,7 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 		return SessionInfo{}, err
 	}
 
+	runStartedAt := time.Now().UTC()
 	go func() {
 		defer func() {
 			cancel()
@@ -192,8 +196,9 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 			return
 		}
 
+		finishedAt := time.Now().UTC()
 		current.ProviderState = session.ProviderState
-		current.LastActiveAt = time.Now().UTC()
+		current.LastActiveAt = finishedAt
 		if runErr != nil {
 			if errors.Is(runErr, context.Canceled) || errors.Is(runErr, context.DeadlineExceeded) {
 				current.Status = StatusStopped
@@ -206,6 +211,12 @@ func (m *SessionManager) RunSession(ctx context.Context, name, command string) (
 			current.Status = StatusIdle
 			current.RunCount++
 			current.Error = ""
+		}
+		current.Result = &RunResult{
+			Status:       current.Status,
+			Error:        current.Error,
+			ExitSummary:  buf.Tail(runResultExitSummaryLimit),
+			DurationSecs: finishedAt.Sub(runStartedAt).Seconds(),
 		}
 
 		if err := m.store.Put(current); err != nil {
@@ -229,6 +240,14 @@ func (m *SessionManager) GetOutput(name string, offset, limit int) (chunk string
 	}
 	chunk, total := buf.StringFromLimit(offset, limit)
 	return chunk, total, session.Status == StatusRunning, nil
+}
+
+func (m *SessionManager) GetResult(name string) (*RunResult, error) {
+	session, err := m.store.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return session.Result, nil
 }
 
 // StopSession cancels any in-flight RunSession for the named session.
@@ -272,6 +291,7 @@ func (m *SessionManager) ResetSession(name string) (SessionInfo, error) {
 	m.mu.Unlock()
 
 	session.ProviderState = ProviderState{}
+	session.Result = nil
 	session.Status = StatusIdle
 	session.Error = ""
 	session.LastActiveAt = time.Now().UTC()
