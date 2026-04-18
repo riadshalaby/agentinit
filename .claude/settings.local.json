@@ -14,10 +14,7 @@
       "Bash(go vet ./...:*)",
       "Bash(go test ./...:*)",
       "Bash(git:*)",
-      "Bash(git reset:*)",
-      "mcp__aide__*",
-      "Bash(ls:*)",
-      "Bash(grep:*)"
+      "mcp__aide__*"
     ]
   }
 }
