@@ -60,7 +60,7 @@ func (a *ClaudeAdapter) RunStream(ctx context.Context, session *Session, command
 
 	args := []string{
 		"-p",
-		"--session-id", session.ProviderState.SessionID,
+		"--resume", session.ProviderState.SessionID,
 		"--permission-mode", a.permissionMode,
 	}
 	if opts.Model != "" {
