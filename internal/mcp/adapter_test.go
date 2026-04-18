@@ -115,8 +115,33 @@ func TestAdapterClaudeRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RunStream() error = %v", err)
 	}
-	if !strings.Contains(output.String(), "--session-id claude-session-123") || !strings.Contains(output.String(), "status_cycle") {
+	if !strings.Contains(output.String(), "--resume claude-session-123") || !strings.Contains(output.String(), "status_cycle") {
 		t.Fatalf("RunStream() output = %q", output.String())
+	}
+}
+
+func TestAdapterClaudeRunUsesResume(t *testing.T) {
+	t.Parallel()
+
+	session := &Session{
+		Name: "reviewer",
+		ProviderState: ProviderState{
+			SessionID: "claude-session-123",
+		},
+	}
+	adapter := NewClaudeAdapter(t.TempDir(), ClaudeDefaults{PermissionMode: "acceptEdits"})
+	adapter.exec = testClaudeExec(t)
+
+	var output strings.Builder
+	err := adapter.RunStream(context.Background(), session, "status_cycle", RunOpts{}, &output)
+	if err != nil {
+		t.Fatalf("RunStream() error = %v", err)
+	}
+	if !strings.Contains(output.String(), "--resume claude-session-123") {
+		t.Fatalf("RunStream() output = %q, want --resume", output.String())
+	}
+	if strings.Contains(output.String(), "--session-id claude-session-123") {
+		t.Fatalf("RunStream() output = %q, should not contain --session-id", output.String())
 	}
 }
 
