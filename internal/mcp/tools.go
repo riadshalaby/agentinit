@@ -23,6 +23,7 @@ type sessionRunArgs struct {
 type sessionGetOutputArgs struct {
 	Name   string `json:"name"`
 	Offset int    `json:"offset"`
+	Limit  int    `json:"limit"`
 }
 
 type sessionNameArgs struct {
@@ -30,6 +31,8 @@ type sessionNameArgs struct {
 }
 
 func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Config, logger *slog.Logger) {
+	const defaultSessionOutputLimit = 20000
+
 	server.AddTool(
 		mcpproto.NewTool(
 			"session_start",
@@ -88,13 +91,18 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 	server.AddTool(
 		mcpproto.NewTool(
 			"session_get_output",
-			mcpproto.WithDescription("Poll output from a running or completed session. Pass offset=0 to read from the start, or offset=total_bytes from the previous call to read only new output."),
+			mcpproto.WithDescription("Poll output from a running or completed session. Pass offset=0 to read from the start, or offset=total_bytes from the previous call to read only new output. Responses are capped by the optional limit parameter."),
 			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
 			mcpproto.WithNumber("offset", mcpproto.Description("Byte offset to start reading from.")),
+			mcpproto.WithNumber("limit", mcpproto.Description("Maximum bytes to return. Default: 20000. Omit or pass 0 to use the default.")),
 		),
 		mcpproto.NewTypedToolHandler(func(_ context.Context, _ mcpproto.CallToolRequest, args sessionGetOutputArgs) (*mcpproto.CallToolResult, error) {
 			logger.Info("tool call started", "tool", "session_get_output", "args", args)
-			chunk, totalBytes, running, err := manager.GetOutput(args.Name, args.Offset)
+			limit := args.Limit
+			if limit == 0 {
+				limit = defaultSessionOutputLimit
+			}
+			chunk, totalBytes, running, err := manager.GetOutput(args.Name, args.Offset, limit)
 			if err != nil {
 				logger.Error("tool call failed", "tool", "session_get_output", "args", args, "error", err)
 				return mcpproto.NewToolResultErrorf("session_get_output failed: %v", err), nil

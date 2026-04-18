@@ -4,7 +4,7 @@ import "sync"
 
 // outputBuffer is a goroutine-safe append-only byte buffer that implements
 // io.Writer. Adapters stream subprocess output into it; the manager reads
-// from it via StringFrom.
+// from it via StringFrom or StringFromLimit.
 type outputBuffer struct {
 	mu   sync.Mutex
 	data []byte
@@ -20,6 +20,13 @@ func (b *outputBuffer) Write(p []byte) (int, error) {
 // StringFrom returns the buffered output starting at byte offset off,
 // along with the current total byte count.
 func (b *outputBuffer) StringFrom(off int) (chunk string, total int) {
+	return b.StringFromLimit(off, 0)
+}
+
+// StringFromLimit returns the buffered output starting at byte offset off,
+// capped to at most limit bytes when limit is positive, along with the
+// current total byte count.
+func (b *outputBuffer) StringFromLimit(off, limit int) (chunk string, total int) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if off < 0 {
@@ -29,5 +36,9 @@ func (b *outputBuffer) StringFrom(off int) (chunk string, total int) {
 	if off >= total {
 		return "", total
 	}
-	return string(b.data[off:]), total
+	end := total
+	if limit > 0 && off+limit < end {
+		end = off + limit
+	}
+	return string(b.data[off:end]), total
 }

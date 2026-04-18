@@ -35,3 +35,43 @@ No issues found.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-18
+
+#### Findings
+
+No issues found.
+
+#### Verification
+
+##### Steps
+- Read `internal/mcp/output_buffer.go` — `StringFromLimit(off, limit int)` added; `StringFrom` delegates to it with `limit=0` (backward-compat). Cap logic is correct: `if limit > 0 && off+limit < end { end = off + limit }`.
+- Read `internal/mcp/manager.go` — `GetOutput` signature updated to `(name string, offset, limit int)`; passes `limit` directly to `buf.StringFromLimit`. ✅
+- Read `internal/mcp/tools.go` — `sessionGetOutputArgs` has `Limit int`; tool definition registers a `limit` number parameter; default of `20000` applied when `args.Limit == 0`; `limit` passed to `manager.GetOutput`. Tool description updated to mention capping. ✅
+- Read `internal/mcp/manager_test.go` — `TestManagerGetOutputLimit` writes 21,050 bytes, calls `GetOutput` with `limit=100`, asserts chunk length is 100 and total equals full buffer size. `waitForOutput` helper passes `limit=0` (unlimited, backward-compat). `waitForLimitedOutput` helper added. ✅
+- Read `internal/mcp/server_test.go` — `pollToolOutput` now accepts a `limit int` parameter and passes it to `session_get_output`. Called in the lifecycle test with `limit=20000`. ✅
+- Read `.ai/prompts/po.md` — Tool list entry for `session_get_output` updated to mention `limit`; interaction pattern updated to document finite `limit` usage. This documentation change is consistent with the AGENTS.md rule requiring doc updates for interface changes. ✅
+- Ran `go fmt ./...` — clean.
+- Ran `go vet ./...` — clean.
+- Ran `go test -count=1 ./...` — all packages pass.
+- Ran `go test -count=1 ./internal/mcp/... -run TestManagerGetOutput|TestServerSessionToolsLifecycle -v` — 3/3 tests pass.
+
+##### Findings
+- None.
+
+##### Risks
+- None. The cap is applied only when `limit > 0`; passing `0` preserves old unlimited behavior everywhere it is still needed (e.g. `waitForOutput` helper).
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

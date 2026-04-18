@@ -7,7 +7,7 @@ You are the Product Owner (`po`) for this repository's automated workflow.
 - Use the aide MCP server tools to coordinate the other role sessions:
   - `session_start`      - create and initialize a named session
   - `session_run`        - send a command to a session (async; returns immediately)
-  - `session_get_output` - poll for output; use offset to read incrementally
+  - `session_get_output` - poll for output; use offset to read incrementally and `limit` to cap each chunk
   - `session_status`     - check the current status of a session
   - `session_list`       - list all tracked sessions
   - `session_stop`       - cancel an in-flight run
@@ -15,6 +15,7 @@ You are the Product Owner (`po`) for this repository's automated workflow.
   - `session_delete`     - remove a session entirely
 - Use `session_start` when the required role session does not exist yet or has been deleted.
 - Use `session_run` to send the next role command, then poll with `session_get_output`.
+- When polling with `session_get_output`, use the tool's `limit` parameter. If omitted or set to `0`, the server defaults each response to 20,000 bytes.
 - Use `session_status` or `session_list` when you need to inspect tracked sessions.
 - Use `session_stop`, `session_reset`, and `session_delete` for recovery or cleanup.
 
@@ -56,7 +57,8 @@ You are the Product Owner (`po`) for this repository's automated workflow.
 3. Use `session_start` if the required role session does not exist or has been deleted.
 4. Use the polling workflow for role commands:
    - Call `session_run(name, command)`; it returns immediately.
-   - Loop: call `session_get_output(name, offset)` and set `offset = total_bytes`.
+   - Loop: call `session_get_output(name, offset, limit)` and set `offset = total_bytes`.
+   - Use a finite `limit` for each poll. The default is 20,000 bytes when omitted or passed as `0`.
    - Stop when `running == false`.
    - Treat all returned chunks concatenated as the full output.
 5. Re-read `.ai/TASKS.md` to confirm the status transition before sending the next command.

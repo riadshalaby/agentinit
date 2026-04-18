@@ -71,3 +71,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-18T20:40:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Verified end-to-end `limit` cap on `session_get_output`: buffer method, manager signature, MCP tool parameter, default enforcement, tests, and po.md documentation |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-18T20:32:58Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added `limit`-capped session output reads end-to-end, including the MCP tool parameter, default chunk cap, tests, and prompt documentation |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/prompts/po.md, internal/mcp/output_buffer.go, internal/mcp/manager.go, internal/mcp/tools.go, internal/mcp/manager_test.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS; `go test ./internal/mcp -run 'TestManagerGetOutput|TestManagerGetOutputLimit|TestServerSessionToolsLifecycle'` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending implementation commit` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-18T20:39:16Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed the T-002 implementation and review artifacts into the final task commit and closed the task as done |
+| Files Changed | .ai/TASKS.md, .ai/HANDOFF.md, .ai/REVIEW.md, .ai/prompts/po.md, internal/mcp/output_buffer.go, internal/mcp/manager.go, internal/mcp/tools.go, internal/mcp/manager_test.go, internal/mcp/server_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `pending final squash commit` |
+| Next Role | none |
+
+---
