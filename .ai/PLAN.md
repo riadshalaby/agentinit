@@ -6,6 +6,48 @@ Goal: fix two `agentinit update` bugs (settings files not reconciled, narrow too
 
 ---
 
+## T-011 — Fix e2e build: update stale `NewSessionManager` call in `mcp_e2e_test.go`
+
+### Problem
+
+`e2e/mcp_e2e_test.go` line 51 calls `mcp.NewSessionManager` with the pre-T-003 signature (five arguments, no `context.Context` first, no `*slog.Logger` last). T-003 updated the signature but missed this call site. Building with `-tags e2e` fails to compile.
+
+### Fix
+
+Update line 51 of `e2e/mcp_e2e_test.go`:
+
+```go
+// Before
+mgr := mcp.NewSessionManager(store, adapters, mcp.Config{}, tmpDir, nil)
+
+// After
+mgr := mcp.NewSessionManager(context.Background(), store, adapters, mcp.Config{}, tmpDir, nil)
+```
+
+`context` is already imported in the file (line 6), so no import change is needed.
+
+### Files to change
+
+| File | Change |
+|------|--------|
+| `e2e/mcp_e2e_test.go` | Line 51: add `context.Background()` as first argument to `mcp.NewSessionManager` |
+
+### Validation
+
+```
+go build -tags e2e ./e2e/...
+go test -tags e2e -run TestMCPSessionLifecycle ./e2e/...  # skips when claude/codex absent
+go test ./...
+```
+
+### Acceptance criteria
+
+- `go build -tags e2e ./e2e/...` succeeds.
+- `go test -tags e2e ./e2e/...` compiles and runs (skips cleanly when `claude`/`codex` not in PATH).
+- `go test ./...` continues to pass.
+
+---
+
 ## T-001 — Fix `managedPaths` skipping desired-only files that exist on disk
 
 ### Problem
