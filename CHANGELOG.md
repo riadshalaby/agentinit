@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.8.0](https://github.com/riadshalaby/agentinit/compare/v0.7.2...v0.8.0) (2026-04-18)
+
+
+### chore
+
+* **ai:** close cycle ([6b73c6c](https://github.com/riadshalaby/agentinit/commit/6b73c6c0d27e8d9a01fadb01a612c22859d8704c))
+
+
+### Features
+
+* **cli:** add cross-platform cycle bootstrap command ([458ea82](https://github.com/riadshalaby/agentinit/commit/458ea822d65b05e4d1d3e5dbae165a292fed4cfd))
+* **cli:** add cross-platform po launcher ([cc86b4a](https://github.com/riadshalaby/agentinit/commit/cc86b4a97902773b2950826c9a7b01ae53175f85))
+* **cli:** add cross-platform role launch commands ([e83ec6b](https://github.com/riadshalaby/agentinit/commit/e83ec6b559b8513bf4d18f11cf1b73a931b89d4b))
+* **cli:** add cycle close and pull request commands ([553560c](https://github.com/riadshalaby/agentinit/commit/553560c032eb46c066bb00d6061b5df2048d6743))
+* **cli:** rename the agent binary to aide ([488ca13](https://github.com/riadshalaby/agentinit/commit/488ca1396dd2516dc73ef9ae6f93426ed9dfac29))
+* **scaffold:** replace generated shell scripts with agentinit commands ([a2ea253](https://github.com/riadshalaby/agentinit/commit/a2ea2530a3044eed0c3b6e73204136d39ed66eeb))
+
+
+### Bug Fixes
+
+* **e2e:** restore tagged session manager test build ([84ac868](https://github.com/riadshalaby/agentinit/commit/84ac868f513310c90e36cb2b083e5343c0b0ec28))
+* **mcp:** address review findings for session lifecycle context ([a232964](https://github.com/riadshalaby/agentinit/commit/a232964f78cf603d80751fa6f8146656bc314776))
+* **mcp:** keep role model settings provider-aware ([0a7303e](https://github.com/riadshalaby/agentinit/commit/0a7303ebf651a9c1a6ac252182bd6a556716f353))
+* **template:** broaden generated go and git tool permissions ([e380226](https://github.com/riadshalaby/agentinit/commit/e3802267b04721b34e42085c6d512b742b717244))
+* **update:** reconcile desired-only managed files that already exist on disk ([3bca8f9](https://github.com/riadshalaby/agentinit/commit/3bca8f90c10fd1afca8ce275e301399776930164))
+
 ## [0.7.2](https://github.com/riadshalaby/agentinit/compare/v0.7.1...v0.7.2) (2026-04-16)
 
 
