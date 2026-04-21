@@ -134,3 +134,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | review |
 
 ---
+
+### T-003 — implement — 2026-04-21T15:58:08Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-003 into the final task commit after review passed and marked the task done |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, README.md, cmd/update.go, cmd/update_test.go, internal/wizard/wizard.go, internal/wizard/wizard_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./cmd` PASS; `go test ./internal/wizard` PASS; `go test ./...` PASS |
+| Commit | `68457f6 feat(update): run tool checks after refreshing files` |
+| Next Role | none |
+
+---
+
+### T-004 — review — 2026-04-21T16:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-004: README PATH setup instructions after go install; all acceptance criteria met, tests pass |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-21T16:02:11Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added Quick Start PATH setup instructions after `go install` for macOS/Linux and Windows |
+| Files Changed | .ai/TASKS.md, README.md |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `e43fb85 docs(readme): add PATH setup after go install` |
+| Next Role | review |
+
+---
