@@ -39,3 +39,42 @@ Reviewed: 2026-04-21
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002 — `aide pr` skips with warning when no remote configured
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-21
+
+#### Findings
+
+- **nit** — `cmd/cycle.go` line 316: the warning message `"no remote configured — skipping PR"` is slightly misleading when a non-GitHub remote IS configured (the condition also fires when `!isGitHubRemote(remoteURL)`). The plan explicitly specifies this wording, so no fix required.
+- **nit** — `cmd/cycle_test.go`: the non-GitHub-remote path (`hasRemote=true && !isGitHubRemote`) has no dedicated test. The single new test only exercises the `!hasRemote` branch. Low risk — condition is simple boolean logic. No fix required.
+
+#### Verification
+
+##### Steps
+1. Read `cmd/cycle.go` lines 314–318 — confirmed implementation matches plan exactly: `if !opts.DryRun && (!hasRemote || !isGitHubRemote(remoteURL))` prints warning to `cliOutput` and returns nil.
+2. Confirmed `runCycleEnd` (lines 164–167) is unchanged — still uses its own remote check with its own message and nil return; path not touched by this commit.
+3. Confirmed dry-run path is unaffected: `opts.DryRun` short-circuits the remote check, letting dry-run proceed to produce output normally.
+4. Read new test `TestPRCommandSkipsWhenNoRemoteConfigured` in `cmd/cycle_test.go` — stubs `git remote get-url origin` to return an error, asserts `RunE()` returns nil, asserts no `run` calls were made, and asserts exact output string `"no remote configured — skipping PR\n"`.
+5. Read README diff — note added immediately after the `aide pr` description line, within scope, no other sections modified.
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test ./...` — all packages pass.
+
+##### Findings
+- All checks pass; no failures or warnings.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`

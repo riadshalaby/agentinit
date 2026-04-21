@@ -58,3 +58,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | review |
 
 ---
+
+### T-001 — implement — 2026-04-21T15:31:40Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-001 into the final task commit after review passed and marked the task done |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, README.md, internal/prereq/prereq_test.go, internal/prereq/tool.go, internal/wizard/wizard.go, internal/wizard/wizard_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `99aea13 feat(wizard): require git before scaffolding` |
+| Next Role | none |
+
+---
+
+### T-002 — review — 2026-04-21T16:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002: aide pr warning-and-skip when no remote configured; all acceptance criteria met, all tests pass |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-21T15:36:51Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated `aide pr` to warn and exit cleanly when no GitHub remote is configured |
+| Files Changed | .ai/TASKS.md, README.md, cmd/cycle.go, cmd/cycle_test.go |
+| Validation | `go fmt ./...` PASS; `go test ./cmd` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `769f4f7 fix(pr): skip aide pr when no remote is configured` |
+| Next Role | review |
+
+---
