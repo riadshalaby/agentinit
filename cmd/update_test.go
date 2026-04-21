@@ -2,18 +2,22 @@ package cmd
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
+	"github.com/riadshalaby/agentinit/internal/prereq"
 	updater "github.com/riadshalaby/agentinit/internal/update"
 )
 
 func TestUpdateCommandUsesFlagsAndPrintsChanges(t *testing.T) {
 	originalRunUpdate := runUpdate
+	originalRunToolCheck := runUpdateToolCheck
 	originalOutput := cliOutput
 	originalDir := updateTargetDir
 	originalDryRun := updateDryRun
 	t.Cleanup(func() {
 		runUpdate = originalRunUpdate
+		runUpdateToolCheck = originalRunToolCheck
 		cliOutput = originalOutput
 		updateTargetDir = originalDir
 		updateDryRun = originalDryRun
@@ -24,6 +28,7 @@ func TestUpdateCommandUsesFlagsAndPrintsChanges(t *testing.T) {
 
 	var output bytes.Buffer
 	cliOutput = &output
+	runUpdateToolCheck = func(prereq.Commander) error { return nil }
 	runUpdate = func(dir string, dryRun bool) (updater.Result, error) {
 		if dir != "/tmp/project" {
 			t.Fatalf("dir = %q, want %q", dir, "/tmp/project")
@@ -58,11 +63,13 @@ func TestUpdateCommandUsesFlagsAndPrintsChanges(t *testing.T) {
 
 func TestUpdateCommandPrintsNoChangeMessage(t *testing.T) {
 	originalRunUpdate := runUpdate
+	originalRunToolCheck := runUpdateToolCheck
 	originalOutput := cliOutput
 	originalDir := updateTargetDir
 	originalDryRun := updateDryRun
 	t.Cleanup(func() {
 		runUpdate = originalRunUpdate
+		runUpdateToolCheck = originalRunToolCheck
 		cliOutput = originalOutput
 		updateTargetDir = originalDir
 		updateDryRun = originalDryRun
@@ -73,6 +80,7 @@ func TestUpdateCommandPrintsNoChangeMessage(t *testing.T) {
 
 	var output bytes.Buffer
 	cliOutput = &output
+	runUpdateToolCheck = func(prereq.Commander) error { return nil }
 	runUpdate = func(string, bool) (updater.Result, error) {
 		return updater.Result{}, nil
 	}
@@ -83,5 +91,48 @@ func TestUpdateCommandPrintsNoChangeMessage(t *testing.T) {
 
 	if got := output.String(); got != "No managed files changed.\n" {
 		t.Fatalf("output = %q", got)
+	}
+}
+
+func TestUpdateCommandRunsToolCheckAfterPrintingChanges(t *testing.T) {
+	originalRunUpdate := runUpdate
+	originalRunToolCheck := runUpdateToolCheck
+	originalOutput := cliOutput
+	originalDir := updateTargetDir
+	originalDryRun := updateDryRun
+	t.Cleanup(func() {
+		runUpdate = originalRunUpdate
+		runUpdateToolCheck = originalRunToolCheck
+		cliOutput = originalOutput
+		updateTargetDir = originalDir
+		updateDryRun = originalDryRun
+	})
+
+	updateTargetDir = "/tmp/project"
+	updateDryRun = false
+
+	var output bytes.Buffer
+	cliOutput = &output
+	var calls []string
+	runUpdate = func(string, bool) (updater.Result, error) {
+		calls = append(calls, "update")
+		return updater.Result{
+			Changes: []updater.Change{{Path: "AGENTS.md", Action: "update"}},
+		}, nil
+	}
+	runUpdateToolCheck = func(prereq.Commander) error {
+		calls = append(calls, "toolcheck")
+		if got := output.String(); got != "Updated AGENTS.md (update)\n" {
+			t.Fatalf("output before tool check = %q", got)
+		}
+		return nil
+	}
+
+	if err := updateCmd.RunE(updateCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	if got, want := strings.Join(calls, ","), "update,toolcheck"; got != want {
+		t.Fatalf("calls = %q, want %q", got, want)
 	}
 }

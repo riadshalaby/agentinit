@@ -44,7 +44,21 @@ func Run(cmdr prereq.Commander) error {
 	return run(cmdr, huhUI{}, cwd, scaffold.Run)
 }
 
+// RunToolCheck scans for required and optional tools and interactively offers
+// to install any that are missing. Used by both aide init and aide update.
+func RunToolCheck(cmdr prereq.Commander) error {
+	return runToolCheck(cmdr, huhUI{})
+}
+
 func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
+	if err := runToolCheck(cmdr, ui); err != nil {
+		return err
+	}
+
+	return runScaffoldStep(ui, cwd, scaffoldFn)
+}
+
+func runToolCheck(cmdr prereq.Commander, ui ui) error {
 	report := scanPrereqs(cmdr)
 	if err := ui.Note("Checking your system...", formatScanReport(report)); err != nil {
 		return err
@@ -116,7 +130,7 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 		}
 	}
 
-	return runScaffoldStep(ui, cwd, scaffoldFn)
+	return nil
 }
 
 func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
