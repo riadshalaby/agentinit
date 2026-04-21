@@ -20,7 +20,8 @@ Command expectations:
 
 | Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- |
-| T-001 | Fix claude adapter: use `--resume` in RunStream | `done` | `session_start` + `session_run` succeeds with claude provider; test covers resume path | `go vet ./...`; `go test ./...` | none |
-| T-002 | Cap `session_get_output` with `limit` parameter | `done` | Output never exceeds `limit` bytes; default 20KB; pagination works via offset | `go vet ./...`; `go test ./...` | none |
-| T-003 | Add `session_get_result` structured summary | `done` | Returns JSON < 2KB after run; PO prompt updated to use it; `session_get_output` no longer primary | `go vet ./...`; `go test ./...` | none |
-| T-004 | PO model defaults: haiku (claude), gpt-5.4-mini (codex) | `done` | `aide po` uses haiku; `aide po codex` uses gpt-5.4-mini; config override works | `go vet ./...`; `go test ./...` | none |
+| T-001 | Add git as required tool in the interactive wizard | ready_for_implement | `aide init` fails with readable error when git is absent; git appears in scan output with required flag; README tool table includes git row | n/a | implement |
+| T-002 | `aide pr` skips with warning when no remote configured | ready_for_implement | `aide pr` with no origin prints warning and exits 0; `--dry-run` unaffected; `aide cycle end` unchanged | n/a | implement |
+| T-003 | `aide update` runs tool checks after file refresh | ready_for_implement | `aide update` shows tool-scan and offers installs; file update behaviour unchanged; `aide init` path unchanged | n/a | implement |
+| T-004 | README PATH setup documentation after `go install` | ready_for_implement | Quick Start contains platform-specific PATH instructions for macOS/Linux and Windows; no other sections modified; scaffold template untouched | n/a | implement |
+| T-005 | Codex reasoning effort configurable with "high" default for implementer | ready_for_implement | `aide implement` passes `-c model_reasoning_effort="high"` to Codex by default; effort configurable via `.ai/config.json`; MCP sessions apply effort on Start and RunStream; new scaffolds pre-set effort "high" for implement role | n/a | implement |

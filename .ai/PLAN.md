@@ -1,108 +1,250 @@
-# Plan
+# PLAN
 
-Status: **active**
+## Goal
 
-Goal: fix MCP session management bugs and reduce PO token usage (cycle 0.8.1).
-
-## Scope
-
-1. Fix claude provider session resumption (`--session-id` → `--resume` for RunStream)
-2. Cap `session_get_output` response size with a `limit` parameter
-3. Add structured completion summary (`session_get_result`) so the PO never reads raw output
-4. Add PO model defaults via config (`haiku` for claude, `gpt-5.4-mini` for codex)
-
-## Acceptance Criteria
-
-- `session_start` + `session_run` succeeds with the claude provider (multi-turn)
-- `session_get_output` never returns more than `limit` bytes; callers paginate via `offset`
-- `session_get_result` returns a structured JSON payload under 2KB after a run completes
-- `aide po` launches with `--model haiku`; `aide po codex` launches with `--model gpt-5.4-mini`; `.ai/config.json` can override both
-- All existing tests pass; each task adds targeted tests
-- PO prompt updated to use `session_get_result` instead of `session_get_output` for normal flow
-
-## Implementation Phases
-
-### T-001 — Fix claude adapter session resumption
-
-**Problem:** `ClaudeAdapter.RunStream` uses `--session-id <UUID>` but the claude CLI rejects reuse of a session ID created by a prior `-p` call. The correct flag for subsequent calls is `--resume <UUID>`.
-
-**Files to change:**
-
-| File | Change |
-|------|--------|
-| `internal/mcp/adapter_claude.go` | In `RunStream`, replace `--session-id` with `--resume` in the args slice (lines 61-64). Keep `Start` using `--session-id` unchanged. |
-| `internal/mcp/adapter_test.go` | Update `TestAdapterClaudeRun` (line 118): the expected output should contain `--resume claude-session-123` instead of `--session-id claude-session-123`. Add a new test `TestAdapterClaudeRunUsesResume` that explicitly asserts `--resume` is present and `--session-id` is absent in the RunStream args. |
-
-**Constraints:**
-- Do not change the `Start` method — it correctly uses `--session-id` to create the session.
-- Do not change the `Adapter` interface.
+Improve the out-of-the-box installation experience: enforce git as a required tool in
+the wizard, make `aide pr` graceful when no remote is configured, expose tool-check
+in `aide update`, and document the PATH setup after `go install` in the README.
 
 ---
 
-### T-002 — Cap session_get_output response size
+## T-001 — Git as required tool in the interactive wizard
 
-**Problem:** `GetOutput` returns the entire buffer from `offset` to end. A 103K+ response exceeds MCP client token limits.
+### Context
 
-**Files to change:**
+`internal/prereq/tool.go` holds `Registry()`. The wizard (`internal/wizard/wizard.go`)
+calls `prereq.Scan`, shows missing tools, and uses `defaultInstallChoice(tool)` (which
+returns `tool.Required`) to default required tools to "install". After the install loop
+the wizard proceeds unconditionally to `runScaffoldStep`; there is no post-install gate.
 
-| File | Change |
-|------|--------|
-| `internal/mcp/output_buffer.go` | Add a `StringFromLimit(off, limit int) (chunk string, total int)` method. When `limit > 0`, cap the returned slice to `limit` bytes. When `limit <= 0`, return everything (backward compat). |
-| `internal/mcp/manager.go` | Change `GetOutput` signature to `GetOutput(name string, offset, limit int)`. Pass `limit` through to `buf.StringFromLimit`. |
-| `internal/mcp/tools.go` | Add `Limit int` field to `sessionGetOutputArgs` struct (line 25). Add `limit` number parameter to the `session_get_output` tool definition with description "Maximum bytes to return. Default: 20000. Pass 0 for unlimited." Set default: if `args.Limit == 0`, use `20000`. Update the tool description to mention the limit parameter. Pass `args.Limit` to `manager.GetOutput`. |
-| `internal/mcp/manager_test.go` | Update existing `GetOutput` call sites to pass the new `limit` parameter. Add a test that writes >20KB to a buffer, calls `GetOutput` with `limit=100`, and asserts the chunk is exactly 100 bytes and total reflects the full buffer size. |
-| `internal/mcp/server_test.go` | Update `pollToolOutput` and any `session_get_output` call sites to include the `limit` parameter. |
+### Changes
 
-**Constraints:**
-- The default limit (20,000 bytes) applies when the caller omits or sends `0` for the limit field.
-- Callers paginate by advancing `offset` by the length of the received chunk.
+**`internal/prereq/tool.go`** — add git entry to `Registry()` as the first entry
+(before GitHub CLI):
+- `Name`: `"Git"`, `Binary`: `"git"`, `Category`: `ToolCategoryAgentDependency`,
+  `Required`: `true`
+- `PackageInstalls`: `"brew": "brew install git"`, `"choco": "choco install git"`
+- `OSInstalls[Windows]`: label `"Git for Windows"`, no auto-install command (GUI
+  installer), so `Auto` resolves to false and the fallback URL is shown
+- `FallbackURL`: `"https://git-scm.com/downloads"`
+- Linux: no `OSInstalls` entry and no package-manager key → `ResolveInstallPlan` returns
+  the fallback URL automatically
+
+**`internal/wizard/wizard.go`** — add a post-install required-tool gate in `run()`,
+after the install loop and before `runScaffoldStep`:
+```go
+afterInstall := scanPrereqs(cmdr)
+for _, r := range afterInstall.Results {
+    if r.Tool.Required && !r.Installed {
+        return fmt.Errorf("%s is required but not installed; "+
+            "install it manually: %s", r.Tool.Name, r.Tool.FallbackURL)
+    }
+}
+```
+This gate fires whether the user skips installs or installs fail.
+
+**`README.md`** — add git as the first row in the Tool Detection and Installation table:
+```
+| Git (`git`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
+```
+
+**Tests**:
+- `internal/prereq/prereq_test.go`: ensure git appears in the registry and is marked
+  required.
+- `internal/wizard/wizard_test.go`: add test covering the case where git is still
+  missing after the install step — `run()` must return a non-nil error and must not call
+  `scaffoldFn`.
+
+### Acceptance criteria
+- `aide init` fails with a readable error when git is absent after the install step.
+- git appears in the tool-scan output and defaults to "install".
+- README tool table includes the git row as the first data row.
 
 ---
 
-### T-003 — Add structured completion summary (session_get_result)
+## T-002 — `aide pr` skips with warning when no remote is configured
 
-**Problem:** The PO reads raw `session_get_output` to determine run outcomes. This wastes tokens and can exceed limits. The PO only needs: did it finish, did it succeed, and what's the error if any.
+### Context
 
-**Files to change:**
+`runPRSync` in `cmd/cycle.go` returns `fmt.Errorf("no GitHub remote detected")` when no
+remote or non-GitHub remote is found (line ~315). `aide cycle end` already handles this
+gracefully (warning + nil return). `aide pr` should match that pattern.
 
-| File | Change |
-|------|--------|
-| `internal/mcp/types.go` | Add `Result *RunResult` field to `Session` struct. Define `RunResult` struct: `Status SessionStatus`, `Error string`, `ExitSummary string` (last ~500 bytes of output for error context), `DurationSecs float64`. |
-| `internal/mcp/manager.go` | In the `RunSession` goroutine (lines 180-214), after the run completes, populate `current.Result` with status, error, duration (from run start to now), and last 500 bytes of the output buffer for error context. Add a `GetResult(name string) (*RunResult, error)` method that returns `session.Result`. |
-| `internal/mcp/output_buffer.go` | Add a `Tail(n int) string` method that returns the last `n` bytes of the buffer. Used by the manager to capture error context. |
-| `internal/mcp/tools.go` | Register a new `session_get_result` MCP tool with `name` (required string) parameter. Handler calls `manager.GetResult(name)` and returns the `RunResult` as JSON. If `Result` is nil (no run completed yet), return a descriptive message. |
-| `internal/mcp/manager_test.go` | Add `TestGetResultAfterSuccessfulRun` and `TestGetResultAfterFailedRun` tests. |
-| `internal/mcp/server_test.go` | Add integration test for the `session_get_result` tool. |
-| `.ai/prompts/po.md` | Update the tool list to include `session_get_result`. Change the "Interaction Pattern" section (lines 54-62): replace the `session_get_output` polling loop with `session_status` polling → `session_get_result` on completion. Keep `session_get_output` documented for debugging only. Update "Signs that a role command is complete" to reference `session_get_result` status field. |
+### Changes
 
-**Constraints:**
-- `session_get_result` returns nil/empty before the first run completes.
-- The `ExitSummary` field is capped at 500 bytes to keep the payload small.
-- `session_reset` should clear `Result` (already clears `ProviderState`; also clear `Result`).
-- The PO prompt changes must be backward-compatible: `session_get_output` remains available but is no longer the primary feedback channel.
+**`cmd/cycle.go`** — in `runPRSync`, replace the hard error with a warning + early
+return:
+```go
+if !opts.DryRun && (!hasRemote || !isGitHubRemote(remoteURL)) {
+    _, err := fmt.Fprintln(cliOutput, "no remote configured — skipping PR")
+    return err
+}
+```
+
+**`cmd/cycle_test.go`** — update tests that currently assert an error from `runPRSync`
+when no remote is present: assert nil error and that the warning line is written to
+output instead.
+
+### Acceptance criteria
+- `aide pr` with no `origin` prints `"no remote configured — skipping PR"` and exits 0.
+- `aide pr --dry-run` is unaffected (dry-run path does not check for a remote).
+- `aide cycle end` behaviour is unchanged.
 
 ---
 
-### T-004 — PO model defaults via config
+## T-003 — `aide update` runs tool checks
 
-**Problem:** The PO session uses the provider's default model (typically Sonnet/GPT-5.4), which is expensive for a coordinator that only reads files and calls MCP tools. Haiku / gpt-5.4-mini are sufficient.
+### Context
 
-**Files to change:**
+`cmd/update.go` calls `runUpdate` (file refresh only). The wizard's `run()` handles the
+full tool-check + install-offer flow but is coupled to scaffolding. The tool-check block
+must be extracted so `aide update` can reuse it.
 
-| File | Change |
-|------|--------|
-| `internal/mcp/config.go` | Add `"po"` to the `validRoles` map (line 17). Add a `DefaultModelForRole(role, provider string) string` method that returns hardcoded defaults: `po`+`claude` → `"haiku"`, `po`+`codex` → `"gpt-5.4-mini"`, all others → `""`. Update `ModelForRoleAndProvider` to fall back to `DefaultModelForRole` when no config override exists (i.e., when the role is not in `Roles` map or has no model set). |
-| `internal/mcp/config_test.go` | Add tests: `TestDefaultModelForPO_Claude` (expects `"haiku"`), `TestDefaultModelForPO_Codex` (expects `"gpt-5.4-mini"`), `TestConfigOverridesDefaultModel` (config sets `po.model = "opus"`, expects `"opus"`), `TestDefaultModelForImplement` (expects `""` — no default for non-PO roles). |
-| `cmd/po.go` | In `runPOLaunch`, after determining the agent, call `cfg.ModelForRoleAndProvider("po", agent)` and store the result. If no `--model` flag is already present in `args`, pass the model to `launchRole` via `RoleLaunchOpts.Model`. |
-| `cmd/po_test.go` | Update `TestPOCommandLaunchesClaudeWithTempFiles` to assert `launchOpts.Model == "haiku"`. Update `TestPOCommandLaunchesCodexWithInlineMCPConfig` to assert `launchOpts.Model == "gpt-5.4-mini"` (when no explicit `--model` in args). Add test: explicit `--model opus` in args overrides the default. |
+### Changes
 
-**Constraints:**
-- Adding `"po"` to `validRoles` means the MCP `session_start` tool will also accept `"po"` as a role. This is fine — it doesn't break anything, and could be useful later.
-- The default model only applies when no explicit model is configured in `.ai/config.json` and no `--model` flag is passed on the command line.
-- CLI `--model` flag (passed as extra args) takes highest precedence, then config, then hardcoded default.
+**`internal/wizard/wizard.go`** — extract the scan + offer-to-install block (including
+the required-tool gate from T-001) into:
+```go
+// RunToolCheck scans for required and optional tools and interactively
+// offers to install any that are missing. Used by both aide init and aide update.
+func RunToolCheck(cmdr prereq.Commander) error {
+    return runToolCheck(cmdr, huhUI{})
+}
+
+func runToolCheck(cmdr prereq.Commander, ui ui) error {
+    // the scan, missing-check, install-loop, and post-install gate logic
+}
+```
+`run()` becomes: `runToolCheck(cmdr, ui)` → `runScaffoldStep(ui, cwd, scaffoldFn)`.
+
+**`cmd/update.go`** — after `runUpdate` completes and the change list is printed, call:
+```go
+return wizard.RunToolCheck(prereq.NewExecCommander())
+```
+Add imports for `internal/wizard` and `internal/prereq`.
+
+**`cmd/update_test.go`** — add test verifying that tool-check runs after file update;
+use the existing `runUpdate` var-swap pattern to isolate the update step.
+
+**`internal/wizard/wizard_test.go`** — add unit tests for `runToolCheck` in isolation:
+all tools present → no install prompt; missing optional tool → prompt shown; missing
+required tool → error after gate.
+
+### Acceptance criteria
+- `aide update` shows the tool-scan report and offers to install missing tools after
+  refreshing managed files.
+- Managed-file update behaviour and output are unchanged.
+- `aide init` wizard path is unchanged (still calls `runToolCheck` internally).
+
+---
+
+## T-005 — Codex reasoning effort configurable, default "high" for implementer
+
+### Context
+
+`RoleLaunchOpts.Effort` and `Config.EffortForRoleAndProvider` already exist.
+`launcher.Launch` uses `--effort` for Claude but ignores `Effort` for Codex entirely.
+The MCP `CodexAdapter` (`Start`, `RunStream`) also ignores effort.
+`DefaultEffortForRole` does not exist — `EffortForRoleAndProvider` returns `""` when
+nothing is configured. The scaffold template sets no effort for the `implement` role.
+
+The Codex CLI flag is: `-c model_reasoning_effort="high"`.
+
+### Changes
+
+**`internal/launcher/launcher.go`** — codex case: after the model flag, add:
+```go
+if opts.Effort != "" {
+    args = append(args, "-c", fmt.Sprintf("model_reasoning_effort=%q", opts.Effort))
+}
+```
+
+**`internal/mcp/adapter_codex.go`**:
+- Add `effort string` field to `CodexAdapter`.
+- In `Start`: assign `a.effort = opts.Effort`; append `-c model_reasoning_effort=<effort>`
+  to args when non-empty (same format as launcher).
+- In `RunStream`: append `-c model_reasoning_effort=<effort>` when `a.effort != ""`.
+
+**`internal/mcp/config.go`** — add default effort lookup:
+```go
+func (c Config) DefaultEffortForRole(role, provider string) string {
+    if role == "implement" && provider == "codex" {
+        return "high"
+    }
+    return ""
+}
+```
+Update `EffortForRoleAndProvider` to call `DefaultEffortForRole` as fallback (same
+pattern as `ModelForRoleAndProvider` → `DefaultModelForRole`).
+
+**`internal/template/templates/base/ai/config.json.tmpl`** — add `"effort": "high"` to
+the `implement` role so new scaffolds show the default explicitly:
+```json
+"implement": {
+  "agent": "codex",
+  "model": "gpt-5.4",
+  "effort": "high"
+}
+```
+
+**`README.md`** — in the `.ai/config.json` description, note that `effort` for a Codex
+role maps to `-c model_reasoning_effort=<value>` and that the implementer defaults to
+`"high"`.
+
+**Tests**:
+- `internal/launcher/launcher_test.go`: assert `-c model_reasoning_effort="high"` appears
+  in codex args when `Effort: "high"` is set.
+- `internal/mcp/adapter_test.go`: assert the reasoning effort flag is included in codex
+  `Start` and `RunStream` args.
+- `internal/mcp/config_test.go`: assert `EffortForRoleAndProvider("implement", "codex")`
+  returns `"high"` when no effort is explicitly configured.
+
+### Acceptance criteria
+- `aide implement` with default config passes `-c model_reasoning_effort="high"` to Codex.
+- `effort` in `.ai/config.json` overrides the default; empty string disables the flag.
+- MCP-driven Codex sessions (via `aide po`) apply reasoning effort on both `Start` and
+  `RunStream`.
+- New scaffolds have `"effort": "high"` pre-set in the implement role.
+
+---
+
+## T-004 — README: PATH setup after `go install`
+
+### Context
+
+The Quick Start section of `README.md` has `go install ...` with no follow-up
+instruction for adding `$GOPATH/bin` to the user's PATH.
+
+### Changes
+
+**`README.md`** — immediately after the `go install` line in Quick Start, add:
+
+```markdown
+# Add the Go bin directory to your PATH if it is not already present.
+
+# macOS / Linux — add to ~/.zshrc, ~/.bashrc, or ~/.profile and restart your shell:
+export PATH="$(go env GOPATH)/bin:$PATH"
+
+# Windows PowerShell — add to $PROFILE and restart PowerShell:
+$env:PATH = "$(go env GOPATH)\bin;" + $env:PATH
+
+# Windows CMD (persistent, run once in an elevated Command Prompt):
+setx PATH "%PATH%;%USERPROFILE%\go\bin"
+```
+
+### Acceptance criteria
+- README Quick Start contains platform-specific PATH instructions for macOS/Linux and
+  Windows immediately after `go install`.
+- No other README sections are modified.
+- Scaffold template `README.md.tmpl` is not modified.
+
+---
 
 ## Validation
 
-- `go fmt ./...`
-- `go vet ./...`
-- `go test ./...`
+After every task commit:
+```
+go fmt ./...
+go vet ./...
+go test ./...
+```
