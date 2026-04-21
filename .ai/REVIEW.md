@@ -2,35 +2,22 @@
 
 Shared review log for the current cycle. Append a new task section when review starts for a new task. Within a task, append a new review round instead of replacing prior history.
 
----
-
-## Task: T-001 — Add git as required tool in the interactive wizard
+## Task: T-XXX
 
 ### Review Round 1
 
-Status: **PASS**
+Status: **pending**
 
-Reviewed: 2026-04-21
+Reviewed: YYYY-MM-DD
 
 #### Findings
-
-- **nit** — `internal/wizard/wizard.go` lines 112–117: The post-install gate always executes a second `scanPrereqs` call unconditionally, even when `missing` was empty on the first scan (i.e., all tools were already present). On a clean system this adds an unnecessary second scan. Not a correctness issue; the plan did not call for guarding this. No fix required.
+- Pending review.
 
 #### Verification
-
 ##### Steps
-1. Read `internal/prereq/tool.go` — confirmed git is the first entry in `Registry()`, `Required: true`, `Category: ToolCategoryAgentDependency`, `brew`/`choco` package installs present, `OSInstalls[Windows]` has label only (no `Command`, so `Auto` resolves false and fallback URL is shown), `FallbackURL: "https://git-scm.com/downloads"`.
-2. Read `internal/wizard/wizard.go` — confirmed post-install gate (lines 112–117) is placed *outside* the `if len(missing) > 0` block, so it fires whether the user declined installs or installations failed.
-3. Read `internal/prereq/prereq_test.go` — confirmed `TestRegistryStartsWithRequiredGit` (position 0, Required true, correct category) and `TestScanDetectsPackageManagerAndTools` covers git detection.
-4. Read `internal/wizard/wizard_test.go` — confirmed `TestRunFailsWhenRequiredGitRemainsMissing` asserts non-nil error with correct message and that `scaffoldFn` is never called.
-5. Read `README.md` — confirmed git row is first data row in the Tool Detection and Installation table: `| Git (\`git\`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |`
-6. Ran `go fmt ./...` — clean (no output).
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
-
+- Pending verification.
 ##### Findings
-- All checks pass; no failures or warnings.
-
+- None.
 ##### Risks
 - None.
 
@@ -38,162 +25,4 @@ Reviewed: 2026-04-21
 - None.
 
 #### Verdict
-`PASS`
-
----
-
-## Task: T-003 — `aide update` runs tool checks after file refresh
-
-### Review Round 1
-
-Status: **PASS**
-
-Reviewed: 2026-04-21
-
-#### Findings
-
-- **nit** — `cmd/update_test.go`: `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order only for the "has changes" code path. The no-changes path (tool check after "No managed files changed.") has no equivalent call-order assertion. The logic is trivially sequential and the existing stub tests cover nil-error behavior. No fix required.
-
-#### Verification
-
-##### Steps
-1. Read `internal/wizard/wizard.go` — confirmed `RunToolCheck` (public) delegates to `runToolCheck` (unexported), `run()` is simplified to `runToolCheck(cmdr, ui)` → `runScaffoldStep`, and the required-tool gate from T-001 is preserved inside `runToolCheck`. The extraction is clean and the public API matches the plan's specified signature.
-2. Read `cmd/update.go` — confirmed `runUpdateToolCheck` var-swap is introduced for testability; `runUpdateToolCheck(prereq.NewExecCommander())` is called at the end of both branches (no-changes: line 47, changes: line 55). Tool check always runs regardless of whether files changed.
-3. Read `cmd/update_test.go` diff — existing tests updated to stub `runUpdateToolCheck` (prevents real system calls); new `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order (`"update,toolcheck"`) and that output is already written before tool check runs.
-4. Read `internal/wizard/wizard_test.go` diff — three new `runToolCheck` unit tests: all-present (no prompts), missing optional (prompt shown), missing required (error returned with correct message). All match plan spec.
-5. Read README diff — existing `aide update` description extended in-place with one sentence about the post-refresh tool scan. No other sections modified.
-6. Ran `go fmt ./...` — clean.
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
-
-##### Findings
-- All checks pass; no failures or warnings.
-
-##### Risks
-- None.
-
-#### Open Questions
-- None.
-
-#### Verdict
-`PASS`
-
----
-
-## Task: T-005 — Codex reasoning effort configurable with "high" default for implementer
-
-### Review Round 1
-
-Status: **PASS**
-
-Reviewed: 2026-04-21
-
-#### Findings
-
-None.
-
-#### Verification
-
-##### Steps
-1. **`internal/launcher/launcher.go`** — confirmed Codex case appends `-c model_reasoning_effort="high"` (using `%q` format) when `opts.Effort != ""`. Claude case already had `--effort` support; unchanged.
-2. **`internal/mcp/adapter_codex.go`** — confirmed `effort string` field added; `Start` assigns `a.effort = opts.Effort` and appends the flag when non-empty; `RunStream` reads `a.effort` and appends same flag. Same `%q` format as launcher.
-3. **`internal/mcp/config.go`** — confirmed `DefaultEffortForRole` returns `"high"` for `implement+codex`, `""` otherwise. `EffortForRoleAndProvider` calls it as fallback. Custom `UnmarshalJSON` uses pointer `*string` to detect presence of `effort` key and sets `effortSet bool` — correctly distinguishes explicit `""` from absent key.
-4. **`internal/template/templates/base/ai/config.json.tmpl`** diff — only the implement role received `"effort": "high"`; plan and review roles were pre-existing with `"effort": "medium"`.
-5. **`README.md`** — two "agent/model" references updated to "agent/model/effort"; two lines added explaining Codex effort flag mapping and implementer default.
-6. **`internal/mcp/adapter.go`** — `Effort` field comment updated from "claude:" to "provider-specific".
-7. **`cmd/launch_test.go`** — `TestImplementCommandUsesConfiguredAgentAndModel` updated: expected `Effort` changed from `""` to `"high"`, confirming the default flows end-to-end from config through launcher.
-8. **`internal/launcher/launcher_test.go`** — `TestLaunchCodex` asserts `-c model_reasoning_effort="high"` present in Codex args.
-9. **`internal/mcp/adapter_test.go`** — `TestAdapterCodexStart` and `TestAdapterCodexRun` both assert `model_reasoning_effort="high"` in args.
-10. **`internal/mcp/config_test.go`** — four new tests: `TestDefaultEffortForImplementCodex`, `TestConfigEffortDefaultsForImplementCodex`, `TestConfigExplicitEmptyEffortOverridesDefault`, `TestConfigLoadEmptyEffortDisablesImplementDefault`. All critical override paths covered, including the `effortSet` sentinel for explicit empty-string.
-11. **`internal/mcp/manager_test.go`** — `TestManagerStartSession` updated to expect `effort = "high"` instead of `""`.
-12. **`internal/template/engine_test.go`** — scaffold output assertion includes `"effort": "high"` for the implement section.
-13. Ran `go fmt ./...` — clean.
-14. Ran `go vet ./...` — clean.
-15. Ran `go test ./...` — all packages pass.
-
-##### Findings
-- All checks pass; no failures or warnings.
-
-##### Risks
-- None.
-
-#### Open Questions
-- None.
-
-#### Verdict
-`PASS`
-
----
-
-## Task: T-004 — README PATH setup documentation after `go install`
-
-### Review Round 1
-
-Status: **PASS**
-
-Reviewed: 2026-04-21
-
-#### Findings
-
-None.
-
-#### Verification
-
-##### Steps
-1. Read `git show e43fb85 -- README.md` — confirmed PATH block is inserted immediately after the `go install` line in Quick Start, covering macOS/Linux (`export PATH=...`) and Windows PowerShell + CMD (`$env:PATH`, `setx`). Content matches plan spec verbatim.
-2. Confirmed `git show e43fb85 -- internal/template/templates/base/README.md.tmpl` produced no output — scaffold template untouched.
-3. Confirmed no other README sections were modified (diff is a single contiguous addition of 11 lines).
-4. Ran `go fmt ./...` — clean.
-5. Ran `go vet ./...` — clean.
-6. Ran `go test ./...` — all packages pass (doc-only change; no code changed).
-
-##### Findings
-- All checks pass; no failures or warnings.
-
-##### Risks
-- None.
-
-#### Open Questions
-- None.
-
-#### Verdict
-`PASS`
-
----
-
-## Task: T-002 — `aide pr` skips with warning when no remote configured
-
-### Review Round 1
-
-Status: **PASS**
-
-Reviewed: 2026-04-21
-
-#### Findings
-
-- **nit** — `cmd/cycle.go` line 316: the warning message `"no remote configured — skipping PR"` is slightly misleading when a non-GitHub remote IS configured (the condition also fires when `!isGitHubRemote(remoteURL)`). The plan explicitly specifies this wording, so no fix required.
-- **nit** — `cmd/cycle_test.go`: the non-GitHub-remote path (`hasRemote=true && !isGitHubRemote`) has no dedicated test. The single new test only exercises the `!hasRemote` branch. Low risk — condition is simple boolean logic. No fix required.
-
-#### Verification
-
-##### Steps
-1. Read `cmd/cycle.go` lines 314–318 — confirmed implementation matches plan exactly: `if !opts.DryRun && (!hasRemote || !isGitHubRemote(remoteURL))` prints warning to `cliOutput` and returns nil.
-2. Confirmed `runCycleEnd` (lines 164–167) is unchanged — still uses its own remote check with its own message and nil return; path not touched by this commit.
-3. Confirmed dry-run path is unaffected: `opts.DryRun` short-circuits the remote check, letting dry-run proceed to produce output normally.
-4. Read new test `TestPRCommandSkipsWhenNoRemoteConfigured` in `cmd/cycle_test.go` — stubs `git remote get-url origin` to return an error, asserts `RunE()` returns nil, asserts no `run` calls were made, and asserts exact output string `"no remote configured — skipping PR\n"`.
-5. Read README diff — note added immediately after the `aide pr` description line, within scope, no other sections modified.
-6. Ran `go fmt ./...` — clean.
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
-
-##### Findings
-- All checks pass; no failures or warnings.
-
-##### Risks
-- None.
-
-#### Open Questions
-- None.
-
-#### Verdict
-`PASS`
+`PENDING`
