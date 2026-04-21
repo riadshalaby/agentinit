@@ -43,6 +43,22 @@ type CheckResult struct {
 func Registry() []Tool {
 	return []Tool{
 		{
+			Name:     "Git",
+			Binary:   "git",
+			Category: ToolCategoryAgentDependency,
+			Required: true,
+			PackageInstalls: map[string]string{
+				"brew":  "brew install git",
+				"choco": "choco install git",
+			},
+			OSInstalls: map[OS]InstallMethod{
+				Windows: {
+					Label: "Git for Windows",
+				},
+			},
+			FallbackURL: "https://git-scm.com/downloads",
+		},
+		{
 			Name:     "GitHub CLI",
 			Binary:   "gh",
 			Category: ToolCategoryAgentDependency,

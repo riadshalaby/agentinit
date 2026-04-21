@@ -67,6 +67,9 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 	if !results["gh"] {
 		t.Error("expected gh to be detected as installed")
 	}
+	if !results["git"] {
+		t.Error("expected git to be detected as installed")
+	}
 	if results["rg"] {
 		t.Error("expected rg to be detected as missing")
 	}
@@ -98,7 +101,7 @@ func TestScanDetectsPackageManagerAndTools(t *testing.T) {
 
 func TestInstallToolRunsPackageManagerCommand(t *testing.T) {
 	cmdr := &mockCommander{}
-	tool := Registry()[0]
+	tool := toolByBinary("gh")
 	plan := InstallPlan{
 		Tool:    tool,
 		Label:   "Homebrew",
@@ -215,7 +218,7 @@ func TestInstallPackageManagerReturnsErrorWithoutSupportedManager(t *testing.T) 
 func TestInstallToolPropagatesRunnerError(t *testing.T) {
 	cmdr := &mockCommander{runErr: errors.New("boom")}
 	plan := InstallPlan{
-		Tool:    Registry()[1],
+		Tool:    toolByBinary("rg"),
 		Label:   "Chocolatey",
 		Command: "choco install ripgrep",
 		Auto:    true,
@@ -386,6 +389,7 @@ func TestRegistryAssignsCategoryToEveryTool(t *testing.T) {
 	}
 
 	expectedCategories := map[string]ToolCategory{
+		"git":         ToolCategoryAgentDependency,
 		"gh":          ToolCategoryAgentDependency,
 		"jq":          ToolCategoryAgentDependency,
 		"rg":          ToolCategoryDeveloperTool,
@@ -403,6 +407,19 @@ func TestRegistryAssignsCategoryToEveryTool(t *testing.T) {
 		if tool.Category != category {
 			t.Fatalf("%s category = %q, want %q", binary, tool.Category, category)
 		}
+	}
+}
+
+func TestRegistryStartsWithRequiredGit(t *testing.T) {
+	tool := Registry()[0]
+	if tool.Binary != "git" {
+		t.Fatalf("Registry()[0].Binary = %q, want %q", tool.Binary, "git")
+	}
+	if !tool.Required {
+		t.Fatal("Registry()[0].Required = false, want true")
+	}
+	if tool.Category != ToolCategoryAgentDependency {
+		t.Fatalf("Registry()[0].Category = %q, want %q", tool.Category, ToolCategoryAgentDependency)
 	}
 }
 

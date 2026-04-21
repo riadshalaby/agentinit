@@ -20,7 +20,7 @@ Command expectations:
 
 | Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |
 | --- | --- | --- | --- | --- | --- |
-| T-001 | Add git as required tool in the interactive wizard | ready_for_implement | `aide init` fails with readable error when git is absent; git appears in scan output with required flag; README tool table includes git row | n/a | implement |
+| T-001 | Add git as required tool in the interactive wizard | done | `aide init` fails with readable error when git is absent; git appears in scan output with required flag; README tool table includes git row | `go fmt ./...`; `go vet ./...`; `go test ./...` | none |
 | T-002 | `aide pr` skips with warning when no remote configured | ready_for_implement | `aide pr` with no origin prints warning and exits 0; `--dry-run` unaffected; `aide cycle end` unchanged | n/a | implement |
 | T-003 | `aide update` runs tool checks after file refresh | ready_for_implement | `aide update` shows tool-scan and offers installs; file update behaviour unchanged; `aide init` path unchanged | n/a | implement |
 | T-004 | README PATH setup documentation after `go install` | ready_for_implement | Quick Start contains platform-specific PATH instructions for macOS/Linux and Windows; no other sections modified; scaffold template untouched | n/a | implement |
