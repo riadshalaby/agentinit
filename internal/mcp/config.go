@@ -25,9 +25,10 @@ type Config struct {
 }
 
 type RoleConfig struct {
-	Provider string `json:"agent,omitempty"`
-	Model    string `json:"model,omitempty"`
-	Effort   string `json:"effort,omitempty"`
+	Provider  string `json:"agent,omitempty"`
+	Model     string `json:"model,omitempty"`
+	Effort    string `json:"effort,omitempty"`
+	effortSet bool
 }
 
 type ProviderDefaults struct {
@@ -109,12 +110,22 @@ func (c Config) DefaultModelForRole(role, provider string) string {
 func (c Config) EffortForRoleAndProvider(role, provider string) string {
 	rc, ok := c.Roles[role]
 	if !ok {
-		return ""
+		return c.DefaultEffortForRole(role, provider)
 	}
 	if rc.Provider != "" && rc.Provider != provider {
 		return ""
 	}
-	return rc.Effort
+	if rc.effortSet || rc.Effort != "" {
+		return rc.Effort
+	}
+	return c.DefaultEffortForRole(role, provider)
+}
+
+func (c Config) DefaultEffortForRole(role, provider string) string {
+	if role == "implement" && provider == "codex" {
+		return "high"
+	}
+	return ""
 }
 
 func (c Config) validate() error {
@@ -125,6 +136,26 @@ func (c Config) validate() error {
 		if _, ok := validProviders[rc.Provider]; !ok {
 			return fmt.Errorf("invalid provider %q for role %q", rc.Provider, role)
 		}
+	}
+	return nil
+}
+
+func (rc *RoleConfig) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Provider string  `json:"agent,omitempty"`
+		Model    string  `json:"model,omitempty"`
+		Effort   *string `json:"effort"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	rc.Provider = aux.Provider
+	rc.Model = aux.Model
+	rc.effortSet = aux.Effort != nil
+	if aux.Effort != nil {
+		rc.Effort = *aux.Effort
+	} else {
+		rc.Effort = ""
 	}
 	return nil
 }

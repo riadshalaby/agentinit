@@ -20,11 +20,17 @@ func TestAdapterCodexStart(t *testing.T) {
 		Sandbox:       "workspace-write",
 		NetworkAccess: true,
 	})
-	adapter.exec = testCodexExec(t)
+	var gotArgs []string
+	adapter.exec = func(_ context.Context, args []string, stdin string, w io.Writer) error {
+		gotArgs = append([]string(nil), args...)
+		_, err := io.WriteString(w, "session id: test-session-abc\n")
+		return err
+	}
 
 	output, err := adapter.Start(context.Background(), session, StartOpts{
 		PromptFile: promptFile,
 		Model:      "gpt-5.4",
+		Effort:     "high",
 	})
 	if err != nil {
 		t.Fatalf("Start() error = %v", err)
@@ -34,6 +40,9 @@ func TestAdapterCodexStart(t *testing.T) {
 	}
 	if !strings.Contains(output, "session id: test-session-abc") {
 		t.Fatalf("Start() output = %q", output)
+	}
+	if !containsArg(gotArgs, `model_reasoning_effort="high"`) {
+		t.Fatalf("Start() args = %#v", gotArgs)
 	}
 }
 
@@ -47,7 +56,13 @@ func TestAdapterCodexRun(t *testing.T) {
 		},
 	}
 	adapter := NewCodexAdapter(t.TempDir(), CodexDefaults{NetworkAccess: true})
-	adapter.exec = testCodexExec(t)
+	adapter.effort = "high"
+	var gotArgs []string
+	adapter.exec = func(_ context.Context, args []string, stdin string, w io.Writer) error {
+		gotArgs = append([]string(nil), args...)
+		_, err := io.WriteString(w, "response: next_task T-004")
+		return err
+	}
 
 	var output strings.Builder
 	err := adapter.RunStream(context.Background(), session, "next_task T-004", RunOpts{Model: "gpt-5.4"}, &output)
@@ -56,6 +71,9 @@ func TestAdapterCodexRun(t *testing.T) {
 	}
 	if !strings.Contains(output.String(), "response: next_task T-004") {
 		t.Fatalf("RunStream() output = %q", output.String())
+	}
+	if !containsArg(gotArgs, `model_reasoning_effort="high"`) {
+		t.Fatalf("RunStream() args = %#v", gotArgs)
 	}
 }
 
@@ -238,4 +256,13 @@ func indexOf(items []string, target string) int {
 		}
 	}
 	return -1
+}
+
+func containsArg(items []string, target string) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }

@@ -95,6 +95,7 @@ func TestLaunchCodex(t *testing.T) {
 		Role:       "implement",
 		Agent:      "codex",
 		Model:      "gpt-5.4",
+		Effort:     "high",
 		PromptFile: "/repo/.ai/prompts/implementer.md",
 		RepoRoot:   "/repo",
 		ExtraArgs:  []string{"--dangerously-skip-permissions"},
@@ -107,6 +108,7 @@ func TestLaunchCodex(t *testing.T) {
 		"--sandbox", "workspace-write",
 		"-c", "sandbox_workspace_write.network_access=true",
 		"-m", "gpt-5.4",
+		"-c", `model_reasoning_effort="high"`,
 		"--dangerously-skip-permissions",
 		"prompt text",
 	}

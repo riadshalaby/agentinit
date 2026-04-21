@@ -46,8 +46,34 @@ func TestConfigLoadProjectTemplate(t *testing.T) {
 	if got := cfg.ModelForRoleAndProvider("implement", "codex"); got != "gpt-5.4" {
 		t.Fatalf("ModelForRoleAndProvider(implement, codex) = %q, want %q", got, "gpt-5.4")
 	}
+	if got := cfg.EffortForRoleAndProvider("implement", "codex"); got != "high" {
+		t.Fatalf("EffortForRoleAndProvider(implement, codex) = %q, want %q", got, "high")
+	}
 	if got := cfg.EffortForRoleAndProvider("review", "claude"); got != "medium" {
 		t.Fatalf("EffortForRoleAndProvider(review, claude) = %q, want %q", got, "medium")
+	}
+}
+
+func TestConfigLoadEmptyEffortDisablesImplementDefault(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	configDir := filepath.Join(tempDir, ".ai")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+
+	content := `{"roles":{"implement":{"agent":"codex","effort":""}}}`
+	if err := os.WriteFile(filepath.Join(configDir, "config.json"), []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile(config.json) error = %v", err)
+	}
+
+	cfg, err := LoadConfig(tempDir)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if got := cfg.EffortForRoleAndProvider("implement", "codex"); got != "" {
+		t.Fatalf("EffortForRoleAndProvider(implement, codex) = %q, want empty string", got)
 	}
 }
 
@@ -169,6 +195,15 @@ func TestDefaultModelForImplement(t *testing.T) {
 	}
 }
 
+func TestDefaultEffortForImplementCodex(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{}
+	if got := cfg.DefaultEffortForRole("implement", "codex"); got != "high" {
+		t.Fatalf("DefaultEffortForRole(implement, codex) = %q, want %q", got, "high")
+	}
+}
+
 func TestConfigEffortForRoleAndProvider(t *testing.T) {
 	t.Parallel()
 
@@ -186,6 +221,28 @@ func TestConfigEffortForRoleAndProvider(t *testing.T) {
 	}
 	if got := cfg.EffortForRoleAndProvider("implement", "claude"); got != "" {
 		t.Fatalf("EffortForRoleAndProvider(implement, claude) = %q, want empty string", got)
+	}
+}
+
+func TestConfigEffortDefaultsForImplementCodex(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{}
+	if got := cfg.EffortForRoleAndProvider("implement", "codex"); got != "high" {
+		t.Fatalf("EffortForRoleAndProvider(implement, codex) = %q, want %q", got, "high")
+	}
+}
+
+func TestConfigExplicitEmptyEffortOverridesDefault(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		Roles: map[string]RoleConfig{
+			"implement": {Provider: "codex", Effort: "", effortSet: true},
+		},
+	}
+	if got := cfg.EffortForRoleAndProvider("implement", "codex"); got != "" {
+		t.Fatalf("EffortForRoleAndProvider(implement, codex) = %q, want empty string", got)
 	}
 }
 

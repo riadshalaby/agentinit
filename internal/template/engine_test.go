@@ -316,6 +316,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"\"implement\": {",
 		"\"agent\": \"codex\"",
 		"\"model\": \"gpt-5.4\"",
+		"\"effort\": \"high\"",
 		"\"review\": {",
 		"\"model\": \"sonnet\"",
 		"\"effort\": \"medium\"",
