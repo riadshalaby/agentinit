@@ -42,6 +42,44 @@ Reviewed: 2026-04-21
 
 ---
 
+## Task: T-003 — `aide update` runs tool checks after file refresh
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-21
+
+#### Findings
+
+- **nit** — `cmd/update_test.go`: `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order only for the "has changes" code path. The no-changes path (tool check after "No managed files changed.") has no equivalent call-order assertion. The logic is trivially sequential and the existing stub tests cover nil-error behavior. No fix required.
+
+#### Verification
+
+##### Steps
+1. Read `internal/wizard/wizard.go` — confirmed `RunToolCheck` (public) delegates to `runToolCheck` (unexported), `run()` is simplified to `runToolCheck(cmdr, ui)` → `runScaffoldStep`, and the required-tool gate from T-001 is preserved inside `runToolCheck`. The extraction is clean and the public API matches the plan's specified signature.
+2. Read `cmd/update.go` — confirmed `runUpdateToolCheck` var-swap is introduced for testability; `runUpdateToolCheck(prereq.NewExecCommander())` is called at the end of both branches (no-changes: line 47, changes: line 55). Tool check always runs regardless of whether files changed.
+3. Read `cmd/update_test.go` diff — existing tests updated to stub `runUpdateToolCheck` (prevents real system calls); new `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order (`"update,toolcheck"`) and that output is already written before tool check runs.
+4. Read `internal/wizard/wizard_test.go` diff — three new `runToolCheck` unit tests: all-present (no prompts), missing optional (prompt shown), missing required (error returned with correct message). All match plan spec.
+5. Read README diff — existing `aide update` description extended in-place with one sentence about the post-refresh tool scan. No other sections modified.
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test ./...` — all packages pass.
+
+##### Findings
+- All checks pass; no failures or warnings.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-002 — `aide pr` skips with warning when no remote configured
 
 ### Review Round 1

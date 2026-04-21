@@ -96,3 +96,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | review |
 
 ---
+
+### T-002 — implement — 2026-04-21T15:42:19Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-002 into the final task commit after review passed and marked the task done |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, README.md, cmd/cycle.go, cmd/cycle_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./cmd` PASS; `go test ./...` PASS |
+| Commit | `b612770 fix(pr): skip aide pr when no remote is configured` |
+| Next Role | none |
+
+---
+
+### T-003 — review — 2026-04-21T16:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-003: RunToolCheck extraction and aide update integration; all acceptance criteria met, all tests pass |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-21T15:46:42Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Reused the wizard tool-check flow from `aide update` so refresh now runs prerequisite scanning and install offers |
+| Files Changed | .ai/TASKS.md, README.md, cmd/update.go, cmd/update_test.go, internal/wizard/wizard.go, internal/wizard/wizard_test.go |
+| Validation | `go fmt ./...` PASS; `go test ./cmd` PASS; `go test ./internal/wizard` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `8d02a89 feat(update): run tool checks after refreshing files` |
+| Next Role | review |
+
+---

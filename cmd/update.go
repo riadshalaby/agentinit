@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/riadshalaby/agentinit/internal/prereq"
 	updater "github.com/riadshalaby/agentinit/internal/update"
+	"github.com/riadshalaby/agentinit/internal/wizard"
 	"github.com/spf13/cobra"
 )
 
 var (
-	updateTargetDir string
-	updateDryRun    bool
-	runUpdate       = updater.Run
+	updateTargetDir    string
+	updateDryRun       bool
+	runUpdate          = updater.Run
+	runUpdateToolCheck = wizard.RunToolCheck
 )
 
 var updateCmd = &cobra.Command{
@@ -38,7 +41,10 @@ var updateCmd = &cobra.Command{
 			} else {
 				_, err = fmt.Fprintln(cliOutput, "No managed files changed.")
 			}
-			return err
+			if err != nil {
+				return err
+			}
+			return runUpdateToolCheck(prereq.NewExecCommander())
 		}
 
 		for _, change := range result.Changes {
@@ -46,7 +52,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		}
-		return nil
+		return runUpdateToolCheck(prereq.NewExecCommander())
 	},
 }
 

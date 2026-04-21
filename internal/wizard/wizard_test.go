@@ -507,6 +507,79 @@ func TestRunFailsWhenRequiredGitRemainsMissing(t *testing.T) {
 	}
 }
 
+func TestRunToolCheckSkipsInstallPromptsWhenAllToolsPresent(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS:      prereq.Linux,
+			Results: nil,
+		}
+	}
+
+	ui := &fakeUI{}
+	err := runToolCheck((&prereqTestCommander{}), ui)
+	if err != nil {
+		t.Fatalf("runToolCheck() error = %v", err)
+	}
+	if len(ui.confirmCalls) != 0 {
+		t.Fatalf("confirm calls = %+v, want none", ui.confirmCalls)
+	}
+	if len(ui.notes) != 1 || ui.notes[0].title != "Checking your system..." {
+		t.Fatalf("notes = %+v, want only scan note", ui.notes)
+	}
+}
+
+func TestRunToolCheckShowsPromptForMissingOptionalTool(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS:      prereq.Linux,
+			Results: missingResultsFor("claude"),
+		}
+	}
+
+	ui := &fakeUI{
+		confirmValues: []bool{false},
+	}
+	err := runToolCheck((&prereqTestCommander{}), ui)
+	if err != nil {
+		t.Fatalf("runToolCheck() error = %v", err)
+	}
+	if len(ui.confirmCalls) != 1 || ui.confirmCalls[0].title != "Install missing tools?" {
+		t.Fatalf("confirm calls = %+v, want install prompt", ui.confirmCalls)
+	}
+}
+
+func TestRunToolCheckFailsWhenRequiredToolRemainsMissing(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS:      prereq.Linux,
+			Results: missingResultsFor("git"),
+		}
+	}
+
+	ui := &fakeUI{
+		confirmValues: []bool{true},
+	}
+	err := runToolCheck((&prereqTestCommander{}), ui)
+	if err == nil {
+		t.Fatal("runToolCheck() error = nil, want missing required git error")
+	}
+	if got, want := err.Error(), "Git is required but not installed; install it manually: https://git-scm.com/downloads"; got != want {
+		t.Fatalf("runToolCheck() error = %q, want %q", got, want)
+	}
+}
+
 func TestRunUsesCollectedProjectSettings(t *testing.T) {
 	dir := t.TempDir()
 	ui := &fakeUI{
