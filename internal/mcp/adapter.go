@@ -10,7 +10,7 @@ import (
 type StartOpts struct {
 	PromptFile string        // path to role prompt file (required)
 	Model      string        // provider-specific model string (optional)
-	Effort     string        // claude: --effort value (optional)
+	Effort     string        // provider-specific reasoning-effort value (optional)
 	Timeout    time.Duration // 0 means no timeout
 }
 

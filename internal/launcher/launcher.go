@@ -51,6 +51,9 @@ func Launch(opts RoleLaunchOpts) error {
 		if opts.Model != "" {
 			args = append(args, "-m", opts.Model)
 		}
+		if opts.Effort != "" {
+			args = append(args, "-c", fmt.Sprintf("model_reasoning_effort=%q", opts.Effort))
+		}
 		args = append(args, opts.ExtraArgs...)
 		args = append(args, string(prompt))
 		return runProcess("codex", args, opts.RepoRoot, os.Stdin, os.Stdout, os.Stderr)

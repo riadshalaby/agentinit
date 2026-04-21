@@ -19,6 +19,7 @@ type CodexAdapter struct {
 	cwd     string
 	sandbox string
 	network bool
+	effort  string
 	exec    codexExecFunc
 }
 
@@ -38,12 +39,16 @@ func (a *CodexAdapter) Start(ctx context.Context, session *Session, opts StartOp
 		return "", err
 	}
 
+	a.effort = opts.Effort
 	args := []string{"exec", "--sandbox", a.sandbox}
 	if a.network {
 		args = append(args, "-c", fmt.Sprintf("sandbox_%s.network_access=true", strings.ReplaceAll(a.sandbox, "-", "_")))
 	}
 	if opts.Model != "" {
 		args = append(args, "-m", opts.Model)
+	}
+	if a.effort != "" {
+		args = append(args, "-c", fmt.Sprintf("model_reasoning_effort=%q", a.effort))
 	}
 	args = append(args, prompt)
 
@@ -67,6 +72,9 @@ func (a *CodexAdapter) RunStream(ctx context.Context, session *Session, command 
 	}
 	if opts.Model != "" {
 		args = append(args, "-m", opts.Model)
+	}
+	if a.effort != "" {
+		args = append(args, "-c", fmt.Sprintf("model_reasoning_effort=%q", a.effort))
 	}
 	args = append(args, command)
 

@@ -58,7 +58,7 @@ func TestImplementCommandUsesConfiguredAgentAndModel(t *testing.T) {
 		Role:       "implement",
 		Agent:      "codex",
 		Model:      "gpt-5.4",
-		Effort:     "",
+		Effort:     "high",
 		PromptFile: "/repo/.ai/prompts/implementer.md",
 		RepoRoot:   "/repo",
 	})

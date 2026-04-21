@@ -172,3 +172,54 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | review |
 
 ---
+
+### T-004 — implement — 2026-04-21T16:05:44Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-004 into the final task commit after review passed and marked the task done |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, README.md |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `6b188e5 docs(readme): add PATH setup after go install` |
+| Next Role | none |
+
+---
+
+### T-005 — review — 2026-04-21T16:45:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-005: Codex reasoning effort wired through launcher, MCP adapter, and config with high default for implementer; all acceptance criteria met, all tests pass |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-005 — implement — 2026-04-21T17:18:59Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Enabled configurable Codex reasoning effort with a default of `high` for the implementer role |
+| Files Changed | .ai/TASKS.md, README.md, cmd/launch_test.go, internal/launcher/launcher.go, internal/launcher/launcher_test.go, internal/mcp/adapter.go, internal/mcp/adapter_codex.go, internal/mcp/adapter_test.go, internal/mcp/config.go, internal/mcp/config_test.go, internal/mcp/manager_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `8bb7278 feat(config): default codex implementer effort to high` |
+| Next Role | review |
+
+---
+
+### T-005 — implement — 2026-04-21T17:32:13Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Squashed T-005 into the final task commit after review passed and marked the task done |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, README.md, cmd/launch_test.go, internal/launcher/launcher.go, internal/launcher/launcher_test.go, internal/mcp/adapter.go, internal/mcp/adapter_codex.go, internal/mcp/adapter_test.go, internal/mcp/config.go, internal/mcp/config_test.go, internal/mcp/manager_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./...` PASS |
+| Commit | `bd47f85 feat(config): default codex implementer effort to high` |
+| Next Role | none |
+
+---

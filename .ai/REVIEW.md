@@ -80,6 +80,51 @@ Reviewed: 2026-04-21
 
 ---
 
+## Task: T-005 — Codex reasoning effort configurable with "high" default for implementer
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-21
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. **`internal/launcher/launcher.go`** — confirmed Codex case appends `-c model_reasoning_effort="high"` (using `%q` format) when `opts.Effort != ""`. Claude case already had `--effort` support; unchanged.
+2. **`internal/mcp/adapter_codex.go`** — confirmed `effort string` field added; `Start` assigns `a.effort = opts.Effort` and appends the flag when non-empty; `RunStream` reads `a.effort` and appends same flag. Same `%q` format as launcher.
+3. **`internal/mcp/config.go`** — confirmed `DefaultEffortForRole` returns `"high"` for `implement+codex`, `""` otherwise. `EffortForRoleAndProvider` calls it as fallback. Custom `UnmarshalJSON` uses pointer `*string` to detect presence of `effort` key and sets `effortSet bool` — correctly distinguishes explicit `""` from absent key.
+4. **`internal/template/templates/base/ai/config.json.tmpl`** diff — only the implement role received `"effort": "high"`; plan and review roles were pre-existing with `"effort": "medium"`.
+5. **`README.md`** — two "agent/model" references updated to "agent/model/effort"; two lines added explaining Codex effort flag mapping and implementer default.
+6. **`internal/mcp/adapter.go`** — `Effort` field comment updated from "claude:" to "provider-specific".
+7. **`cmd/launch_test.go`** — `TestImplementCommandUsesConfiguredAgentAndModel` updated: expected `Effort` changed from `""` to `"high"`, confirming the default flows end-to-end from config through launcher.
+8. **`internal/launcher/launcher_test.go`** — `TestLaunchCodex` asserts `-c model_reasoning_effort="high"` present in Codex args.
+9. **`internal/mcp/adapter_test.go`** — `TestAdapterCodexStart` and `TestAdapterCodexRun` both assert `model_reasoning_effort="high"` in args.
+10. **`internal/mcp/config_test.go`** — four new tests: `TestDefaultEffortForImplementCodex`, `TestConfigEffortDefaultsForImplementCodex`, `TestConfigExplicitEmptyEffortOverridesDefault`, `TestConfigLoadEmptyEffortDisablesImplementDefault`. All critical override paths covered, including the `effortSet` sentinel for explicit empty-string.
+11. **`internal/mcp/manager_test.go`** — `TestManagerStartSession` updated to expect `effort = "high"` instead of `""`.
+12. **`internal/template/engine_test.go`** — scaffold output assertion includes `"effort": "high"` for the implement section.
+13. Ran `go fmt ./...` — clean.
+14. Ran `go vet ./...` — clean.
+15. Ran `go test ./...` — all packages pass.
+
+##### Findings
+- All checks pass; no failures or warnings.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-004 — README PATH setup documentation after `go install`
 
 ### Review Round 1

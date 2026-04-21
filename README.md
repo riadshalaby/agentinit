@@ -73,11 +73,13 @@ aide plan          # terminal 1
 aide implement     # terminal 2
 aide review        # terminal 3
 
-# Role launchers read default agent/model settings from .ai/config.json.
+# Role launchers read default agent/model/effort settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
 # Example: aide review claude --model sonnet
 # Claude starts interactively by default, and the Codex launcher uses
 # interactive `codex` mode so the session stays open for role commands.
+# For Codex roles, `effort` maps to `-c model_reasoning_effort=...`.
+# The implementer defaults to `high` unless `.ai/config.json` sets `effort` explicitly.
 
 # Or start the PO orchestrator for auto mode
 aide po
@@ -330,7 +332,7 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `.ai/TASKS.md` | Task board with status per task | yes |
 | `.ai/REVIEW.md` | Review findings written by the reviewer | yes (tracked cycle log) |
 | `.ai/HANDOFF.md` | Runtime handoff log between roles | yes (tracked cycle log) |
-| `.ai/config.json` | Per-role agent/model settings plus provider defaults for role launchers and MCP sessions | yes |
+| `.ai/config.json` | Per-role agent/model/effort settings plus provider defaults for role launchers and MCP sessions | yes |
 | `.ai/prompts/` | System prompts for each role | yes |
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |

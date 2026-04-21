@@ -29,8 +29,8 @@ func TestManagerStartSession(t *testing.T) {
 	if adapter.startOpts.Model != "gpt-5.4" {
 		t.Fatalf("StartSession() model = %q, want %q", adapter.startOpts.Model, "gpt-5.4")
 	}
-	if adapter.startOpts.Effort != "" {
-		t.Fatalf("StartSession() effort = %q, want empty string", adapter.startOpts.Effort)
+	if adapter.startOpts.Effort != "high" {
+		t.Fatalf("StartSession() effort = %q, want %q", adapter.startOpts.Effort, "high")
 	}
 
 	list, err := manager.ListSessions()
