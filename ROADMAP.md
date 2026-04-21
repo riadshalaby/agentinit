@@ -1,4 +1,4 @@
-# ROADMAP
+# ROADMAP v0.8.2
 
 Goal: improve out-of-the-box installation experience by detecting git in the wizard and documenting the PATH setup after `go install`.
 
