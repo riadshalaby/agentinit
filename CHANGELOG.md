@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.8.2](https://github.com/riadshalaby/agentinit/compare/v0.8.1...v0.8.2) (2026-04-21)
+
+
+### chore
+
+* **ai:** close cycle ([ec1f3e9](https://github.com/riadshalaby/agentinit/commit/ec1f3e922c30ea280fca563af05cf922d0238c6b))
+
+
+### Features
+
+* **config:** default codex implementer effort to high ([289e8bf](https://github.com/riadshalaby/agentinit/commit/289e8bf8ffaece6a554ad44013e52aff46d6b34e))
+* **update:** run tool checks after refreshing files ([b8c2c7e](https://github.com/riadshalaby/agentinit/commit/b8c2c7e0416d031f29ed3576b8cf286bddc17945))
+* **wizard:** require git before scaffolding ([4db640e](https://github.com/riadshalaby/agentinit/commit/4db640ee7eaca75a6c2db8911fa49feb9b777c55))
+
+
+### Bug Fixes
+
+* **pr:** skip aide pr when no remote is configured ([86771da](https://github.com/riadshalaby/agentinit/commit/86771daffcbb59828b6312d107408226e8371e36))
+
+
+### Documentation
+
+* **readme:** add PATH setup after go install ([5833bd7](https://github.com/riadshalaby/agentinit/commit/5833bd762673322f8582692b0faf92ccd1d64591))
+
 ## [0.8.1](https://github.com/riadshalaby/agentinit/compare/v0.8.0...v0.8.1) (2026-04-18)
 
 
