@@ -419,6 +419,40 @@ func TestPRCommandCreatesPRWhenNoneExists(t *testing.T) {
 	}
 }
 
+func TestPRCommandSkipsWhenNoRemoteConfigured(t *testing.T) {
+	repo := t.TempDir()
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	prBaseBranch = "main"
+	prTitle = ""
+	prDryRun = false
+	var output bytes.Buffer
+	cliOutput = &output
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git rev-parse --abbrev-ref HEAD": {stdout: "feature/no-remote\n"},
+			"git remote get-url origin":       {err: commandError("missing remote")},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := prCmd.RunE(prCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	if len(runner.runCalls) != 0 {
+		t.Fatalf("run calls = %#v, want none", runner.runCalls)
+	}
+	if got := output.String(); got != "no remote configured — skipping PR\n" {
+		t.Fatalf("output = %q", got)
+	}
+}
+
 func stubCycleEnvironment(t *testing.T) func() {
 	t.Helper()
 

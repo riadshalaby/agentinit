@@ -259,6 +259,7 @@ Before `start_plan`, freeform conversation with the planner is the roadmap-refin
 
 Cross-platform CLI equivalents:
 `aide cycle end [VERSION]` closes the cycle outside the persistent role session, and `aide pr [--dry-run]` creates or updates the branch PR.
+If no GitHub remote is configured, `aide pr` prints `no remote configured — skipping PR` and exits successfully.
 
 **Reviewer**
 

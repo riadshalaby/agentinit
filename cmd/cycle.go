@@ -313,7 +313,8 @@ func runPRSync(ctx context.Context, repoRoot string, opts prSyncOptions) error {
 
 	remoteURL, hasRemote := cycleRemoteURL(ctx)
 	if !opts.DryRun && (!hasRemote || !isGitHubRemote(remoteURL)) {
-		return fmt.Errorf("no GitHub remote detected")
+		_, err := fmt.Fprintln(cliOutput, "no remote configured — skipping PR")
+		return err
 	}
 	if hasRemote {
 		_ = cycleRunCommand(ctx, "git", "fetch", "origin", opts.BaseBranch)
