@@ -22,3 +22,76 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | plan \| implement \| review \| none |
 
 ---
+
+### T-001..T-004 — plan — 2026-04-21T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned four tasks: po.md template drift fix, reviewer template fix, implementer template + AGENTS.md fix, self-update idempotency guard |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md` |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-21T20:46:43Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Synced the `po.md` template to the current live prompt so MCP polling uses `session_status` plus `session_get_result`. |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `git diff --no-index -- internal/template/templates/base/ai/prompts/po.md.tmpl .ai/prompts/po.md` (pass: no diff) |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-21T20:55:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-001 template changes — content correct but missing WIP commit and `go test ./...` fails due to stale engine_test.go assertions. |
+| Verdict | FAIL |
+| Blocking Findings | 1. No WIP commit made by implementer — `commit_task` cannot squash; 2. `TestRenderAllBaseOnly` fails on two stale po.md phrase assertions removed by T-001 |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-21T21:02:55Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the review findings by fixing the stale PO prompt assertions, rerunning validations, and preparing T-001 for review again. |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `5c5f216 fix(prompts): address T-001 review findings` |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-21T21:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review passed — WIP commit exists, all 7 plan changes verified, `go test ./...` clean. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-21T21:09:30Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-001 by folding the WIP commit and task artifacts into the release-note-ready task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `ROADMAP.md`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/po.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): align PO template with current MCP polling flow` |
+| Next Role | none |
+
+---
