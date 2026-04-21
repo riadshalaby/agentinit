@@ -145,6 +145,7 @@ The wizard checks these tools:
 
 | Tool | Required | Install Path |
 |------|----------|--------------|
+| Git (`git`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
 | GitHub CLI (`gh`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
 | ripgrep (`rg`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
 | fd (`fd`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |
@@ -155,11 +156,11 @@ The wizard checks these tools:
 
 Platform behavior:
 
-- **macOS**: prefers Homebrew and can offer to install Homebrew first if it is missing. `gh`, `rg`, `fd`, `bat`, `jq`, Claude, and Codex all install through Homebrew when available.
-- **Windows**: prefers Chocolatey for `gh`, `rg`, `fd`, `bat`, and `jq`, but Claude and Codex use their own Windows install paths. Claude uses the official `install.cmd` flow, and Codex uses `npm install -g @openai/codex` only when `npm` is available.
+- **macOS**: prefers Homebrew and can offer to install Homebrew first if it is missing. `git`, `gh`, `rg`, `fd`, `bat`, `jq`, Claude, and Codex all install through Homebrew when available.
+- **Windows**: prefers Chocolatey for `git`, `gh`, `rg`, `fd`, `bat`, and `jq`, but Claude and Codex use their own Windows install paths. Claude uses the official `install.cmd` flow, and Codex uses `npm install -g @openai/codex` only when `npm` is available.
 - **Linux**: does not assume a package manager; the wizard shows official install URLs instead.
 
-The wizard lets you skip all installs and scaffold the project immediately, or confirm installs one tool at a time. Required tools default to install, optional tools default to skip. If you decline Homebrew on macOS, all Homebrew-backed tools fall back to manual links. If you decline Chocolatey on Windows, `gh`, `rg`, `fd`, `bat`, and `jq` fall back; Claude and Codex still use their Windows-specific install flows when available.
+The wizard lets you skip install attempts or confirm installs one tool at a time. Required tools default to install and must be present before scaffolding continues; optional tools default to skip. If you decline Homebrew on macOS, all Homebrew-backed tools fall back to manual links. If you decline Chocolatey on Windows, `git`, `gh`, `rg`, `fd`, `bat`, and `jq` fall back; Claude and Codex still use their Windows-specific install flows when available.
 
 ### Examples
 

@@ -59,7 +59,7 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 	scanPrereqs = func(prereq.Commander) prereq.Report {
 		return prereq.Report{
 			OS:      prereq.Linux,
-			Results: missingResultsFor("gh", "rg"),
+			Results: missingResultsFor("claude", "fzf"),
 		}
 	}
 
@@ -95,8 +95,8 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 	}
 	scan := ui.notes[0]
 	for _, heading := range []string{
-		"Agent dependencies:",
 		"Developer tools:",
+		"Agent runtimes:",
 	} {
 		if !strings.Contains(scan.body, heading) {
 			t.Fatalf("scan note = %q, want heading %q", scan.body, heading)
@@ -121,7 +121,7 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 				Installed:      false,
 				SelfInstallCmd: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`,
 			},
-			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex", "sg", "fzf", "tree-sitter"),
+			Results: missingResultsFor("claude", "codex", "sg", "fzf", "tree-sitter"),
 		}
 	}
 
@@ -155,7 +155,6 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 	}
 	manual := ui.notes[len(ui.notes)-2]
 	for _, heading := range []string{
-		"Agent dependencies:",
 		"Developer tools:",
 		"Recommended for both agents and developers:",
 		"Agent runtimes:",
@@ -163,21 +162,6 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 		if !strings.Contains(manual.body, heading) {
 			t.Fatalf("manual install note = %q, want heading %q", manual.body, heading)
 		}
-	}
-	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") {
-		t.Fatalf("manual install note = %q, want GitHub CLI URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
-		t.Fatalf("manual install note = %q, want ripgrep URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") {
-		t.Fatalf("manual install note = %q, want fd URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") {
-		t.Fatalf("manual install note = %q, want bat URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") {
-		t.Fatalf("manual install note = %q, want jq URL", manual.body)
 	}
 	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") {
 		t.Fatalf("manual install note = %q, want Claude URL", manual.body)
@@ -204,20 +188,26 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 	t.Cleanup(func() {
 		scanPrereqs = originalScan
 	})
+	scanCalls := 0
 	scanPrereqs = func(prereq.Commander) prereq.Report {
+		scanCalls++
+		results := missingResultsFor("git", "gh", "rg", "fd", "bat", "jq", "claude", "codex", "sg", "fzf", "tree-sitter")
+		if scanCalls > 1 {
+			results = missingResultsFor("claude", "codex", "sg", "fzf", "tree-sitter")
+		}
 		return prereq.Report{
 			OS: prereq.Darwin,
 			PackageManager: prereq.PackageManager{
 				Name:      "brew",
 				Installed: true,
 			},
-			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex", "sg", "fzf", "tree-sitter"),
+			Results: results,
 		}
 	}
 
 	dir := t.TempDir()
 	ui := &fakeUI{
-		confirmValues: []bool{true, true, true, true, false, false, false, false, false, false, false},
+		confirmValues: []bool{true, true, true, true, true, true, true, false, false, false, false, false},
 		settings: projectSettings{
 			Name:        "demo",
 			ProjectType: "go",
@@ -248,50 +238,58 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if len(ui.confirmCalls) != 11 {
-		t.Fatalf("confirm calls = %+v, want install gate plus ten tool prompts", ui.confirmCalls)
+	if len(ui.confirmCalls) != 12 {
+		t.Fatalf("confirm calls = %+v, want install gate plus eleven tool prompts", ui.confirmCalls)
 	}
-	if ui.confirmCalls[1].title != "Install GitHub CLI via Homebrew?" {
+	if ui.confirmCalls[1].title != "Install Git via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[1])
 	}
-	if ui.confirmCalls[3].title != "Install fd via Homebrew?" {
-		t.Fatalf("prompt = %+v", ui.confirmCalls[3])
+	if ui.confirmCalls[2].title != "Install GitHub CLI via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[2])
 	}
-	if ui.confirmCalls[4].title != "Install bat via Homebrew?" {
+	if ui.confirmCalls[4].title != "Install fd via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[4])
 	}
-	if ui.confirmCalls[5].title != "Install jq via Homebrew?" {
+	if ui.confirmCalls[5].title != "Install bat via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[5])
 	}
-	if len(installs) != 3 {
-		t.Fatalf("install calls = %v, want 3", installs)
-	}
-	if installs[0] != "brew install gh" || installs[1] != "brew install ripgrep" || installs[2] != "brew install fd" {
-		t.Fatalf("installs = %v", installs)
-	}
-	if ui.confirmCalls[6].title != "Install Claude via Homebrew?" {
+	if ui.confirmCalls[6].title != "Install jq via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[6])
 	}
-	if ui.confirmCalls[7].title != "Install Codex via Homebrew?" {
+	if len(installs) != 6 {
+		t.Fatalf("install calls = %v, want 6", installs)
+	}
+	if installs[0] != "brew install git" ||
+		installs[1] != "brew install gh" ||
+		installs[2] != "brew install ripgrep" ||
+		installs[3] != "brew install fd" ||
+		installs[4] != "brew install bat" ||
+		installs[5] != "brew install jq" {
+		t.Fatalf("installs = %v", installs)
+	}
+	if ui.confirmCalls[7].title != "Install Claude via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[7])
 	}
-	if ui.confirmCalls[8].title != "Install ast-grep via Homebrew?" {
+	if ui.confirmCalls[8].title != "Install Codex via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[8])
 	}
-	if ui.confirmCalls[9].title != "Install fzf via Homebrew?" {
+	if ui.confirmCalls[9].title != "Install ast-grep via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[9])
 	}
-	if ui.confirmCalls[10].title != "Install tree-sitter CLI via Homebrew?" {
+	if ui.confirmCalls[10].title != "Install fzf via Homebrew?" {
 		t.Fatalf("prompt = %+v", ui.confirmCalls[10])
 	}
-	if ui.confirmCalls[8].affirmative {
-		t.Fatalf("prompt = %+v, optional tool should default to skip", ui.confirmCalls[8])
+	if ui.confirmCalls[11].title != "Install tree-sitter CLI via Homebrew?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[11])
 	}
 	if ui.confirmCalls[9].affirmative {
 		t.Fatalf("prompt = %+v, optional tool should default to skip", ui.confirmCalls[9])
 	}
 	if ui.confirmCalls[10].affirmative {
 		t.Fatalf("prompt = %+v, optional tool should default to skip", ui.confirmCalls[10])
+	}
+	if ui.confirmCalls[11].affirmative {
+		t.Fatalf("prompt = %+v, optional tool should default to skip", ui.confirmCalls[11])
 	}
 	final := ui.notes[len(ui.notes)-1]
 	if final.title != "Project scaffold complete!" {
@@ -314,13 +312,13 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 				Name:      "choco",
 				Installed: false,
 			},
-			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex", "sg", "fzf", "tree-sitter"),
+			Results: missingResultsFor("claude", "codex"),
 		}
 	}
 
 	dir := t.TempDir()
 	ui := &fakeUI{
-		confirmValues: []bool{true, false, true},
+		confirmValues: []bool{true, true},
 		settings: projectSettings{
 			Name:      "demo",
 			TargetDir: dir,
@@ -352,42 +350,21 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if len(ui.confirmCalls) != 3 {
+	if len(ui.confirmCalls) != 2 {
 		t.Fatalf("confirm calls = %+v", ui.confirmCalls)
 	}
-	if ui.confirmCalls[2].title != "Install Claude via installer?" {
-		t.Fatalf("prompt = %+v", ui.confirmCalls[2])
+	if ui.confirmCalls[1].title != "Install Claude via installer?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[1])
 	}
 	if len(installs) != 1 || !strings.Contains(installs[0], "curl -fsSL https://claude.ai/install.cmd") {
 		t.Fatalf("installs = %v", installs)
 	}
 	manual := ui.notes[len(ui.notes)-2]
-	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") {
-		t.Fatalf("manual install note = %q", manual.body)
-	}
-	if !strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") {
-		t.Fatalf("manual install note = %q", manual.body)
-	}
-	if !strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") {
-		t.Fatalf("manual install note = %q", manual.body)
-	}
-	if !strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") {
-		t.Fatalf("manual install note = %q", manual.body)
-	}
-	if !strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") {
-		t.Fatalf("manual install note = %q", manual.body)
-	}
 	if !strings.Contains(manual.body, "Codex: https://github.com/openai/codex") {
 		t.Fatalf("manual install note = %q", manual.body)
 	}
-	if !strings.Contains(manual.body, "ast-grep: https://ast-grep.github.io/guide/quick-start.html") {
-		t.Fatalf("manual install note = %q, want ast-grep URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") {
-		t.Fatalf("manual install note = %q, want fzf URL", manual.body)
-	}
-	if !strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
-		t.Fatalf("manual install note = %q, want tree-sitter URL", manual.body)
+	if !strings.Contains(manual.body, "Agent runtimes:") {
+		t.Fatalf("manual install note = %q", manual.body)
 	}
 }
 
@@ -403,13 +380,13 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 				Name:      "choco",
 				Installed: true,
 			},
-			Results: missingResultsFor("gh", "rg", "claude", "codex"),
+			Results: missingResultsFor("claude", "codex"),
 		}
 	}
 
 	dir := t.TempDir()
 	ui := &fakeUI{
-		confirmValues: []bool{true, false, false, false, true},
+		confirmValues: []bool{true, false, true},
 		settings: projectSettings{
 			Name:      "demo",
 			TargetDir: dir,
@@ -437,8 +414,8 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 
-	if ui.confirmCalls[4].title != "Install Codex via npm?" {
-		t.Fatalf("prompt = %+v", ui.confirmCalls[4])
+	if ui.confirmCalls[2].title != "Install Codex via npm?" {
+		t.Fatalf("prompt = %+v", ui.confirmCalls[2])
 	}
 	if len(installs) != 1 || installs[0] != "npm install -g @openai/codex" {
 		t.Fatalf("installs = %v", installs)
@@ -453,7 +430,7 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 	scanPrereqs = func(prereq.Commander) prereq.Report {
 		return prereq.Report{
 			OS:      prereq.Linux,
-			Results: missingResultsFor("gh", "rg", "fd", "bat", "jq", "claude", "codex", "sg", "fzf", "tree-sitter"),
+			Results: missingResultsFor("claude", "codex", "sg", "fzf", "tree-sitter"),
 		}
 	}
 
@@ -483,17 +460,50 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 	}
 
 	manual := ui.notes[len(ui.notes)-2]
-	if !strings.Contains(manual.body, "GitHub CLI: https://cli.github.com") ||
-		!strings.Contains(manual.body, "ripgrep: https://github.com/BurntSushi/ripgrep#installation") ||
-		!strings.Contains(manual.body, "fd: https://github.com/sharkdp/fd#installation") ||
-		!strings.Contains(manual.body, "bat: https://github.com/sharkdp/bat#installation") ||
-		!strings.Contains(manual.body, "jq: https://jqlang.github.io/jq/download/") ||
-		!strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") ||
+	if !strings.Contains(manual.body, "Claude: https://docs.anthropic.com/en/docs/claude-code") ||
 		!strings.Contains(manual.body, "Codex: https://github.com/openai/codex") ||
 		!strings.Contains(manual.body, "ast-grep: https://ast-grep.github.io/guide/quick-start.html") ||
 		!strings.Contains(manual.body, "fzf: https://github.com/junegunn/fzf#installation") ||
 		!strings.Contains(manual.body, "tree-sitter CLI: https://github.com/tree-sitter/tree-sitter/blob/master/cli/README.md") {
 		t.Fatalf("manual install note = %q", manual.body)
+	}
+}
+
+func TestRunFailsWhenRequiredGitRemainsMissing(t *testing.T) {
+	originalScan := scanPrereqs
+	t.Cleanup(func() {
+		scanPrereqs = originalScan
+	})
+	scanPrereqs = func(prereq.Commander) prereq.Report {
+		return prereq.Report{
+			OS:      prereq.Linux,
+			Results: missingResultsFor("git"),
+		}
+	}
+
+	dir := t.TempDir()
+	ui := &fakeUI{
+		confirmValues: []bool{true},
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   true,
+		},
+	}
+
+	scaffoldCalled := false
+	err := run((&prereqTestCommander{}), ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+		scaffoldCalled = true
+		return scaffold.Result{}, nil
+	})
+	if err == nil {
+		t.Fatal("run() error = nil, want missing required git error")
+	}
+	if got, want := err.Error(), "Git is required but not installed; install it manually: https://git-scm.com/downloads"; got != want {
+		t.Fatalf("run() error = %q, want %q", got, want)
+	}
+	if scaffoldCalled {
+		t.Fatal("scaffoldFn was called, want it to be skipped")
 	}
 }
 

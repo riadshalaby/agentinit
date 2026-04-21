@@ -2,22 +2,35 @@
 
 Shared review log for the current cycle. Append a new task section when review starts for a new task. Within a task, append a new review round instead of replacing prior history.
 
-## Task: T-XXX
+---
+
+## Task: T-001 — Add git as required tool in the interactive wizard
 
 ### Review Round 1
 
-Status: **pending**
+Status: **PASS**
 
-Reviewed: YYYY-MM-DD
+Reviewed: 2026-04-21
 
 #### Findings
-- Pending review.
+
+- **nit** — `internal/wizard/wizard.go` lines 112–117: The post-install gate always executes a second `scanPrereqs` call unconditionally, even when `missing` was empty on the first scan (i.e., all tools were already present). On a clean system this adds an unnecessary second scan. Not a correctness issue; the plan did not call for guarding this. No fix required.
 
 #### Verification
+
 ##### Steps
-- Pending verification.
+1. Read `internal/prereq/tool.go` — confirmed git is the first entry in `Registry()`, `Required: true`, `Category: ToolCategoryAgentDependency`, `brew`/`choco` package installs present, `OSInstalls[Windows]` has label only (no `Command`, so `Auto` resolves false and fallback URL is shown), `FallbackURL: "https://git-scm.com/downloads"`.
+2. Read `internal/wizard/wizard.go` — confirmed post-install gate (lines 112–117) is placed *outside* the `if len(missing) > 0` block, so it fires whether the user declined installs or installations failed.
+3. Read `internal/prereq/prereq_test.go` — confirmed `TestRegistryStartsWithRequiredGit` (position 0, Required true, correct category) and `TestScanDetectsPackageManagerAndTools` covers git detection.
+4. Read `internal/wizard/wizard_test.go` — confirmed `TestRunFailsWhenRequiredGitRemainsMissing` asserts non-nil error with correct message and that `scaffoldFn` is never called.
+5. Read `README.md` — confirmed git row is first data row in the Tool Detection and Installation table: `| Git (\`git\`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |`
+6. Ran `go fmt ./...` — clean (no output).
+7. Ran `go vet ./...` — clean.
+8. Ran `go test ./...` — all packages pass.
+
 ##### Findings
-- None.
+- All checks pass; no failures or warnings.
+
 ##### Risks
 - None.
 
@@ -25,4 +38,4 @@ Reviewed: YYYY-MM-DD
 - None.
 
 #### Verdict
-`PENDING`
+`PASS`

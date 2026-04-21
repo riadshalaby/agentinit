@@ -52,7 +52,7 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 
 	missing := missingResults(report.Results)
 	if len(missing) > 0 {
-		installMissing, err := ui.Confirm("Install missing tools?", "You can skip installs and scaffold the project immediately.", true)
+		installMissing, err := ui.Confirm("Install missing tools?", "You can skip install attempts, but required tools must be present before scaffolding continues.", true)
 		if err != nil {
 			return err
 		}
@@ -106,6 +106,13 @@ func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, project
 			if err := showManualInstallURLs(ui, manual); err != nil {
 				return err
 			}
+		}
+	}
+
+	afterInstall := scanPrereqs(cmdr)
+	for _, result := range afterInstall.Results {
+		if result.Tool.Required && !result.Installed {
+			return fmt.Errorf("%s is required but not installed; install it manually: %s", result.Tool.Name, result.Tool.FallbackURL)
 		}
 	}
 

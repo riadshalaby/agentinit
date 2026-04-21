@@ -33,3 +33,28 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | implement |
 
 ---
+
+### T-001 — review — 2026-04-21T16:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-001: git required wizard prerequisite and post-install gate; all acceptance criteria met, all tests pass |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-21T15:24:05Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added git as a required wizard prerequisite and blocked scaffolding when required tools are still missing after the install flow |
+| Files Changed | .ai/TASKS.md, README.md, internal/prereq/prereq_test.go, internal/prereq/tool.go, internal/wizard/wizard.go, internal/wizard/wizard_test.go |
+| Validation | `go fmt ./...` PASS; `go vet ./...` PASS; `go test ./internal/prereq` PASS; `go test ./internal/wizard` PASS; `go test ./...` PASS |
+| Commit | `04730f8 feat(wizard): require git before scaffolding` |
+| Next Role | review |
+
+---
