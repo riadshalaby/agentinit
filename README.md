@@ -41,6 +41,17 @@ The interactive wizard can detect and install additional recommended tools (`gh`
 # Install
 go install github.com/riadshalaby/agentinit/aide@latest
 
+# Add the Go bin directory to your PATH if it is not already present.
+
+# macOS / Linux — add to ~/.zshrc, ~/.bashrc, or ~/.profile and restart your shell:
+export PATH="$(go env GOPATH)/bin:$PATH"
+
+# Windows PowerShell — add to $PROFILE and restart PowerShell:
+$env:PATH = "$(go env GOPATH)\bin;" + $env:PATH
+
+# Windows CMD (persistent, run once in an elevated Command Prompt):
+setx PATH "%PATH%;%USERPROFILE%\go\bin"
+
 # Enable the tracked git hooks for this repo
 git config core.hooksPath scripts/hooks
 

@@ -80,6 +80,42 @@ Reviewed: 2026-04-21
 
 ---
 
+## Task: T-004 — README PATH setup documentation after `go install`
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-21
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. Read `git show e43fb85 -- README.md` — confirmed PATH block is inserted immediately after the `go install` line in Quick Start, covering macOS/Linux (`export PATH=...`) and Windows PowerShell + CMD (`$env:PATH`, `setx`). Content matches plan spec verbatim.
+2. Confirmed `git show e43fb85 -- internal/template/templates/base/README.md.tmpl` produced no output — scaffold template untouched.
+3. Confirmed no other README sections were modified (diff is a single contiguous addition of 11 lines).
+4. Ran `go fmt ./...` — clean.
+5. Ran `go vet ./...` — clean.
+6. Ran `go test ./...` — all packages pass (doc-only change; no code changed).
+
+##### Findings
+- All checks pass; no failures or warnings.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-002 — `aide pr` skips with warning when no remote configured
 
 ### Review Round 1
