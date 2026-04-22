@@ -219,14 +219,14 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			path: ".ai/prompts/reviewer.md",
 			rules: []string{
 				"## Critical Rules",
-				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Re-read `.ai/TASKS.md` before every command.",
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"`ready_to_commit`",
 				"Perform verification as part of review",
+				"always required, not optional",
 				"appending or updating only the active task section, preserving prior task history",
-				"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
+				"Files are the source of truth. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
 		},
@@ -240,6 +240,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			if !strings.Contains(prompt, rule) {
 				t.Errorf("generated %s should contain %q", tc.path, rule)
 			}
+		}
+		if tc.path == ".ai/prompts/reviewer.md" && strings.Contains(prompt, "Use Conventional Commit subjects") {
+			t.Errorf("generated %s should not contain reviewer commit convention rules", tc.path)
 		}
 		if strings.Count(prompt, "AGENTS.md") != 1 {
 			t.Errorf("generated %s should reference AGENTS.md exactly once", tc.path)

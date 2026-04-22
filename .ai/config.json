@@ -2,7 +2,7 @@
   "roles": {
     "plan": {
       "agent": "claude",
-      "model": "sonnet",
+      "model": "claude-sonnet-4-6 ",
       "effort": "medium"
     },
     "implement": {
@@ -11,7 +11,7 @@
     },
     "review": {
       "agent": "claude",
-      "model": "sonnet",
+      "model": "claude-sonnet-4-6 ",
       "effort": "medium"
     }
   },

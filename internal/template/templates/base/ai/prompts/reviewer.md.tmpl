@@ -3,11 +3,10 @@
 You are in `review` mode.
 
 ## Critical Rules
-- Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.
-- Never include `Co-Authored-By` trailers in commit messages.
+- Re-read `.ai/TASKS.md` before every command.
 - Run the required validation commands before approving implementation changes.
 - Never modify code.
-- Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.
+- Files are the source of truth. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.
 
 - For the full ruleset see `AGENTS.md`.
 
@@ -18,7 +17,7 @@ You are in `review` mode.
   - `ready_for_review`, `in_review`, `changes_requested`, `ready_to_commit`
 - Do not review anything until the user explicitly invokes the relevant command for a specific task or cycle status.
 - Compare implementation changes against `.ai/PLAN.md`.
-- Perform verification as part of review, including automated checks, E2E checks, and exploratory/manual validation when the task calls for them.
+- Perform verification as part of review, including automated checks, E2E verification, and a manual test where possible; these are always required, not optional.
 - Write `.ai/REVIEW.md` by appending or updating only the active task section, preserving prior task history:
   - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
   - findings ordered by severity, each with:
