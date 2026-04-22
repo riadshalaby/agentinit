@@ -171,7 +171,8 @@ Use these text commands inside the already-running role sessions.
     - verify all tasks are `done`
     - if the completion condition is not met, report the blocking task states and abort
     - if no version is supplied, ask the user for it before proceeding
-    - close the cycle with a `chore(ai): close cycle` commit and a `Release-As: x.y.z` footer
+    - append a closing entry to `.ai/HANDOFF.md` (`### Cycle closed — <version> — <UTC timestamp>`)
+    - stage and commit with `chore(ai): close cycle` and a `Release-As: x.y.z` footer
     - then run `aide pr` to update the PR
   - `status_cycle [TASK_ID]`
     - return deterministic task status, current owner role, and next recommended action

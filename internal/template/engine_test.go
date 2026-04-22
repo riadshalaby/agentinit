@@ -176,6 +176,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`status_cycle [TASK_ID]`",
 		"writes or updates tests for each changed behaviour before writing implementation code",
 		"counts WIP commits ahead of base; if one: amends with `--no-edit` to include staged files; if multiple: preserves the last WIP commit message, soft-resets, and creates a new commit reusing that message",
+		"append a closing entry to `.ai/HANDOFF.md`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 		"<!-- agentinit:managed:end -->",
@@ -221,6 +222,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "Release-As: VERSION") {
 		t.Error("implementer prompt should describe the cycle-close artifact commit")
+	}
+	if !strings.Contains(implementerPrompt, "append a closing entry to `.ai/HANDOFF.md`") {
+		t.Error("implementer prompt should describe the cycle-close handoff entry")
 	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")

@@ -224,6 +224,52 @@ None.
 
 ---
 
+## Task: T-002 (cycle 0.8.3)
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commit `9ac65f9 fix(prompts): append cycle-close handoff entries` exists.
+2. `git show 9ac65f9 --stat` — 8 files changed: `AGENTS.md.tmpl`, `implementer.md.tmpl`, `AGENTS.md`, `.ai/prompts/implementer.md`, `engine_test.go`, `scaffold_test.go`, `.ai/TASKS.md`, `.ai/HANDOFF.md`.
+3. `git show 9ac65f9 -- internal/template/templates/base/AGENTS.md.tmpl` — plan change verified:
+   - Old: `close the cycle with a \`chore(ai): close cycle\` commit and a \`Release-As: x.y.z\` footer`
+   - New: `append a closing entry to \`.ai/HANDOFF.md\`` bullet added before the commit step ✅
+4. `git show 9ac65f9 -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — plan change verified:
+   - Old: `close the cycle with a \`chore(ai): close cycle\` commit carrying \`Release-As: VERSION\``
+   - New: `append a closing entry to \`.ai/HANDOFF.md\` (\`### Cycle closed — VERSION — <UTC timestamp>\`); stage and commit...` ✅
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical ✅
+6. `grep "Cycle closed\|append a closing entry" AGENTS.md internal/template/templates/base/AGENTS.md.tmpl` — both contain `append a closing entry to \`.ai/HANDOFF.md\`` with identical wording ✅
+7. `git show 9ac65f9 -- internal/template/engine_test.go` — two assertions added: `"append a closing entry to \`.ai/HANDOFF.md\`"` in AGENTS.md strings and in implementer-specific check ✅
+8. `git show 9ac65f9 -- internal/scaffold/scaffold_test.go` — two assertions added: `"append a closing entry to \`.ai/HANDOFF.md\`"` in both implementer and AGENTS.md slices ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — all packages pass.
+12. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; working tree clean (`.claude/settings.local.json` matches template).
+13. `git status` — only `.ai/TASKS.md` modified (this review session's status update); no other drift.
+
+##### Findings
+- Both plan changes correctly implemented in `AGENTS.md.tmpl` and `implementer.md.tmpl`.
+- Live `AGENTS.md` managed section and `.ai/prompts/implementer.md` match their respective templates exactly (template diff is expected template-syntax expansion, not content divergence; `TestSelfUpdateIsIdempotent` confirms zero managed-file drift).
+- Test coverage in `engine_test.go` and `scaffold_test.go` correctly adds positive assertions for the new handoff-entry step in both AGENTS.md and implementer prompt contexts.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-001 (cycle 0.8.3 second pass)
 
 ### Review Round 1

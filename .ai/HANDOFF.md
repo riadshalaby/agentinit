@@ -283,3 +283,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-22T09:20:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review passed — both plan changes verified in template and live files, all test assertions correct, `go test ./...` clean including `TestSelfUpdateIsIdempotent`. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-22T07:04:55Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated `aide cycle end` guidance so it appends a closing HANDOFF entry before creating the cycle-close commit. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `9ac65f9 fix(prompts): append cycle-close handoff entries` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-22T07:16:12Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-002 by folding the implementation and review handoff commits into one task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): append cycle-close handoff entries` |
+| Next Role | none |
+
+---
