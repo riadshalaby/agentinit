@@ -433,3 +433,12 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### Cycle closed — unversioned — 2026-04-22T09:17:18Z
+
+| Field | Value |
+|-------|-------|
+| Summary | All tasks done; cycle closed |
+| Version | unversioned |
+
+---
