@@ -209,3 +209,77 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-001..T-002 — plan — 2026-04-21T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned two tasks: simplify `commit_task` to reuse WIP message (save tokens), fix `aide cycle end` to write closing HANDOFF entry (clean-tree fix) |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md` |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-22T06:02:56Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated the implementer prompt and AGENTS guidance so `commit_task` preserves the existing WIP commit message instead of rewriting it. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `26d8424 fix(prompts): preserve commit_task WIP commit messages` |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-22T08:15:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review failed — T-001 changes correct but TestSelfUpdateIsIdempotent fails due to .claude/settings.local.json drift from reviewer-session tool calls. |
+| Verdict | FAIL |
+| Blocking Findings | 1. .claude/settings.local.json has stale Bash(echo "exit:$?) permission entry; restore to template state and commit |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-22T06:43:37Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the review finding by restoring `.claude/settings.local.json` to template state and rerunning validation so T-001 is review-ready again. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `f10de63 fix(prompts): address review findings` |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-22T08:50:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review passed — settings.local.json clean, TestSelfUpdateIsIdempotent passes, all tests green. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-22T07:00:07Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-001 by folding the commit_task wording changes, rework, and review artifacts into one final task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): preserve commit_task WIP commit messages` |
+| Next Role | none |
+
+---

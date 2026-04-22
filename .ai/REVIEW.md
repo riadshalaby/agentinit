@@ -221,3 +221,82 @@ None.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-001 (cycle 0.8.3 second pass)
+
+### Review Round 1
+
+Status: **FAIL**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **major** — `go test ./...` fails: `TestSelfUpdateIsIdempotent` reports `.claude/settings.local.json` out of sync  
+   The file has an uncommitted working-tree modification: a stale `"Bash(echo \"exit:$?)"` permission entry was appended by the review session's tool calls. The T-001 commit (`26d8424`) did not touch this file and is not the cause, but the acceptance criteria requires `go test ./...` to pass, which it does not.  
+   **Required fix:** Restore `.claude/settings.local.json` to template state (remove the stale `Bash(echo "exit:$?)` entry so the last permission remains `"mcp__aide__*"`). Stage and commit the correction before resubmitting.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -8` — confirmed WIP commit `26d8424 fix(prompts): preserve commit_task WIP commit messages` exists.
+2. `git show 26d8424 --stat` — 10 files changed; all expected T-001 plan files present.
+3. `git show 26d8424 -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 2 plan changes verified:
+   - `commit_task` description: `git commit --amend --no-edit` for one WIP commit; `msg=$(git log -1 --format=%B)` + soft-reset + `git commit -m "$msg"` for multiple ✅
+   - "Use `commit_task` to squash..." updated with "existing WIP commit message is preserved - do not rewrite it." ✅
+4. `git show 26d8424 -- internal/template/templates/base/AGENTS.md.tmpl` — both plan changes verified (Implement Mode block and Session Commands `commit_task` spec) ✅
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical ✅
+6. AGENTS.md.tmpl and live AGENTS.md managed sections both contain `--no-edit` and message-preservation wording ✅
+7. `grep release-note-ready` on all 4 target files — zero matches; phrasing fully removed from `commit_task` context ✅
+8. `engine_test.go` and `scaffold_test.go` assertions updated correctly: old phrase replaced, new `--no-edit` and preservation assertions added ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — **FAIL**: `TestSelfUpdateIsIdempotent` detects `.claude/settings.local.json` working-tree drift. `git diff .claude/settings.local.json` shows an extra `"Bash(echo \"exit:$?)"` entry introduced by reviewer-session tool calls.
+
+##### Findings
+- All T-001 plan changes are correctly implemented. Content, template/live sync, and test assertions are correct.
+- The test failure is caused by working-tree drift in `.claude/settings.local.json` unrelated to T-001's code changes, but must be resolved before `go test ./...` passes.
+
+##### Risks
+- None beyond the file sync fix required.
+
+#### Required Fixes
+1. **(Major — required)** Restore `.claude/settings.local.json` to template state by removing `"Bash(echo \"exit:$?)"`. Stage and commit the fix, then resubmit for review.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — rework commit `f10de63 fix(prompts): address review findings` present.
+2. `git show f10de63 --stat` — only `.ai/` artifacts changed; `.claude/settings.local.json` not in the diff.
+3. `git status .claude/settings.local.json` — clean; `git diff` — empty. Working tree is fully clean.
+4. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS (0.00s).
+5. `go fmt ./...` — clean.
+6. `go vet ./...` — clean.
+7. `go test ./...` — all packages pass.
+
+##### Findings
+- Round 1 blocker resolved: `.claude/settings.local.json` is back in sync with the template; `TestSelfUpdateIsIdempotent` passes.
+- All T-001 plan changes (verified in Round 1) remain intact.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
