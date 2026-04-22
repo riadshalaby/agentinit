@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.8.3](https://github.com/riadshalaby/agentinit/compare/v0.8.2...v0.8.3) (2026-04-22)
+
+
+### chore
+
+* **ai:** close cycle ([b1977db](https://github.com/riadshalaby/agentinit/commit/b1977db912677bf34adaa9ceb65a0d79b464dedd))
+
+
+### Bug Fixes
+
+* **prompts:** align PO template with current MCP polling flow ([e569cae](https://github.com/riadshalaby/agentinit/commit/e569cae6d0fc0c248eb8e75ada101ed45fcc1b0f))
+* **prompts:** align reviewer and handoff commit flow ([713968f](https://github.com/riadshalaby/agentinit/commit/713968fe1ab9b1247bf3c0ec632c7f90999ca43e))
+* **prompts:** append cycle-close handoff entries ([2886bce](https://github.com/riadshalaby/agentinit/commit/2886bce5d76252a99e932ceb9d81e6ec18136eda))
+* **prompts:** make implementer workflow test-first and adaptive ([58c4077](https://github.com/riadshalaby/agentinit/commit/58c4077262a4987b58ef3d31bb5129605c36ed3e))
+* **prompts:** make reviewer verification mandatory ([a5a2c86](https://github.com/riadshalaby/agentinit/commit/a5a2c8654bb98a03a0a15096476b7a98164d1c22))
+* **prompts:** preserve commit_task WIP commit messages ([b01abc5](https://github.com/riadshalaby/agentinit/commit/b01abc5e764cfecbe78effc8d591069ea011f9ac))
+* **prompts:** remove WIP commits from implementer flow ([ef53683](https://github.com/riadshalaby/agentinit/commit/ef53683c6c9783d2c3f25ce1e43cd2244f0edc8b))
+* **update:** make self-update checks catch managed drift ([0ba35d9](https://github.com/riadshalaby/agentinit/commit/0ba35d9496b9e00869759e928aa665c5c5f2c801))
+
 ## [0.8.2](https://github.com/riadshalaby/agentinit/compare/v0.8.1...v0.8.2) (2026-04-21)
 
 
