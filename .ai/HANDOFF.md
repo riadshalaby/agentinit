@@ -321,3 +321,77 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-001..T-002 — plan — 2026-04-22T10:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Planned two tasks: eliminate WIP commits from implementer flow — no commit during `next_task`/`rework_task`, commit message stored in HANDOFF, `commit_task` becomes a single `git add -A && git commit`; update reviewer/HANDOFF template to match |
+| Files Changed | `ROADMAP.md`, `.ai/PLAN.md`, `.ai/TASKS.md` |
+| Next Role | implement |
+
+---
+
+### T-001 — review — 2026-04-22T11:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review failed — all content changes correct and tests green, but `commit_task` entry is unindented in implementer prompt (breaks list hierarchy; required fix). |
+| Verdict | FAIL |
+| Blocking Findings | 1. `commit_task` line 18 in `implementer.md.tmpl` and `.ai/prompts/implementer.md` missing 2-space indent — must align with `next_task` and `rework_task` under "Supported implementer commands" |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-22T08:25:48Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Rewrote the implementer prompt and managed AGENTS flow so `next_task` and `rework_task` do not commit, and `commit_task` creates the single final task commit from HANDOFF metadata. |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `fix(prompts): remove WIP commits from implementer flow` |
+| Next Role | review |
+
+---
+
+### T-001 — review — 2026-04-22T11:15:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review passed — `commit_task` indent fix confirmed in both files, `go test ./...` and `TestSelfUpdateIsIdempotent` clean. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-04-22T08:37:20Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Addressed the required review fix by restoring the `commit_task` list indentation in both implementer prompt files and rerunning the validation suite. |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md`, `.ai/prompts/implementer.md`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `fix(prompts): remove WIP commits from implementer flow` |
+| Next Role | review |
+
+---
+
+### T-001 — implement — 2026-04-22T08:46:48Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-001 by marking the task done and creating the single task commit from the HANDOFF commit message. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/PLAN.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `ROADMAP.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): remove WIP commits from implementer flow` |
+| Next Role | none |
+
+---

@@ -270,6 +270,99 @@ None.
 
 ---
 
+## Task: T-001 (cycle 0.8.3 third pass — eliminate WIP commits)
+
+### Review Round 1
+
+Status: **FAIL**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **major** — `commit_task` entry unindented in `implementer.md.tmpl` / `.ai/prompts/implementer.md` (line 18)  
+   The plan specifies `  - \`commit_task...\`` (indented under the "Supported implementer commands" list, consistent with `next_task` and `rework_task`) but the implementation produced `- \`commit_task...\`` (top-level bullet, breaking the list hierarchy). This is a structural inconsistency in the prompt: `commit_task` visually falls outside the "Supported implementer commands" block even though it belongs there. Both files must be corrected.  
+   **Required fix:** In `internal/template/templates/base/ai/prompts/implementer.md.tmpl` and `.ai/prompts/implementer.md`, change line 18 from `- \`commit_task...\`` to `  - \`commit_task...\`` (add 2-space indent to match `next_task` and `rework_task`).
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commit not yet present (working-tree changes, implementer correctly deferred commit per new flow).
+2. Read `internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 7 plan-specified changes verified:
+   - Critical Rules: "handing off to review" (not "before committing") ✅
+   - Critical Rules: "Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`." ✅
+   - `next_task` description updated with commit-message-to-HANDOFF, no-commit instruction ✅
+   - `rework_task` description updated with "address every required fix; do not `git commit`" ✅
+   - `commit_task` description: simple read-from-HANDOFF + `git add -A && git commit` (no squash logic) ✅
+   - Line 26: "Use `commit_task` to create the single task commit..." ✅
+   - Rework section: "Do not `git commit`. The commit happens later via `commit_task`." + scope-change note ✅
+3. Read `.ai/prompts/implementer.md` — byte-for-byte identical to template ✅
+4. Read `internal/template/templates/base/AGENTS.md.tmpl` — all 3 plan-specified AGENTS changes verified:
+   - Implement Mode (`next_task`): "writes the final Conventional Commit message into the HANDOFF entry `Commit` field", "does not `git commit`" ✅
+   - Implement Mode (`commit_task`): "reads the commit message from the task's `next_task` HANDOFF entry", "runs `git add -A && git commit -m \"<message>\"`" ✅
+   - Implement Mode (rework): "does not `git commit`" ✅
+   - `commit_task` Session Commands spec: read-from-HANDOFF, update TASKS, append HANDOFF entry, run `git add -A && git commit` ✅
+   - Commit Conventions: "`implement` role does not commit during `next_task` or `rework_task`. The single task commit is created by `commit_task` after review approval." ✅
+5. Read `AGENTS.md` — managed section matches template (confirmed independently by `TestSelfUpdateIsIdempotent`) ✅
+6. `rg` scan for stale phrases (`git rev-list`, `--no-edit`, `amend`, `reset --soft`, `WIP commit`, `squash`) in all four target files — **zero matches** ✅
+7. `engine_test.go` assertions verified:
+   - Old stale assertions removed (no `git rev-list`, `--no-edit`, amend, "existing WIP commit message") ✅
+   - New positive assertions added: `"does not \`git commit\`"` (AGENTS.md), `"reads the commit message from the task's \`next_task\` HANDOFF entry"` (AGENTS.md), `"Do not \`git commit\` during \`next_task\` or \`rework_task\`"` (implementer), `"read the commit message from the task's \`next_task\` HANDOFF entry \`Commit\` field"` (implementer) ✅
+8. `scaffold_test.go` assertions verified: aligned with new no-WIP-commit wording ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — all packages pass.
+12. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms managed files (AGENTS.md, implementer.md, etc.) are in sync with templates.
+
+##### Findings
+- All plan-specified changes correctly implemented across all six target files.
+- No stale WIP-commit references in any of the target or test files.
+- `TestSelfUpdateIsIdempotent` confirms zero managed-file drift.
+- One cosmetic nit: `commit_task` list entry unindented (same carry-over as T-003); content correct.
+
+##### Risks
+- None.
+
+#### Required Fixes
+1. **(Major — required)** In `internal/template/templates/base/ai/prompts/implementer.md.tmpl` and `.ai/prompts/implementer.md`, change the `commit_task` command line from `- \`commit_task...\`` to `  - \`commit_task...\`` (2-space indent) so it sits correctly within the "Supported implementer commands" list alongside `next_task` and `rework_task`.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. Checked `internal/template/templates/base/ai/prompts/implementer.md.tmpl` line 18 — `commit_task` now reads `  - \`commit_task...\`` (2-space indent), matching `next_task` (line 16) and `rework_task` (line 17) ✅
+2. Checked `.ai/prompts/implementer.md` line 18 — identical fix applied ✅
+3. `go fmt ./...` — clean.
+4. `go vet ./...` — clean.
+5. `go test ./...` — all packages pass.
+6. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms template and live file are in sync.
+
+##### Findings
+- Round 1 required fix resolved: `commit_task` list hierarchy is now correct in both files.
+- All content changes from Round 1 remain intact.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-001 (cycle 0.8.3 second pass)
 
 ### Review Round 1

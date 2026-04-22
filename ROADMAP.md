@@ -1,40 +1,27 @@
 # ROADMAP
 
-Goal: simplify two friction points in the aide workflow — make `commit_task` cheaper by reusing the existing WIP commit message instead of re-deriving it, and fix `aide cycle end` so it works when the working tree is clean after the last `commit_task`.
+Goal: eliminate WIP commits entirely — the implementer does not commit until the task is fully reviewed and approved. This removes all squash/amend/counting logic from `commit_task` and fixes the broken base-counting problem where `@{upstream}..HEAD` includes commits from earlier tasks.
 
-## Priority 1 — Make `commit_task` reuse the existing WIP commit message
+## Priority 1 — No-commit-until-done flow
 
-The implementer already writes a release-note-ready Conventional Commit subject in the WIP commit and logs it in HANDOFF. Then `commit_task` asks the agent to craft a "release-note-ready Conventional Commit message" from scratch — re-reading plan context and burning tokens to arrive at the same message.
+### Current problem
 
-Fix: change `commit_task` to preserve the existing WIP commit message:
-- If one WIP commit: `git add -A && git commit --amend --no-edit` (keeps the message, adds staged `.ai/` files).
-- If multiple WIP commits: read the subject of the last WIP commit with `git log -1 --format=%B`, then `git reset --soft HEAD~N && git add -A && git commit -m <preserved-message>`.
-- Remove all references to "release-note-ready Conventional Commit message" from `commit_task` — the implementer already wrote it during `next_task`.
+The implementer creates WIP commits during `next_task`, then `commit_task` tries to squash them. The squash uses `@{upstream}..HEAD` to count WIP commits, but that range includes commits from *all previous tasks on the branch*, not just the current task. This makes `commit_task` unreliable on multi-task branches.
 
-Files affected:
-- `AGENTS.md.tmpl` managed section (Implement Mode `commit_task` block + Session Commands `commit_task` spec)
-- `implementer.md.tmpl` (`commit_task` command description)
-- Live `AGENTS.md` and `.ai/prompts/implementer.md`
-- `engine_test.go` and `scaffold_test.go` assertions that match the old "amends with the release-note-ready" wording
+### New flow
 
-## Priority 2 — Fix `aide cycle end` on clean working tree
+1. **`next_task`**: Implementer works — code, tests, docs. Writes the final Conventional Commit message into the HANDOFF entry `Commit` field (without a hash). Updates TASKS.md to `ready_for_review`. **No git commit.**
+2. **Review**: Reviewer examines working-tree changes via `git diff` and file reads. Moves task to `ready_to_commit` or `changes_requested`.
+3. **`rework_task`**: Implementer fixes findings. **No git commit.** Updates TASKS.md back to `ready_for_review`.
+4. **`commit_task`**: Reads the commit message from the `next_task` HANDOFF entry. Updates TASKS.md to `done`, appends a `commit_task` HANDOFF entry, then runs `git add -A && git commit -m "<message>"`. One commit per task, zero squashing.
 
-After the last `commit_task` squashes everything including `.ai/` artifacts, the working tree is clean. `aide cycle end` tries to create a `chore(ai): close cycle` commit but has nothing to stage, so it fails or creates an empty commit.
+### What changes
 
-Fix: `aide cycle end` appends a closing entry to `.ai/HANDOFF.md` before committing. This gives the commit real content and provides a natural end marker for the handoff log.
-
-Closing entry format:
-```
-### Cycle closed — <version> — <UTC timestamp>
-
-| Field | Value |
-|-------|-------|
-| Summary | All tasks done; cycle closed |
-| Version | <version> |
-```
-
-Files affected:
-- `AGENTS.md.tmpl` managed section (`aide cycle end` spec)
-- `implementer.md.tmpl` (`aide cycle end` command description)
-- Live `AGENTS.md` and `.ai/prompts/implementer.md`
-- `engine_test.go` and `scaffold_test.go` assertions for cycle-end wording
+- `AGENTS.md.tmpl`: Implement Mode no longer mentions WIP commits or squash. `commit_task` spec becomes: read message from HANDOFF, stage, commit, done. `rework_task` no longer commits.
+- `implementer.md.tmpl`: Same simplifications. Remove `git rev-list`, `--amend`, `--no-edit`, `reset --soft`. `next_task` writes the commit message to HANDOFF but does not commit. `rework_task` does not commit. `commit_task` is a one-liner.
+- `HANDOFF.template.md.tmpl` and live `HANDOFF.template.md`: Update the `Commit` field description to `<conventional commit message>` (no hash on `next_task` entries; hash added by `commit_task` entry).
+- `reviewer.md.tmpl`: No structural changes — reviewer already reviews via file reads. Clarify that review targets working-tree changes, not a commit diff.
+- `po.md.tmpl`: No changes — PO references `commit_task` by name, which still exists.
+- `engine_test.go` and `scaffold_test.go`: Update assertions to match new wording (remove squash/amend/WIP assertions, add no-commit/message-from-HANDOFF assertions).
+- Live files (`AGENTS.md`, `.ai/prompts/implementer.md`, `.ai/prompts/reviewer.md`, `.ai/HANDOFF.template.md`): Mirror template changes.
+- Commit Conventions section in `AGENTS.md.tmpl`: Clarify that the single task commit is created by `commit_task` after review, not during implementation.

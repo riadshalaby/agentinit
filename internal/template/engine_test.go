@@ -175,7 +175,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"`status_cycle [TASK_ID]`",
 		"writes or updates tests for each changed behaviour before writing implementation code",
-		"counts WIP commits ahead of base; if one: amends with `--no-edit` to include staged files; if multiple: preserves the last WIP commit message, soft-resets, and creates a new commit reusing that message",
+		"does not `git commit`",
+		"reads the commit message from the task's `next_task` HANDOFF entry",
 		"append a closing entry to `.ai/HANDOFF.md`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
@@ -232,22 +233,16 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	assertPromptCriticalRules(t, "implementer prompt", implementerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
 		"Never include `Co-Authored-By` trailers in commit messages.",
-		"Run the required validation commands before committing.",
-		"Stage all changes with `git add -A`.",
+		"Run the required validation commands before handing off to review.",
+		"Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`.",
 		"Re-read `.ai/TASKS.md` before every command.",
 		"Files are the source of truth. Re-read `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 	})
 	if !strings.Contains(implementerPrompt, "Write or update tests for each changed behaviour before writing the implementation code.") {
 		t.Error("implementer prompt should require tests before implementation changes")
 	}
-	if !strings.Contains(implementerPrompt, "git rev-list --count @{upstream}..HEAD") {
-		t.Error("implementer prompt should describe adaptive commit_task commit counting")
-	}
-	if !strings.Contains(implementerPrompt, "git commit --amend --no-edit") {
-		t.Error("implementer prompt should preserve the existing WIP commit message when only one WIP commit exists")
-	}
-	if !strings.Contains(implementerPrompt, "The existing WIP commit message is preserved - do not rewrite it.") {
-		t.Error("implementer prompt should explicitly preserve the existing WIP commit message")
+	if !strings.Contains(implementerPrompt, "read the commit message from the task's `next_task` HANDOFF entry `Commit` field") {
+		t.Error("implementer prompt should read the commit message from the HANDOFF entry")
 	}
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
