@@ -133,3 +133,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-003 — implement — 2026-04-22T04:33:54Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the standalone TASKS re-read rule, made implementer guidance test-first, and aligned `commit_task` plus AGENTS to the adaptive amend/reset flow. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `869a58d fix(prompts): make implementer workflow test-first and adaptive` |
+| Next Role | review |
+
+---
+
+### T-003 — review — 2026-04-22T07:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review passed — all plan changes verified across implementer.md.tmpl, AGENTS.md.tmpl, and both live files; go test passes; one cosmetic nit on commit_task indent. |
+| Verdict | PASS_WITH_NOTES |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-003 — implement — 2026-04-22T05:15:13Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-003 by folding the implementer prompt, AGENTS, review, and handoff updates into one release-note-ready task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/implementer.md`, `AGENTS.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/ai/prompts/implementer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): make implementer workflow test-first and adaptive` |
+| Next Role | none |
+
+---

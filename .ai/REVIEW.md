@@ -134,3 +134,51 @@ None.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS_WITH_NOTES**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **nit** — `commit_task` bullet lost its 2-space indent in `implementer.md.tmpl` / `.ai/prompts/implementer.md` (line 18)  
+   The `commit_task [TASK_ID]` command entry changed from `  - \`commit_task...\`` (indented, consistent with `next_task` and `rework_task`) to `- \`commit_task...\`` (unindented, breaking the list hierarchy under "Supported implementer commands"). Content is correct; purely cosmetic. Not a required fix.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commits `869a58d fix(prompts): make implementer workflow test-first and adaptive` and `ccc63a7 chore(ai): hand off T-003 for review`.
+2. `git show 869a58d --stat` — 6 files changed: `implementer.md.tmpl`, `.ai/prompts/implementer.md`, `AGENTS.md.tmpl`, `AGENTS.md`, `engine_test.go`, `scaffold_test.go`.
+3. `git show 869a58d -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 3 plan changes verified:
+   - Standalone `Re-read .ai/TASKS.md before every command.` bullet added ✅
+   - `Write or update tests for each changed behaviour before writing the implementation code.` replaces `Update tests as needed.` ✅
+   - `commit_task` description updated with `git rev-list --count @{upstream}..HEAD`, adaptive amend/soft-reset logic ✅
+4. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical.
+5. `git show 869a58d -- internal/template/templates/base/AGENTS.md.tmpl` — all 3 AGENTS.md.tmpl plan changes verified:
+   - `writes or updates tests for each changed behaviour before writing implementation code` ✅
+   - Adaptive amend/reset wording in both the mode description and `commit_task` command spec ✅
+6. `git show 869a58d -- AGENTS.md` — identical changes applied to live file.
+7. Managed section comparison via `awk '/agentinit:managed:start/,/agentinit:managed:end/'` — both template and live have identical phrasing for all T-003 changes.
+8. `git show 869a58d -- internal/template/engine_test.go` — AGENTS.md assertions added for TDD wording and adaptive commit; implementer `assertPromptCriticalRules` updated with standalone TASKS.md re-read and updated Files sentence; positive assertions for TDD and `git rev-list` phrases added.
+9. `git show 869a58d -- internal/scaffold/scaffold_test.go` — implementer and AGENTS.md assertions updated to match new wording.
+10. `go fmt ./...` — clean.
+11. `go vet ./...` — clean.
+12. `go test ./...` — all packages pass.
+
+##### Findings
+- All plan changes correctly implemented across all 4 target files.
+- AGENTS.md.tmpl and live AGENTS.md managed sections are consistent.
+- Test assertions in `engine_test.go` and `scaffold_test.go` aligned with new content.
+- One cosmetic nit: `commit_task` lost its indentation level in the implementer prompt (not a required fix).
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS_WITH_NOTES`
