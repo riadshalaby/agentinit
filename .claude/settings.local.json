@@ -14,10 +14,7 @@
       "Bash(go vet ./...:*)",
       "Bash(go test ./...:*)",
       "Bash(git:*)",
-      "mcp__aide__*",
-      "Bash(grep -n \"runPRSync\\\\|remoteCheck\\\\|git remote\" /Users/riadshalaby/localrepos/agentinit/cmd/*.go)",
-      "Bash(cat /Users/riadshalaby/localrepos/agentinit/internal/wizard/*.go)",
-      "Bash(grep -n \"reasoning\\\\|effort\\\\|codex\\\\|-c \" /Users/riadshalaby/localrepos/agentinit/cmd/*.go /Users/riadshalaby/localrepos/agentinit/internal/launcher/launcher.go)"
+      "mcp__aide__*"
     ]
   }
 }
