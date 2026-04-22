@@ -395,3 +395,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-22T11:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review passed — both plan changes verified in template and live files, `"working-tree changes"` assertions present in both test files, `go test ./...` and `TestSelfUpdateIsIdempotent` clean. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-22T08:50:35Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated the reviewer prompt and HANDOFF template so review targets working-tree changes and the `Commit` field describes the no-WIP-commit flow. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/HANDOFF.template.md`, `.ai/TASKS.md`, `.ai/prompts/reviewer.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/HANDOFF.template.md.tmpl`, `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `fix(prompts): align reviewer and handoff commit flow` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-22T09:04:48Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-002 by marking the task done and creating the single task commit from the HANDOFF commit message. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/HANDOFF.template.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/reviewer.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/HANDOFF.template.md.tmpl`, `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): align reviewer and handoff commit flow` |
+| Next Role | none |
+
+---

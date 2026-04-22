@@ -227,6 +227,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"`ready_to_commit`",
+				"working-tree changes",
 				"Perform verification as part of review",
 				"always required, not optional",
 				"appending or updating only the active task section, preserving prior task history",
@@ -378,6 +379,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf("generated .ai/REVIEW.template.md should contain %q", snippet)
 		}
+	}
+
+	handoffTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/HANDOFF.template.md"))
+	if err != nil {
+		t.Fatalf("read .ai/HANDOFF.template.md: %v", err)
+	}
+	handoffTemplate := string(handoffTemplateBytes)
+	if !strings.Contains(handoffTemplate, "| Commit | `<conventional commit message>` on `next_task`; `<hash> <message>` on `commit_task` (implement only) |") {
+		t.Error("generated .ai/HANDOFF.template.md should describe the no-WIP-commit Commit field flow")
 	}
 }
 

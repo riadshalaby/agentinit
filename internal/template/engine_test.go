@@ -279,6 +279,9 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(reviewerPrompt, "Perform verification as part of review") {
 		t.Error("reviewer prompt should describe verification responsibilities")
 	}
+	if !strings.Contains(reviewerPrompt, "working-tree changes") {
+		t.Error("reviewer prompt should review working-tree changes before commit_task")
+	}
 	if !strings.Contains(reviewerPrompt, "always required, not optional") {
 		t.Error("reviewer prompt should make E2E and manual verification mandatory")
 	}
@@ -297,6 +300,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf(".ai/REVIEW.template.md should contain %q", snippet)
 		}
+	}
+	handoffTemplate := files[".ai/HANDOFF.template.md"]
+	if !strings.Contains(handoffTemplate, "| Commit | `<conventional commit message>` on `next_task`; `<hash> <message>` on `commit_task` (implement only) |") {
+		t.Error(".ai/HANDOFF.template.md should describe the no-WIP-commit Commit field flow")
 	}
 	poPrompt := files[".ai/prompts/po.md"]
 	for _, snippet := range []string{

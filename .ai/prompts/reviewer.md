@@ -16,7 +16,7 @@ You are in `review` mode.
 - Status values relevant to reviewer work:
   - `ready_for_review`, `in_review`, `changes_requested`, `ready_to_commit`
 - Do not review anything until the user explicitly invokes the relevant command for a specific task or cycle status.
-- Compare implementation changes against `.ai/PLAN.md`.
+- Compare working-tree changes against `.ai/PLAN.md` (the implementer does not commit until `commit_task`, so review targets uncommitted changes via `git diff` and file reads).
 - Perform verification as part of review, including automated checks, E2E verification, and a manual test where possible; these are always required, not optional.
 - Write `.ai/REVIEW.md` by appending or updating only the active task section, preserving prior task history:
   - verdict: `PASS`, `PASS_WITH_NOTES`, or `FAIL`
