@@ -4,85 +4,62 @@ Shared review log for the current cycle. Append a new task section when review s
 
 ---
 
-## Task: T-001 — Add git as required tool in the interactive wizard
+## Task: T-001
 
 ### Review Round 1
 
-Status: **PASS**
+Status: **FAIL**
 
 Reviewed: 2026-04-21
 
 #### Findings
 
-- **nit** — `internal/wizard/wizard.go` lines 112–117: The post-install gate always executes a second `scanPrereqs` call unconditionally, even when `missing` was empty on the first scan (i.e., all tools were already present). On a clean system this adds an unnecessary second scan. Not a correctness issue; the plan did not call for guarding this. No fix required.
+1. **blocker** — Missing WIP commit  
+   The implementation changes to `internal/template/templates/base/ai/prompts/po.md.tmpl`, `.ai/TASKS.md`, and `.ai/HANDOFF.md` are uncommitted (`git status` shows them as modified working-tree files). The implement protocol requires a Conventional Commit (including commit hash in the handoff) before marking `ready_for_review`. Without a WIP commit, `commit_task` has no commits to squash and the content changes would not be included.  
+   **Required fix:** Stage and commit all T-001 changes with a WIP Conventional Commit. Update `.ai/HANDOFF.md` with the commit hash.
+
+2. **major** — `go test ./...` fails — stale `engine_test.go` assertions  
+   `TestRenderAllBaseOnly` in `internal/template/engine_test.go` still asserts that the PO prompt contains:
+   - `` "`session_get_output(name, offset)`" `` (line 303)
+   - `` "`running == false`" `` (line 303)  
+   Both strings were intentionally removed as part of T-001. The plan allocates the assertion update to T-004, but as submitted T-001 leaves the test suite broken. This is a required fix per the validation mandate (`go test ./...`).  
+   **Required fix:** Either (a) update the two stale assertions in `engine_test.go` as part of the T-001 WIP commit, pulling that portion of T-004's scope forward, or (b) confirm with the task author that test fixes for T-001 changes will be accepted as part of T-004 and document the expected breakage. Option (a) is strongly preferred so the WIP commit is green.
 
 #### Verification
 
 ##### Steps
-1. Read `internal/prereq/tool.go` — confirmed git is the first entry in `Registry()`, `Required: true`, `Category: ToolCategoryAgentDependency`, `brew`/`choco` package installs present, `OSInstalls[Windows]` has label only (no `Command`, so `Auto` resolves false and fallback URL is shown), `FallbackURL: "https://git-scm.com/downloads"`.
-2. Read `internal/wizard/wizard.go` — confirmed post-install gate (lines 112–117) is placed *outside* the `if len(missing) > 0` block, so it fires whether the user declined installs or installations failed.
-3. Read `internal/prereq/prereq_test.go` — confirmed `TestRegistryStartsWithRequiredGit` (position 0, Required true, correct category) and `TestScanDetectsPackageManagerAndTools` covers git detection.
-4. Read `internal/wizard/wizard_test.go` — confirmed `TestRunFailsWhenRequiredGitRemainsMissing` asserts non-nil error with correct message and that `scaffoldFn` is never called.
-5. Read `README.md` — confirmed git row is first data row in the Tool Detection and Installation table: `| Git (\`git\`) | yes | Homebrew on macOS, Chocolatey on Windows, manual install link on Linux |`
-6. Ran `go fmt ./...` — clean (no output).
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
+1. Read `internal/template/templates/base/ai/prompts/po.md.tmpl` — full file review against plan change list.
+2. Read `.ai/prompts/po.md` — full file review.
+3. `git diff --no-index -- internal/template/templates/base/ai/prompts/po.md.tmpl .ai/prompts/po.md` — verified files are identical (exit 0).
+4. `git diff internal/template/templates/base/ai/prompts/po.md.tmpl` — verified all 7 plan changes are present.
+5. `go fmt ./...` — clean (no output).
+6. `go vet ./...` — clean (no output).
+7. `go test ./...` — **FAIL**: `TestRenderAllBaseOnly` in `internal/template` package.
+8. `git status` — confirmed implementation changes are uncommitted.
+9. `git log --oneline -10` — confirmed no T-001 WIP commit exists.
 
 ##### Findings
-- All checks pass; no failures or warnings.
+- All 7 template changes specified in the plan are correctly implemented and present in both `po.md.tmpl` and `.ai/prompts/po.md`.
+- Files are byte-for-byte identical.
+- `go fmt` and `go vet` pass.
+- `go test ./...` fails due to two stale assertions in `internal/template/engine_test.go:303`.
+- No WIP commit was created by the implementer.
+- The `running == true` reference remaining in the Error Handling section (line 81 of the template) is in a different context (stuck-session detection) and is **not** the old polling loop — this is acceptable.
 
 ##### Risks
-- None.
+- If committed without fixing the test, the T-001 squash commit would leave the repo in a broken-test state between T-001 and T-004, harming CI bisectability.
+- Without a WIP commit, `commit_task` cannot squash implementation changes correctly.
 
-#### Open Questions
-- None.
+#### Required Fixes
+1. **(Blocker)** Stage and commit the T-001 implementation changes (`po.md.tmpl`, `.ai/TASKS.md`, `.ai/HANDOFF.md`) as a WIP Conventional Commit. Include the commit hash in `.ai/HANDOFF.md`.
+2. **(Major — required)** Fix or remove the two stale `engine_test.go:303` assertions so `go test ./...` passes after the T-001 commit. Preferred: remove `` "`session_get_output(name, offset)`" `` and `` "`running == false`" `` assertions, add replacement assertions for the new phrases (`session_get_result`, `session_status`) as specified in T-004's plan — pull just these two removals into the T-001 commit so the suite stays green. T-004 can still add the positive new-phrase assertions.
 
 #### Verdict
-`PASS`
+`FAIL`
 
 ---
 
-## Task: T-003 — `aide update` runs tool checks after file refresh
-
-### Review Round 1
-
-Status: **PASS**
-
-Reviewed: 2026-04-21
-
-#### Findings
-
-- **nit** — `cmd/update_test.go`: `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order only for the "has changes" code path. The no-changes path (tool check after "No managed files changed.") has no equivalent call-order assertion. The logic is trivially sequential and the existing stub tests cover nil-error behavior. No fix required.
-
-#### Verification
-
-##### Steps
-1. Read `internal/wizard/wizard.go` — confirmed `RunToolCheck` (public) delegates to `runToolCheck` (unexported), `run()` is simplified to `runToolCheck(cmdr, ui)` → `runScaffoldStep`, and the required-tool gate from T-001 is preserved inside `runToolCheck`. The extraction is clean and the public API matches the plan's specified signature.
-2. Read `cmd/update.go` — confirmed `runUpdateToolCheck` var-swap is introduced for testability; `runUpdateToolCheck(prereq.NewExecCommander())` is called at the end of both branches (no-changes: line 47, changes: line 55). Tool check always runs regardless of whether files changed.
-3. Read `cmd/update_test.go` diff — existing tests updated to stub `runUpdateToolCheck` (prevents real system calls); new `TestUpdateCommandRunsToolCheckAfterPrintingChanges` verifies call order (`"update,toolcheck"`) and that output is already written before tool check runs.
-4. Read `internal/wizard/wizard_test.go` diff — three new `runToolCheck` unit tests: all-present (no prompts), missing optional (prompt shown), missing required (error returned with correct message). All match plan spec.
-5. Read README diff — existing `aide update` description extended in-place with one sentence about the post-refresh tool scan. No other sections modified.
-6. Ran `go fmt ./...` — clean.
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
-
-##### Findings
-- All checks pass; no failures or warnings.
-
-##### Risks
-- None.
-
-#### Open Questions
-- None.
-
-#### Verdict
-`PASS`
-
----
-
-## Task: T-005 — Codex reasoning effort configurable with "high" default for implementer
-
-### Review Round 1
+### Review Round 2
 
 Status: **PASS**
 
@@ -95,29 +72,21 @@ None.
 #### Verification
 
 ##### Steps
-1. **`internal/launcher/launcher.go`** — confirmed Codex case appends `-c model_reasoning_effort="high"` (using `%q` format) when `opts.Effort != ""`. Claude case already had `--effort` support; unchanged.
-2. **`internal/mcp/adapter_codex.go`** — confirmed `effort string` field added; `Start` assigns `a.effort = opts.Effort` and appends the flag when non-empty; `RunStream` reads `a.effort` and appends same flag. Same `%q` format as launcher.
-3. **`internal/mcp/config.go`** — confirmed `DefaultEffortForRole` returns `"high"` for `implement+codex`, `""` otherwise. `EffortForRoleAndProvider` calls it as fallback. Custom `UnmarshalJSON` uses pointer `*string` to detect presence of `effort` key and sets `effortSet bool` — correctly distinguishes explicit `""` from absent key.
-4. **`internal/template/templates/base/ai/config.json.tmpl`** diff — only the implement role received `"effort": "high"`; plan and review roles were pre-existing with `"effort": "medium"`.
-5. **`README.md`** — two "agent/model" references updated to "agent/model/effort"; two lines added explaining Codex effort flag mapping and implementer default.
-6. **`internal/mcp/adapter.go`** — `Effort` field comment updated from "claude:" to "provider-specific".
-7. **`cmd/launch_test.go`** — `TestImplementCommandUsesConfiguredAgentAndModel` updated: expected `Effort` changed from `""` to `"high"`, confirming the default flows end-to-end from config through launcher.
-8. **`internal/launcher/launcher_test.go`** — `TestLaunchCodex` asserts `-c model_reasoning_effort="high"` present in Codex args.
-9. **`internal/mcp/adapter_test.go`** — `TestAdapterCodexStart` and `TestAdapterCodexRun` both assert `model_reasoning_effort="high"` in args.
-10. **`internal/mcp/config_test.go`** — four new tests: `TestDefaultEffortForImplementCodex`, `TestConfigEffortDefaultsForImplementCodex`, `TestConfigExplicitEmptyEffortOverridesDefault`, `TestConfigLoadEmptyEffortDisablesImplementDefault`. All critical override paths covered, including the `effortSet` sentinel for explicit empty-string.
-11. **`internal/mcp/manager_test.go`** — `TestManagerStartSession` updated to expect `effort = "high"` instead of `""`.
-12. **`internal/template/engine_test.go`** — scaffold output assertion includes `"effort": "high"` for the implement section.
-13. Ran `go fmt ./...` — clean.
-14. Ran `go vet ./...` — clean.
-15. Ran `go test ./...` — all packages pass.
+1. `git log --oneline -4` — confirmed WIP commit `5c5f216 fix(prompts): address T-001 review findings` exists.
+2. `git show 5c5f216 --stat` — commit includes `po.md.tmpl`, `engine_test.go`, `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`.
+3. `git show 5c5f216 -- internal/template/engine_test.go` — verified: removed stale `` "`session_get_output(name, offset)`" `` and `` "`running == false`" `` assertions; added `` "`session_get_result`" ``, `` "`session_get_result(name)`" ``, `` "`session_status(name)`" `` assertions. All plan-specified changes present.
+4. `git show 5c5f216 -- internal/template/templates/base/ai/prompts/po.md.tmpl` — all 7 plan changes confirmed in final committed state.
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/po.md.tmpl .ai/prompts/po.md` — exit 0; files identical.
+6. `go fmt ./...` — clean.
+7. `go vet ./...` — clean.
+8. `go test ./...` — all packages pass.
 
 ##### Findings
-- All checks pass; no failures or warnings.
+- Both Round 1 blockers resolved: WIP commit exists; `go test ./...` passes.
+- All 7 plan changes present and correct in both template and live file.
+- New `engine_test.go` assertions are well-chosen: they test the presence of the key new identifiers rather than brittle phrase fragments.
 
 ##### Risks
-- None.
-
-#### Open Questions
 - None.
 
 #### Verdict
@@ -125,13 +94,13 @@ None.
 
 ---
 
-## Task: T-004 — README PATH setup documentation after `go install`
+## Task: T-002
 
 ### Review Round 1
 
 Status: **PASS**
 
-Reviewed: 2026-04-21
+Reviewed: 2026-04-22
 
 #### Findings
 
@@ -140,20 +109,27 @@ None.
 #### Verification
 
 ##### Steps
-1. Read `git show e43fb85 -- README.md` — confirmed PATH block is inserted immediately after the `go install` line in Quick Start, covering macOS/Linux (`export PATH=...`) and Windows PowerShell + CMD (`$env:PATH`, `setx`). Content matches plan spec verbatim.
-2. Confirmed `git show e43fb85 -- internal/template/templates/base/README.md.tmpl` produced no output — scaffold template untouched.
-3. Confirmed no other README sections were modified (diff is a single contiguous addition of 11 lines).
-4. Ran `go fmt ./...` — clean.
-5. Ran `go vet ./...` — clean.
-6. Ran `go test ./...` — all packages pass (doc-only change; no code changed).
+1. `git log --oneline -6` — confirmed WIP commits `f211917 fix(prompts): require reviewer verification on every task` and `a44e721 chore(ai): hand off T-002 for review`.
+2. `git show f211917 -- internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — verified all 3 plan changes:
+   - Removed `Use Conventional Commit subjects...` and `Never include \`Co-Authored-By\`...` lines.
+   - Added `Re-read \`.ai/TASKS.md\` before every command.` as standalone bullet.
+   - Updated verification mandate to `...E2E verification, and a manual test where possible; these are always required, not optional.`
+   - Cleaned the old combined Files sentence (TASKS.md re-read moved to standalone bullet).
+3. Read `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — no commit convention rules present; standalone TASKS.md re-read bullet present; mandatory verification phrasing present.
+4. Read `.ai/prompts/reviewer.md` — content identical to template.
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/reviewer.md.tmpl .ai/prompts/reviewer.md` — exit 0; files identical.
+6. `git show f211917 -- internal/template/engine_test.go` — negative assertion for `"Use Conventional Commit subjects"` added; `assertPromptCriticalRules` updated to remove old commit bullets and add `"Re-read \`.ai/TASKS.md\` before every command."` and updated Files sentence; `"always required, not optional"` positive assertion added.
+7. `git show f211917 -- internal/scaffold/scaffold_test.go` — same alignment: old commit bullets removed, new standalone re-read and mandatory E2E strings added, negative assertion for commit rules added.
+8. `go fmt ./...` — clean.
+9. `go vet ./...` — clean.
+10. `go test ./...` — all packages pass (including `internal/scaffold` which runs the scaffold integration tests).
 
 ##### Findings
-- All checks pass; no failures or warnings.
+- All 3 plan changes correctly implemented in both template and live file.
+- Test coverage in both `engine_test.go` and `scaffold_test.go` is appropriately updated and adds a regression guard (negative assertion) against commit rules reappearing.
+- No stale references to old commit convention lines found anywhere in the changed files.
 
 ##### Risks
-- None.
-
-#### Open Questions
 - None.
 
 #### Verdict
@@ -161,38 +137,345 @@ None.
 
 ---
 
-## Task: T-002 — `aide pr` skips with warning when no remote configured
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS_WITH_NOTES**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **nit** — `commit_task` bullet lost its 2-space indent in `implementer.md.tmpl` / `.ai/prompts/implementer.md` (line 18)  
+   The `commit_task [TASK_ID]` command entry changed from `  - \`commit_task...\`` (indented, consistent with `next_task` and `rework_task`) to `- \`commit_task...\`` (unindented, breaking the list hierarchy under "Supported implementer commands"). Content is correct; purely cosmetic. Not a required fix.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commits `869a58d fix(prompts): make implementer workflow test-first and adaptive` and `ccc63a7 chore(ai): hand off T-003 for review`.
+2. `git show 869a58d --stat` — 6 files changed: `implementer.md.tmpl`, `.ai/prompts/implementer.md`, `AGENTS.md.tmpl`, `AGENTS.md`, `engine_test.go`, `scaffold_test.go`.
+3. `git show 869a58d -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 3 plan changes verified:
+   - Standalone `Re-read .ai/TASKS.md before every command.` bullet added ✅
+   - `Write or update tests for each changed behaviour before writing the implementation code.` replaces `Update tests as needed.` ✅
+   - `commit_task` description updated with `git rev-list --count @{upstream}..HEAD`, adaptive amend/soft-reset logic ✅
+4. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical.
+5. `git show 869a58d -- internal/template/templates/base/AGENTS.md.tmpl` — all 3 AGENTS.md.tmpl plan changes verified:
+   - `writes or updates tests for each changed behaviour before writing implementation code` ✅
+   - Adaptive amend/reset wording in both the mode description and `commit_task` command spec ✅
+6. `git show 869a58d -- AGENTS.md` — identical changes applied to live file.
+7. Managed section comparison via `awk '/agentinit:managed:start/,/agentinit:managed:end/'` — both template and live have identical phrasing for all T-003 changes.
+8. `git show 869a58d -- internal/template/engine_test.go` — AGENTS.md assertions added for TDD wording and adaptive commit; implementer `assertPromptCriticalRules` updated with standalone TASKS.md re-read and updated Files sentence; positive assertions for TDD and `git rev-list` phrases added.
+9. `git show 869a58d -- internal/scaffold/scaffold_test.go` — implementer and AGENTS.md assertions updated to match new wording.
+10. `go fmt ./...` — clean.
+11. `go vet ./...` — clean.
+12. `go test ./...` — all packages pass.
+
+##### Findings
+- All plan changes correctly implemented across all 4 target files.
+- AGENTS.md.tmpl and live AGENTS.md managed sections are consistent.
+- Test assertions in `engine_test.go` and `scaffold_test.go` aligned with new content.
+- One cosmetic nit: `commit_task` lost its indentation level in the implementer prompt (not a required fix).
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS_WITH_NOTES`
+
+---
+
+## Task: T-004
 
 ### Review Round 1
 
 Status: **PASS**
 
-Reviewed: 2026-04-21
+Reviewed: 2026-04-22
 
 #### Findings
 
-- **nit** — `cmd/cycle.go` line 316: the warning message `"no remote configured — skipping PR"` is slightly misleading when a non-GitHub remote IS configured (the condition also fires when `!isGitHubRemote(remoteURL)`). The plan explicitly specifies this wording, so no fix required.
-- **nit** — `cmd/cycle_test.go`: the non-GitHub-remote path (`hasRemote=true && !isGitHubRemote`) has no dedicated test. The single new test only exercises the `!hasRemote` branch. Low risk — condition is simple boolean logic. No fix required.
+None.
 
 #### Verification
 
 ##### Steps
-1. Read `cmd/cycle.go` lines 314–318 — confirmed implementation matches plan exactly: `if !opts.DryRun && (!hasRemote || !isGitHubRemote(remoteURL))` prints warning to `cliOutput` and returns nil.
-2. Confirmed `runCycleEnd` (lines 164–167) is unchanged — still uses its own remote check with its own message and nil return; path not touched by this commit.
-3. Confirmed dry-run path is unaffected: `opts.DryRun` short-circuits the remote check, letting dry-run proceed to produce output normally.
-4. Read new test `TestPRCommandSkipsWhenNoRemoteConfigured` in `cmd/cycle_test.go` — stubs `git remote get-url origin` to return an error, asserts `RunE()` returns nil, asserts no `run` calls were made, and asserts exact output string `"no remote configured — skipping PR\n"`.
-5. Read README diff — note added immediately after the `aide pr` description line, within scope, no other sections modified.
-6. Ran `go fmt ./...` — clean.
-7. Ran `go vet ./...` — clean.
-8. Ran `go test ./...` — all packages pass.
+1. `git log --oneline -6` — confirmed WIP commits `9543151 fix(update): make self-update dry runs idempotent` and `e333d1c chore(ai): hand off T-004 for review`.
+2. `git show 9543151 --stat` — 4 files changed: `update.go`, `update_test.go`, `.ai/TASKS.md`, `.claude/settings.local.json`.
+3. `git show 9543151 -- internal/update/update_test.go` — `TestSelfUpdateIsIdempotent` added matching plan spec exactly (same code, `findRepoRoot` helper). `TestRunIgnoresManifestGeneratedAtDrift` also added to cover the `update.go` behaviour change.
+4. `git show 9543151 -- internal/update/update.go` — `manifestsEqualIgnoringGeneratedAt()` added; compares `Version` and `Files` via `reflect.DeepEqual`, ignores `GeneratedAt`. Called before `bytes.Equal` in `manifestNeedsWrite`. Correct approach: prevents `generated_at`-only manifest drift from being reported as a change.
+5. `grep` on `internal/template/engine_test.go` for all stale phrases required by the plan — zero matches (all removals were handled by T-001/T-002/T-003 reworks; no remaining stale assertions).
+6. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS (0.00s).
+7. `go fmt ./...` — clean.
+8. `go vet ./...` — clean.
+9. `go test ./...` — all packages pass.
 
 ##### Findings
-- All checks pass; no failures or warnings.
+- `TestSelfUpdateIsIdempotent` correctly finds repo root, runs dry-run, and fails the test with a human-readable diff if any managed files would change.
+- `manifestsEqualIgnoringGeneratedAt` is a sound fix: it avoids false positives from timestamp-only manifest regeneration without masking real file content drift.
+- `engine_test.go` stale assertion cleanup (T-004 plan scope) was already addressed across T-001/T-002/T-003 rework commits — no remaining stale assertions found.
+- `.claude/settings.local.json` restored to template state as a side effect of `TestSelfUpdateIsIdempotent` catching the local divergence.
 
 ##### Risks
 - None.
 
-#### Open Questions
+#### Verdict
+`PASS`
+
+---
+
+## Task: T-002 (cycle 0.8.3)
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commit `9ac65f9 fix(prompts): append cycle-close handoff entries` exists.
+2. `git show 9ac65f9 --stat` — 8 files changed: `AGENTS.md.tmpl`, `implementer.md.tmpl`, `AGENTS.md`, `.ai/prompts/implementer.md`, `engine_test.go`, `scaffold_test.go`, `.ai/TASKS.md`, `.ai/HANDOFF.md`.
+3. `git show 9ac65f9 -- internal/template/templates/base/AGENTS.md.tmpl` — plan change verified:
+   - Old: `close the cycle with a \`chore(ai): close cycle\` commit and a \`Release-As: x.y.z\` footer`
+   - New: `append a closing entry to \`.ai/HANDOFF.md\`` bullet added before the commit step ✅
+4. `git show 9ac65f9 -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — plan change verified:
+   - Old: `close the cycle with a \`chore(ai): close cycle\` commit carrying \`Release-As: VERSION\``
+   - New: `append a closing entry to \`.ai/HANDOFF.md\` (\`### Cycle closed — VERSION — <UTC timestamp>\`); stage and commit...` ✅
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical ✅
+6. `grep "Cycle closed\|append a closing entry" AGENTS.md internal/template/templates/base/AGENTS.md.tmpl` — both contain `append a closing entry to \`.ai/HANDOFF.md\`` with identical wording ✅
+7. `git show 9ac65f9 -- internal/template/engine_test.go` — two assertions added: `"append a closing entry to \`.ai/HANDOFF.md\`"` in AGENTS.md strings and in implementer-specific check ✅
+8. `git show 9ac65f9 -- internal/scaffold/scaffold_test.go` — two assertions added: `"append a closing entry to \`.ai/HANDOFF.md\`"` in both implementer and AGENTS.md slices ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — all packages pass.
+12. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; working tree clean (`.claude/settings.local.json` matches template).
+13. `git status` — only `.ai/TASKS.md` modified (this review session's status update); no other drift.
+
+##### Findings
+- Both plan changes correctly implemented in `AGENTS.md.tmpl` and `implementer.md.tmpl`.
+- Live `AGENTS.md` managed section and `.ai/prompts/implementer.md` match their respective templates exactly (template diff is expected template-syntax expansion, not content divergence; `TestSelfUpdateIsIdempotent` confirms zero managed-file drift).
+- Test coverage in `engine_test.go` and `scaffold_test.go` correctly adds positive assertions for the new handoff-entry step in both AGENTS.md and implementer prompt contexts.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
+## Task: T-002 (cycle 0.8.3)
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. Read `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — plan change verified:
+   - Line 19: "Compare working-tree changes against `.ai/PLAN.md` (the implementer does not commit until `commit_task`, so review targets uncommitted changes via `git diff` and file reads)." ✅
+2. Read `.ai/prompts/reviewer.md` — byte-for-byte identical to template ✅
+3. Read `internal/template/templates/base/ai/HANDOFF.template.md.tmpl` — plan change verified:
+   - Line 19: `| Commit | \`<conventional commit message>\` on \`next_task\`; \`<hash> <message>\` on \`commit_task\` (implement only) |` ✅
+4. Read `.ai/HANDOFF.template.md` — byte-for-byte identical to template ✅
+5. `engine_test.go` line 282 — `"working-tree changes"` positive assertion present for reviewer prompt ✅; HANDOFF template `Commit` field not separately tested (plan condition "if HANDOFF template is tested" is not applicable) ✅
+6. `scaffold_test.go` line 230 — `"working-tree changes"` assertion present in reviewer rules slice ✅
+7. `go fmt ./...` — clean.
+8. `go vet ./...` — clean.
+9. `go test ./...` — all packages pass.
+10. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms reviewer.md and HANDOFF.template.md are in sync with their templates.
+
+##### Findings
+- Both plan-specified changes correctly implemented across all four target files.
+- Test coverage added in both `engine_test.go` and `scaffold_test.go` for the `"working-tree changes"` reviewer prompt change.
+- HANDOFF template Commit field updated; no test assertion required (not currently tested).
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
+## Task: T-001 (cycle 0.8.3 third pass — eliminate WIP commits)
+
+### Review Round 1
+
+Status: **FAIL**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **major** — `commit_task` entry unindented in `implementer.md.tmpl` / `.ai/prompts/implementer.md` (line 18)  
+   The plan specifies `  - \`commit_task...\`` (indented under the "Supported implementer commands" list, consistent with `next_task` and `rework_task`) but the implementation produced `- \`commit_task...\`` (top-level bullet, breaking the list hierarchy). This is a structural inconsistency in the prompt: `commit_task` visually falls outside the "Supported implementer commands" block even though it belongs there. Both files must be corrected.  
+   **Required fix:** In `internal/template/templates/base/ai/prompts/implementer.md.tmpl` and `.ai/prompts/implementer.md`, change line 18 from `- \`commit_task...\`` to `  - \`commit_task...\`` (add 2-space indent to match `next_task` and `rework_task`).
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commit not yet present (working-tree changes, implementer correctly deferred commit per new flow).
+2. Read `internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 7 plan-specified changes verified:
+   - Critical Rules: "handing off to review" (not "before committing") ✅
+   - Critical Rules: "Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`." ✅
+   - `next_task` description updated with commit-message-to-HANDOFF, no-commit instruction ✅
+   - `rework_task` description updated with "address every required fix; do not `git commit`" ✅
+   - `commit_task` description: simple read-from-HANDOFF + `git add -A && git commit` (no squash logic) ✅
+   - Line 26: "Use `commit_task` to create the single task commit..." ✅
+   - Rework section: "Do not `git commit`. The commit happens later via `commit_task`." + scope-change note ✅
+3. Read `.ai/prompts/implementer.md` — byte-for-byte identical to template ✅
+4. Read `internal/template/templates/base/AGENTS.md.tmpl` — all 3 plan-specified AGENTS changes verified:
+   - Implement Mode (`next_task`): "writes the final Conventional Commit message into the HANDOFF entry `Commit` field", "does not `git commit`" ✅
+   - Implement Mode (`commit_task`): "reads the commit message from the task's `next_task` HANDOFF entry", "runs `git add -A && git commit -m \"<message>\"`" ✅
+   - Implement Mode (rework): "does not `git commit`" ✅
+   - `commit_task` Session Commands spec: read-from-HANDOFF, update TASKS, append HANDOFF entry, run `git add -A && git commit` ✅
+   - Commit Conventions: "`implement` role does not commit during `next_task` or `rework_task`. The single task commit is created by `commit_task` after review approval." ✅
+5. Read `AGENTS.md` — managed section matches template (confirmed independently by `TestSelfUpdateIsIdempotent`) ✅
+6. `rg` scan for stale phrases (`git rev-list`, `--no-edit`, `amend`, `reset --soft`, `WIP commit`, `squash`) in all four target files — **zero matches** ✅
+7. `engine_test.go` assertions verified:
+   - Old stale assertions removed (no `git rev-list`, `--no-edit`, amend, "existing WIP commit message") ✅
+   - New positive assertions added: `"does not \`git commit\`"` (AGENTS.md), `"reads the commit message from the task's \`next_task\` HANDOFF entry"` (AGENTS.md), `"Do not \`git commit\` during \`next_task\` or \`rework_task\`"` (implementer), `"read the commit message from the task's \`next_task\` HANDOFF entry \`Commit\` field"` (implementer) ✅
+8. `scaffold_test.go` assertions verified: aligned with new no-WIP-commit wording ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — all packages pass.
+12. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms managed files (AGENTS.md, implementer.md, etc.) are in sync with templates.
+
+##### Findings
+- All plan-specified changes correctly implemented across all six target files.
+- No stale WIP-commit references in any of the target or test files.
+- `TestSelfUpdateIsIdempotent` confirms zero managed-file drift.
+- One cosmetic nit: `commit_task` list entry unindented (same carry-over as T-003); content correct.
+
+##### Risks
+- None.
+
+#### Required Fixes
+1. **(Major — required)** In `internal/template/templates/base/ai/prompts/implementer.md.tmpl` and `.ai/prompts/implementer.md`, change the `commit_task` command line from `- \`commit_task...\`` to `  - \`commit_task...\`` (2-space indent) so it sits correctly within the "Supported implementer commands" list alongside `next_task` and `rework_task`.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. Checked `internal/template/templates/base/ai/prompts/implementer.md.tmpl` line 18 — `commit_task` now reads `  - \`commit_task...\`` (2-space indent), matching `next_task` (line 16) and `rework_task` (line 17) ✅
+2. Checked `.ai/prompts/implementer.md` line 18 — identical fix applied ✅
+3. `go fmt ./...` — clean.
+4. `go vet ./...` — clean.
+5. `go test ./...` — all packages pass.
+6. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms template and live file are in sync.
+
+##### Findings
+- Round 1 required fix resolved: `commit_task` list hierarchy is now correct in both files.
+- All content changes from Round 1 remain intact.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
+## Task: T-001 (cycle 0.8.3 second pass)
+
+### Review Round 1
+
+Status: **FAIL**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+1. **major** — `go test ./...` fails: `TestSelfUpdateIsIdempotent` reports `.claude/settings.local.json` out of sync  
+   The file has an uncommitted working-tree modification: a stale `"Bash(echo \"exit:$?)"` permission entry was appended by the review session's tool calls. The T-001 commit (`26d8424`) did not touch this file and is not the cause, but the acceptance criteria requires `go test ./...` to pass, which it does not.  
+   **Required fix:** Restore `.claude/settings.local.json` to template state (remove the stale `Bash(echo "exit:$?)` entry so the last permission remains `"mcp__aide__*"`). Stage and commit the correction before resubmitting.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -8` — confirmed WIP commit `26d8424 fix(prompts): preserve commit_task WIP commit messages` exists.
+2. `git show 26d8424 --stat` — 10 files changed; all expected T-001 plan files present.
+3. `git show 26d8424 -- internal/template/templates/base/ai/prompts/implementer.md.tmpl` — all 2 plan changes verified:
+   - `commit_task` description: `git commit --amend --no-edit` for one WIP commit; `msg=$(git log -1 --format=%B)` + soft-reset + `git commit -m "$msg"` for multiple ✅
+   - "Use `commit_task` to squash..." updated with "existing WIP commit message is preserved - do not rewrite it." ✅
+4. `git show 26d8424 -- internal/template/templates/base/AGENTS.md.tmpl` — both plan changes verified (Implement Mode block and Session Commands `commit_task` spec) ✅
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/implementer.md.tmpl .ai/prompts/implementer.md` — exit 0; files identical ✅
+6. AGENTS.md.tmpl and live AGENTS.md managed sections both contain `--no-edit` and message-preservation wording ✅
+7. `grep release-note-ready` on all 4 target files — zero matches; phrasing fully removed from `commit_task` context ✅
+8. `engine_test.go` and `scaffold_test.go` assertions updated correctly: old phrase replaced, new `--no-edit` and preservation assertions added ✅
+9. `go fmt ./...` — clean.
+10. `go vet ./...` — clean.
+11. `go test ./...` — **FAIL**: `TestSelfUpdateIsIdempotent` detects `.claude/settings.local.json` working-tree drift. `git diff .claude/settings.local.json` shows an extra `"Bash(echo \"exit:$?)"` entry introduced by reviewer-session tool calls.
+
+##### Findings
+- All T-001 plan changes are correctly implemented. Content, template/live sync, and test assertions are correct.
+- The test failure is caused by working-tree drift in `.claude/settings.local.json` unrelated to T-001's code changes, but must be resolved before `go test ./...` passes.
+
+##### Risks
+- None beyond the file sync fix required.
+
+#### Required Fixes
+1. **(Major — required)** Restore `.claude/settings.local.json` to template state by removing `"Bash(echo \"exit:$?)"`. Stage and commit the fix, then resubmit for review.
+
+#### Verdict
+`FAIL`
+
+---
+
+### Review Round 2
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — rework commit `f10de63 fix(prompts): address review findings` present.
+2. `git show f10de63 --stat` — only `.ai/` artifacts changed; `.claude/settings.local.json` not in the diff.
+3. `git status .claude/settings.local.json` — clean; `git diff` — empty. Working tree is fully clean.
+4. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS (0.00s).
+5. `go fmt ./...` — clean.
+6. `go vet ./...` — clean.
+7. `go test ./...` — all packages pass.
+
+##### Findings
+- Round 1 blocker resolved: `.claude/settings.local.json` is back in sync with the template; `TestSelfUpdateIsIdempotent` passes.
+- All T-001 plan changes (verified in Round 1) remain intact.
+
+##### Risks
 - None.
 
 #### Verdict

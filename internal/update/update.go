@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -243,10 +244,21 @@ func manifestNeedsWrite(targetDir string, manifest scaffold.Manifest) (bool, str
 		return false, "", fmt.Errorf("read %s: %w", path, err)
 	}
 
+	if manifestsEqualIgnoringGeneratedAt(existing, manifest) {
+		return false, "", nil
+	}
 	if bytes.Equal(existing, desired) {
 		return false, "", nil
 	}
 	return true, actionUpdate, nil
+}
+
+func manifestsEqualIgnoringGeneratedAt(existing []byte, desired scaffold.Manifest) bool {
+	var current scaffold.Manifest
+	if err := json.Unmarshal(existing, &current); err != nil {
+		return false
+	}
+	return current.Version == desired.Version && reflect.DeepEqual(current.Files, desired.Files)
 }
 
 func marshalManifest(manifest scaffold.Manifest) ([]byte, error) {

@@ -174,6 +174,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`work_all`",
 		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"`status_cycle [TASK_ID]`",
+		"writes or updates tests for each changed behaviour before writing implementation code",
+		"does not `git commit`",
+		"reads the commit message from the task's `next_task` HANDOFF entry",
+		"append a closing entry to `.ai/HANDOFF.md`",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 		"<!-- agentinit:managed:end -->",
@@ -220,16 +224,26 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if !strings.Contains(implementerPrompt, "Release-As: VERSION") {
 		t.Error("implementer prompt should describe the cycle-close artifact commit")
 	}
+	if !strings.Contains(implementerPrompt, "append a closing entry to `.ai/HANDOFF.md`") {
+		t.Error("implementer prompt should describe the cycle-close handoff entry")
+	}
 	if strings.Contains(implementerPrompt, "search-strategy.md") {
 		t.Error("implementer prompt should not reference search-strategy.md")
 	}
 	assertPromptCriticalRules(t, "implementer prompt", implementerPrompt, []string{
 		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
 		"Never include `Co-Authored-By` trailers in commit messages.",
-		"Run the required validation commands before committing.",
-		"Stage all changes with `git add -A`.",
-		"Files are the source of truth. Re-read `.ai/TASKS.md` and `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
+		"Run the required validation commands before handing off to review.",
+		"Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`.",
+		"Re-read `.ai/TASKS.md` before every command.",
+		"Files are the source of truth. Re-read `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 	})
+	if !strings.Contains(implementerPrompt, "Write or update tests for each changed behaviour before writing the implementation code.") {
+		t.Error("implementer prompt should require tests before implementation changes")
+	}
+	if !strings.Contains(implementerPrompt, "read the commit message from the task's `next_task` HANDOFF entry `Commit` field") {
+		t.Error("implementer prompt should read the commit message from the HANDOFF entry")
+	}
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
 	if !strings.Contains(plannerPrompt, "move all newly planned tasks to `ready_for_implement`") {
@@ -256,21 +270,29 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(reviewerPrompt, "search-strategy.md") {
 		t.Error("reviewer prompt should not reference search-strategy.md")
 	}
+	if strings.Contains(reviewerPrompt, "Use Conventional Commit subjects") {
+		t.Error("reviewer prompt should not contain commit convention rules")
+	}
 	if !strings.Contains(reviewerPrompt, "`ready_to_commit`") {
 		t.Error("reviewer prompt should mention ready_to_commit")
 	}
 	if !strings.Contains(reviewerPrompt, "Perform verification as part of review") {
 		t.Error("reviewer prompt should describe verification responsibilities")
 	}
+	if !strings.Contains(reviewerPrompt, "working-tree changes") {
+		t.Error("reviewer prompt should review working-tree changes before commit_task")
+	}
+	if !strings.Contains(reviewerPrompt, "always required, not optional") {
+		t.Error("reviewer prompt should make E2E and manual verification mandatory")
+	}
 	if !strings.Contains(reviewerPrompt, "appending or updating only the active task section, preserving prior task history") {
 		t.Error("reviewer prompt should preserve prior task history in REVIEW.md")
 	}
 	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
-		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Re-read `.ai/TASKS.md` before every command.",
 		"Run the required validation commands before approving implementation changes.",
 		"Never modify code.",
-		"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
+		"Files are the source of truth. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 	})
 
 	reviewTemplate := files[".ai/REVIEW.template.md"]
@@ -278,6 +300,10 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf(".ai/REVIEW.template.md should contain %q", snippet)
 		}
+	}
+	handoffTemplate := files[".ai/HANDOFF.template.md"]
+	if !strings.Contains(handoffTemplate, "| Commit | `<conventional commit message>` on `next_task`; `<hash> <message>` on `commit_task` (implement only) |") {
+		t.Error(".ai/HANDOFF.template.md should describe the no-WIP-commit Commit field flow")
 	}
 	poPrompt := files[".ai/prompts/po.md"]
 	for _, snippet := range []string{
@@ -287,14 +313,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`session_start`",
 		"`session_run`",
 		"`session_get_output`",
+		"`session_get_result`",
 		"`session_status`",
 		"`session_list`",
 		"`session_stop`",
 		"`session_reset`",
 		"`session_delete`",
 		"`session_run(name, command)`",
-		"`session_get_output(name, offset)`",
-		"`running == false`",
+		"`session_get_result(name)`",
+		"`session_status(name)`",
 		"`session_start(name=\"implementer\", role=\"implement\")`",
 		"`ready_to_commit` -> implementer `commit_task`",
 		"Reviewer owns both review and verification",

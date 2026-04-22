@@ -205,13 +205,17 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"## Critical Rules",
 				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
 				"Never include `Co-Authored-By` trailers in commit messages.",
-				"Run the required validation commands before committing.",
-				"Stage all changes with `git add -A`.",
+				"Run the required validation commands before handing off to review.",
+				"Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`.",
+				"Re-read `.ai/TASKS.md` before every command.",
 				"`aide cycle end [VERSION]`",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
 				"Release-As: VERSION",
-				"Files are the source of truth. Re-read `.ai/TASKS.md` and `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
+				"append a closing entry to `.ai/HANDOFF.md`",
+				"Write or update tests for each changed behaviour before writing the implementation code.",
+				"read the commit message from the task's `next_task` HANDOFF entry `Commit` field",
+				"Files are the source of truth. Re-read `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
 		},
@@ -219,14 +223,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			path: ".ai/prompts/reviewer.md",
 			rules: []string{
 				"## Critical Rules",
-				"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-				"Never include `Co-Authored-By` trailers in commit messages.",
+				"Re-read `.ai/TASKS.md` before every command.",
 				"Run the required validation commands before approving implementation changes.",
 				"Never modify code.",
 				"`ready_to_commit`",
+				"working-tree changes",
 				"Perform verification as part of review",
+				"always required, not optional",
 				"appending or updating only the active task section, preserving prior task history",
-				"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
+				"Files are the source of truth. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 				"For the full ruleset see `AGENTS.md`.",
 			},
 		},
@@ -240,6 +245,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 			if !strings.Contains(prompt, rule) {
 				t.Errorf("generated %s should contain %q", tc.path, rule)
 			}
+		}
+		if tc.path == ".ai/prompts/reviewer.md" && strings.Contains(prompt, "Use Conventional Commit subjects") {
+			t.Errorf("generated %s should not contain reviewer commit convention rules", tc.path)
 		}
 		if strings.Count(prompt, "AGENTS.md") != 1 {
 			t.Errorf("generated %s should reference AGENTS.md exactly once", tc.path)
@@ -281,6 +289,10 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"conversation with the planner is the roadmap-refinement phase",
 		"`start_plan` is the gate to formal planning",
 		"`review` role never commits.",
+		"writes or updates tests for each changed behaviour before writing implementation code",
+		"does not `git commit`",
+		"reads the commit message from the task's `next_task` HANDOFF entry",
+		"append a closing entry to `.ai/HANDOFF.md`",
 		"Every role must re-read `.ai/TASKS.md` before executing any command.",
 		"Role-specific files to reload as needed:",
 		"`in_review` -> `ready_to_commit` -> `done`",
@@ -367,6 +379,15 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		if !strings.Contains(reviewTemplate, snippet) {
 			t.Errorf("generated .ai/REVIEW.template.md should contain %q", snippet)
 		}
+	}
+
+	handoffTemplateBytes, err := os.ReadFile(filepath.Join(projectDir, ".ai/HANDOFF.template.md"))
+	if err != nil {
+		t.Fatalf("read .ai/HANDOFF.template.md: %v", err)
+	}
+	handoffTemplate := string(handoffTemplateBytes)
+	if !strings.Contains(handoffTemplate, "| Commit | `<conventional commit message>` on `next_task`; `<hash> <message>` on `commit_task` (implement only) |") {
+		t.Error("generated .ai/HANDOFF.template.md should describe the no-WIP-commit Commit field flow")
 	}
 }
 

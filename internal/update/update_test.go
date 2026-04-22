@@ -10,6 +10,27 @@ import (
 	"github.com/riadshalaby/agentinit/internal/scaffold"
 )
 
+func TestSelfUpdateIsIdempotent(t *testing.T) {
+	// Walk up from the package directory to find the repo root (contains go.mod).
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	repoRoot := findRepoRoot(t, dir)
+
+	result, err := Run(repoRoot, true)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if len(result.Changes) != 0 {
+		paths := make([]string, len(result.Changes))
+		for i, c := range result.Changes {
+			paths[i] = c.Path + " (" + c.Action + ")"
+		}
+		t.Fatalf("aide update would change managed files in this repo — template and live file are out of sync:\n  %s\nFix by updating both the template and the live file together.", strings.Join(paths, "\n  "))
+	}
+}
+
 func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 	dir := t.TempDir()
 	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
@@ -112,6 +133,31 @@ func TestRunIsIdempotentForGoScaffold(t *testing.T) {
 	projectDir := filepath.Join(dir, "demo")
 
 	result, err := Run(projectDir, false)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if len(result.Changes) != 0 {
+		t.Fatalf("Run() changes = %#v, want no changes", result.Changes)
+	}
+}
+
+func TestRunIgnoresManifestGeneratedAtDrift(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+		t.Fatalf("scaffold.Run() error = %v", err)
+	}
+	projectDir := filepath.Join(dir, "demo")
+
+	manifest, err := scaffold.ReadManifest(projectDir)
+	if err != nil {
+		t.Fatalf("ReadManifest() error = %v", err)
+	}
+	manifest.GeneratedAt = "2000-01-01T00:00:00Z"
+	if err := scaffold.WriteManifest(projectDir, manifest); err != nil {
+		t.Fatalf("WriteManifest() error = %v", err)
+	}
+
+	result, err := Run(projectDir, true)
 	if err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
@@ -475,4 +521,19 @@ func assertHasChange(t *testing.T, changes []Change, path, action string) {
 		}
 	}
 	t.Fatalf("expected change %s (%s), got %#v", path, action, changes)
+}
+
+func findRepoRoot(t *testing.T, start string) string {
+	t.Helper()
+	dir := start
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("could not find repo root (no go.mod found)")
+		}
+		dir = parent
+	}
 }

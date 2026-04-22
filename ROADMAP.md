@@ -1,57 +1,27 @@
-# ROADMAP v0.8.2
+# ROADMAP
 
-Goal: improve out-of-the-box installation experience by detecting git in the wizard and documenting the PATH setup after `go install`.
+Goal: eliminate WIP commits entirely — the implementer does not commit until the task is fully reviewed and approved. This removes all squash/amend/counting logic from `commit_task` and fixes the broken base-counting problem where `@{upstream}..HEAD` includes commits from earlier tasks.
 
-## Priority 1 – Git detection in the interactive wizard
+## Priority 1 — No-commit-until-done flow
 
-Objective: add `git` as a **required** tool in the `aide init` interactive wizard; block scaffold creation if git is absent.
+### Current problem
 
-- Detect `git` presence in PATH at wizard startup, alongside the existing tool checks.
-- Mark as **required** (default: install) — `aide init` must not proceed without git.
-- macOS: offer `brew install git` when Homebrew is available; fall back to manual install link.
-- Windows: detect Git for Windows / Git Bash specifically; offer `choco install git` when Chocolatey is available; fall back to manual install link.
-- Linux: show the official manual install link only (no package-manager command).
-- Update the Tool Detection and Installation table in `README.md` to include the `git` row.
+The implementer creates WIP commits during `next_task`, then `commit_task` tries to squash them. The squash uses `@{upstream}..HEAD` to count WIP commits, but that range includes commits from *all previous tasks on the branch*, not just the current task. This makes `commit_task` unreliable on multi-task branches.
 
-## Priority 2 – Remote-optional workflow
+### New flow
 
-Objective: allow `aide pr` to run gracefully when no git remote is configured.
+1. **`next_task`**: Implementer works — code, tests, docs. Writes the final Conventional Commit message into the HANDOFF entry `Commit` field (without a hash). Updates TASKS.md to `ready_for_review`. **No git commit.**
+2. **Review**: Reviewer examines working-tree changes via `git diff` and file reads. Moves task to `ready_to_commit` or `changes_requested`.
+3. **`rework_task`**: Implementer fixes findings. **No git commit.** Updates TASKS.md back to `ready_for_review`.
+4. **`commit_task`**: Reads the commit message from the `next_task` HANDOFF entry. Updates TASKS.md to `done`, appends a `commit_task` HANDOFF entry, then runs `git add -A && git commit -m "<message>"`. One commit per task, zero squashing.
 
-- Affects `aide pr` only.
-- Check whether `origin` is configured (`git remote get-url origin`); if not: skip the command and emit a warning (e.g. `"no remote configured – skipping PR"`).
-- No silent failure, no crash — a readable warning with a hint on how to add a remote.
-- All other commands (`aide cycle end`, local commits, branches) are unaffected.
+### What changes
 
-## Priority 3 – `aide update` runs tool checks
-
-Objective: `aide update` runs the same tool-detection and install-offer step as `aide init`, including the new git check.
-
-- After refreshing managed files, scan for all tools in the registry (same `prereq.Scan` call used by the wizard).
-- Show missing tools and offer to install them using the same install flow as the wizard.
-- Option A only: no new git-less mode, no silent skip — just the same interactive tool check already present in `aide init`.
-
-## Priority 4 – Codex reasoning effort configurable with "high" default for implementer
-
-Objective: the `effort` field in `.ai/config.json` maps to `model_reasoning_effort` for
-Codex (`-c model_reasoning_effort="high"`), with `"high"` as the default for the
-`implement` role.
-
-- `internal/launcher/launcher.go` codex path: pass `-c model_reasoning_effort=<effort>`
-  when `opts.Effort` is set.
-- `internal/mcp/adapter_codex.go`: store effort at `Start` time and apply it on both
-  `Start` and `RunStream` calls.
-- `internal/mcp/config.go`: add `DefaultEffortForRole` returning `"high"` for
-  implement+codex; wire it as fallback in `EffortForRoleAndProvider`.
-- `internal/template/templates/base/ai/config.json.tmpl`: add `"effort": "high"` to the
-  `implement` role.
-- `README.md`: document that `effort` for codex maps to `model_reasoning_effort`; show
-  the default.
-
-## Priority 5 – README: PATH setup after `go install`
-
-Objective: document how to add `$GOPATH/bin` to `$PATH` so that `aide` is runnable after installation.
-
-- Add a platform-specific PATH setup block immediately after the `go install` command in the Quick Start section of `README.md`.
-- macOS / Linux: show `export PATH="$(go env GOPATH)/bin:$PATH"` and note the shell profile file to persist it (`~/.zshrc`, `~/.bashrc`, etc.).
-- Windows: show both `setx GOPATH_BIN "%USERPROFILE%\go\bin"` / `$env:PATH` PowerShell-profile approach and a note on how to persist it.
-- Scope: main `README.md` only; the scaffold template (`README.md.tmpl`) is not affected.
+- `AGENTS.md.tmpl`: Implement Mode no longer mentions WIP commits or squash. `commit_task` spec becomes: read message from HANDOFF, stage, commit, done. `rework_task` no longer commits.
+- `implementer.md.tmpl`: Same simplifications. Remove `git rev-list`, `--amend`, `--no-edit`, `reset --soft`. `next_task` writes the commit message to HANDOFF but does not commit. `rework_task` does not commit. `commit_task` is a one-liner.
+- `HANDOFF.template.md.tmpl` and live `HANDOFF.template.md`: Update the `Commit` field description to `<conventional commit message>` (no hash on `next_task` entries; hash added by `commit_task` entry).
+- `reviewer.md.tmpl`: No structural changes — reviewer already reviews via file reads. Clarify that review targets working-tree changes, not a commit diff.
+- `po.md.tmpl`: No changes — PO references `commit_task` by name, which still exists.
+- `engine_test.go` and `scaffold_test.go`: Update assertions to match new wording (remove squash/amend/WIP assertions, add no-commit/message-from-HANDOFF assertions).
+- Live files (`AGENTS.md`, `.ai/prompts/implementer.md`, `.ai/prompts/reviewer.md`, `.ai/HANDOFF.template.md`): Mirror template changes.
+- Commit Conventions section in `AGENTS.md.tmpl`: Clarify that the single task commit is created by `commit_task` after review, not during implementation.
