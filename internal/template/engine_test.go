@@ -174,6 +174,8 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`work_all`",
 		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"`status_cycle [TASK_ID]`",
+		"writes or updates tests for each changed behaviour before writing implementation code",
+		"counts WIP commits ahead of base; if one: amends with the release-note-ready Conventional Commit message; if multiple: soft-resets and creates a new single Conventional Commit",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 		"<!-- agentinit:managed:end -->",
@@ -228,8 +230,15 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"Never include `Co-Authored-By` trailers in commit messages.",
 		"Run the required validation commands before committing.",
 		"Stage all changes with `git add -A`.",
-		"Files are the source of truth. Re-read `.ai/TASKS.md` and `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
+		"Re-read `.ai/TASKS.md` before every command.",
+		"Files are the source of truth. Re-read `.ai/PLAN.md` before executing any command. Re-read `.ai/REVIEW.md` before `rework_task`.",
 	})
+	if !strings.Contains(implementerPrompt, "Write or update tests for each changed behaviour before writing the implementation code.") {
+		t.Error("implementer prompt should require tests before implementation changes")
+	}
+	if !strings.Contains(implementerPrompt, "git rev-list --count @{upstream}..HEAD") {
+		t.Error("implementer prompt should describe adaptive commit_task commit counting")
+	}
 
 	plannerPrompt := files[".ai/prompts/planner.md"]
 	if !strings.Contains(plannerPrompt, "move all newly planned tasks to `ready_for_implement`") {
