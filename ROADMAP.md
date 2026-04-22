@@ -1,31 +1,40 @@
 # ROADMAP
 
-Goal: fix three prompt-template gaps that cause agent misbehaviour, add lightweight TDD expectations to the workflow, and add a self-update idempotency guard so template drift is caught automatically by CI.
+Goal: simplify two friction points in the aide workflow — make `commit_task` cheaper by reusing the existing WIP commit message instead of re-deriving it, and fix `aide cycle end` so it works when the working tree is clean after the last `commit_task`.
 
-## Priority 1 — Fix `po.md` template drift
+## Priority 1 — Make `commit_task` reuse the existing WIP commit message
 
-`po.md.tmpl` is missing `session_get_result` and uses the old output-polling pattern. `aide update` overwrites downstream `po.md` files from this stale template.
+The implementer already writes a release-note-ready Conventional Commit subject in the WIP commit and logs it in HANDOFF. Then `commit_task` asks the agent to craft a "release-note-ready Conventional Commit message" from scratch — re-reading plan context and burning tokens to arrive at the same message.
 
-- Add `session_get_result` to the tool list.
-- Update `session_get_output` description ("raw output for debugging … `limit` to cap each chunk").
-- Replace old polling loop (`session_get_output` until `running == false`) with `session_status` → `session_get_result` pattern; demote `session_get_output` to debug-only.
-- Update "Signs that a role command is complete" to reference `session_get_result` terminal statuses.
+Fix: change `commit_task` to preserve the existing WIP commit message:
+- If one WIP commit: `git add -A && git commit --amend --no-edit` (keeps the message, adds staged `.ai/` files).
+- If multiple WIP commits: read the subject of the last WIP commit with `git log -1 --format=%B`, then `git reset --soft HEAD~N && git add -A && git commit -m <preserved-message>`.
+- Remove all references to "release-note-ready Conventional Commit message" from `commit_task` — the implementer already wrote it during `next_task`.
 
-## Priority 2 — Fix reviewer prompt
+Files affected:
+- `AGENTS.md.tmpl` managed section (Implement Mode `commit_task` block + Session Commands `commit_task` spec)
+- `implementer.md.tmpl` (`commit_task` command description)
+- Live `AGENTS.md` and `.ai/prompts/implementer.md`
+- `engine_test.go` and `scaffold_test.go` assertions that match the old "amends with the release-note-ready" wording
 
-Two issues:
+## Priority 2 — Fix `aide cycle end` on clean working tree
 
-1. **Commit rules don't belong here.** The Critical Rules block contains commit conventions copied from the implementer. The reviewer never commits — remove them.
-2. **E2E testing is not optional.** The current wording "when the task calls for them" allows E2E to be skipped. E2E verification is always mandatory.
+After the last `commit_task` squashes everything including `.ai/` artifacts, the working tree is clean. `aide cycle end` tries to create a `chore(ai): close cycle` commit but has nothing to stage, so it fails or creates an empty commit.
 
-## Priority 3 — Fix implementer prompt
+Fix: `aide cycle end` appends a closing entry to `.ai/HANDOFF.md` before committing. This gives the commit real content and provides a natural end marker for the handoff log.
 
-Three issues:
+Closing entry format:
+```
+### Cycle closed — <version> — <UTC timestamp>
 
-1. **TASKS.md re-read rule is buried.** It lives inside a long sentence in Critical Rules and gets overlooked. Promote it to a dedicated bullet point: `Re-read .ai/TASKS.md before every command.`
-2. **No test-first expectation.** The current wording "Update tests as needed" is reactive. Add lightweight TDD: implementer writes or updates tests before writing implementation code; reviewer verifies that test coverage exists for the changed behaviour and performs a manual test where possible.
-3. **`commit_task` is over-specified and error-prone.** The current squash-rebase approach causes unnecessary complexity. Replace with adaptive amend logic: count commits ahead of base (`git log --oneline origin/HEAD..HEAD`); if one WIP commit, use `git add -A && git commit --amend`; if multiple WIP commits, use `git reset --soft HEAD~N && git add -A && git commit`. Both paths produce a single Conventional Commit.
+| Field | Value |
+|-------|-------|
+| Summary | All tasks done; cycle closed |
+| Version | <version> |
+```
 
-## Priority 4 — Self-update idempotency guard
-
-Add `TestSelfUpdateIsIdempotent` to `internal/update/`: runs `update.Run(repoRoot, dryRun=true)` and asserts zero changes. Catches drift in any managed file the moment it diverges from its template. Update `engine_test.go` po.md assertions to reflect the new template content (remove stale references to old polling pattern; add assertions for `session_get_result`; add assertions for new reviewer and implementer rules).
+Files affected:
+- `AGENTS.md.tmpl` managed section (`aide cycle end` spec)
+- `implementer.md.tmpl` (`aide cycle end` command description)
+- Live `AGENTS.md` and `.ai/prompts/implementer.md`
+- `engine_test.go` and `scaffold_test.go` assertions for cycle-end wording

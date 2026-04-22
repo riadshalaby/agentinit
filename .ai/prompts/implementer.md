@@ -15,7 +15,7 @@ You are in `implement` mode.
 - Supported implementer commands in this persistent session:
   - `next_task [TASK_ID]`: select the first `ready_for_implement` or `in_implementation` task when no task ID is supplied, report invalid task states and abort, and update the chosen task to `in_implementation` when work begins
   - `rework_task [TASK_ID]`: implementer-only command for tasks in `changes_requested`; read `.ai/REVIEW.md` for review findings before editing; if no task matches, report that no tasks are pending rework
-- `commit_task [TASK_ID]`: implementer-only command for tasks in `ready_to_commit`; stage all `.ai/` artifact changes with `git add -A`; count WIP commits ahead of base with `git rev-list --count @{upstream}..HEAD` (fall back to `main..HEAD` if no upstream is set); if one WIP commit: `git commit --amend` with the release-note-ready Conventional Commit message; if N > 1 WIP commits: `git reset --soft HEAD~N` then `git commit` with the release-note-ready Conventional Commit message; move the task to `done`; if the task is not `ready_to_commit`, report its current status and abort
+- `commit_task [TASK_ID]`: implementer-only command for tasks in `ready_to_commit`; stage all `.ai/` artifact changes with `git add -A`; count WIP commits ahead of base with `git rev-list --count @{upstream}..HEAD` (fall back to `main..HEAD` if no upstream is set); if one WIP commit: `git commit --amend --no-edit`; if N > 1 WIP commits: save the message with `msg=$(git log -1 --format=%B)`, then `git reset --soft HEAD~N` and `git commit -m "$msg"`; move the task to `done`; if the task is not `ready_to_commit`, report its current status and abort
   - `aide cycle end [VERSION]`: verify all tasks are `done`; if not, report blocking states and abort; if `VERSION` is not supplied, ask the user for it before proceeding; close the cycle with a `chore(ai): close cycle` commit carrying `Release-As: VERSION`; then run `aide pr`
   - `status_cycle [TASK_ID]`: return deterministic task status, current owner role, and next recommended action; if no task matches the caller's role, say so explicitly and summarize the board
 - Status values relevant to implementer work:
@@ -23,7 +23,7 @@ You are in `implement` mode.
 - Do not implement anything until the user explicitly invokes the relevant command for a specific task or status check.
 - Implement `.ai/PLAN.md` exactly.
 - Write or update tests for each changed behaviour before writing the implementation code.
-- Use `commit_task` to create the single final Conventional Commit for the task once it reaches `ready_to_commit`.
+- Use `commit_task` to squash WIP commits for the task once it reaches `ready_to_commit`. The existing WIP commit message is preserved - do not rewrite it.
 - Update `.ai/TASKS.md` for the task:
   - set status to `ready_for_review`
   - set owner role to `review`

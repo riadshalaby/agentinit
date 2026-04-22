@@ -175,7 +175,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`codex` PO runs use inline `-c mcp_servers.aide.*` overrides",
 		"`status_cycle [TASK_ID]`",
 		"writes or updates tests for each changed behaviour before writing implementation code",
-		"counts WIP commits ahead of base; if one: amends with the release-note-ready Conventional Commit message; if multiple: soft-resets and creates a new single Conventional Commit",
+		"counts WIP commits ahead of base; if one: amends with `--no-edit` to include staged files; if multiple: preserves the last WIP commit message, soft-resets, and creates a new commit reusing that message",
 		"When available, use `ast-grep` (`sg`)",
 		"When available, use `fzf` for interactive fuzzy file and symbol selection in the shell",
 		"<!-- agentinit:managed:end -->",
@@ -238,6 +238,12 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "git rev-list --count @{upstream}..HEAD") {
 		t.Error("implementer prompt should describe adaptive commit_task commit counting")
+	}
+	if !strings.Contains(implementerPrompt, "git commit --amend --no-edit") {
+		t.Error("implementer prompt should preserve the existing WIP commit message when only one WIP commit exists")
+	}
+	if !strings.Contains(implementerPrompt, "The existing WIP commit message is preserved - do not rewrite it.") {
+		t.Error("implementer prompt should explicitly preserve the existing WIP commit message")
 	}
 
 	plannerPrompt := files[".ai/prompts/planner.md"]

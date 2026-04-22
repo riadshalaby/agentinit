@@ -64,7 +64,7 @@
 - Implement Mode (`commit_task` after review):
   - only for tasks in `ready_to_commit`
   - stages all `.ai/` artifact changes with `git add -A`
-  - counts WIP commits ahead of base; if one: amends with the release-note-ready Conventional Commit message; if multiple: soft-resets and creates a new single Conventional Commit
+  - counts WIP commits ahead of base; if one: amends with `--no-edit` to include staged files; if multiple: preserves the last WIP commit message, soft-resets, and creates a new commit reusing that message
   - updates `.ai/TASKS.md` status to `done`
   - appends a handoff entry to `.ai/HANDOFF.md` including commit hash
 - Implement Mode (rework after rejection):
@@ -164,7 +164,7 @@ Use these text commands inside the already-running role sessions.
     - implementer only
     - target a task in `ready_to_commit`
     - stage all `.ai/` artifact changes with `git add -A`
-    - count WIP commits ahead of base; if one: amend with the release-note-ready Conventional Commit message; if multiple: soft-reset and create a new single Conventional Commit
+    - count WIP commits ahead of base; if one: amend with `--no-edit`; if multiple: preserve the last WIP commit message, soft-reset, and create a new commit reusing that message
     - update the task to `done`
     - if the supplied task is not ready to commit, report its current status and abort
   - `aide cycle end [VERSION]`
