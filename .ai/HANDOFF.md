@@ -442,3 +442,12 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Version | unversioned |
 
 ---
+
+### Cycle closed — 0.8.3 — 2026-04-22T09:18:22Z
+
+| Field | Value |
+|-------|-------|
+| Summary | All tasks done; cycle closed |
+| Version | 0.8.3 |
+
+---
