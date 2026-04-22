@@ -236,6 +236,7 @@ func TestCycleEndRejectsUndoneTasks(t *testing.T) {
 func TestCycleEndCommitsReleaseFooterAndSkipsPRWithoutGitHubRemote(t *testing.T) {
 	repo := t.TempDir()
 	writeDoneTaskBoard(t, repo)
+	writeCycleTemplate(t, repo, ".ai/HANDOFF.md", "# HANDOFF\n\n---\n")
 
 	restore := stubCycleEnvironment(t)
 	defer restore()
@@ -244,6 +245,7 @@ func TestCycleEndCommitsReleaseFooterAndSkipsPRWithoutGitHubRemote(t *testing.T)
 	var output bytes.Buffer
 	cliOutput = &output
 	cycleLookPath = func(name string) (string, error) { return name, nil }
+	cycleNow = func() string { return "2026-01-01T00:00:00Z" }
 
 	runner := &fakeCycleRunner{
 		outputResults: map[string]commandResult{
@@ -267,11 +269,53 @@ func TestCycleEndCommitsReleaseFooterAndSkipsPRWithoutGitHubRemote(t *testing.T)
 	if got := output.String(); got != "No GitHub remote detected — skipping PR.\n" {
 		t.Fatalf("output = %q", got)
 	}
+
+	handoff, err := os.ReadFile(filepath.Join(repo, ".ai", "HANDOFF.md"))
+	if err != nil {
+		t.Fatalf("ReadFile(HANDOFF.md) error = %v", err)
+	}
+	if !strings.Contains(string(handoff), "### Cycle closed — 1.0.0 — 2026-01-01T00:00:00Z") {
+		t.Fatalf("HANDOFF.md missing closing entry, got:\n%s", handoff)
+	}
+}
+
+func TestCycleEndAppendsClosingHandoffEntryWithoutVersion(t *testing.T) {
+	repo := t.TempDir()
+	writeDoneTaskBoard(t, repo)
+	writeCycleTemplate(t, repo, ".ai/HANDOFF.md", "# HANDOFF\n\n---\n")
+
+	restore := stubCycleEnvironment(t)
+	defer restore()
+
+	getWorkingDir = func() (string, error) { return repo, nil }
+	cycleLookPath = func(name string) (string, error) { return name, nil }
+	cycleNow = func() string { return "2026-01-01T00:00:00Z" }
+
+	runner := &fakeCycleRunner{
+		outputResults: map[string]commandResult{
+			"git remote get-url origin": {err: commandError("missing remote")},
+		},
+	}
+	cycleRunCommand = runner.run
+	cycleOutputCommand = runner.output
+
+	if err := cycleEndCmd.RunE(cycleEndCmd, nil); err != nil {
+		t.Fatalf("RunE() error = %v", err)
+	}
+
+	handoff, err := os.ReadFile(filepath.Join(repo, ".ai", "HANDOFF.md"))
+	if err != nil {
+		t.Fatalf("ReadFile(HANDOFF.md) error = %v", err)
+	}
+	if !strings.Contains(string(handoff), "### Cycle closed — unversioned — 2026-01-01T00:00:00Z") {
+		t.Fatalf("HANDOFF.md missing closing entry, got:\n%s", handoff)
+	}
 }
 
 func TestCycleEndPushesBranchAndUpdatesExistingPR(t *testing.T) {
 	repo := t.TempDir()
 	writeDoneTaskBoard(t, repo)
+	writeCycleTemplate(t, repo, ".ai/HANDOFF.md", "# HANDOFF\n\n---\n")
 	if err := os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module example.com/test\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile(go.mod) error = %v", err)
 	}

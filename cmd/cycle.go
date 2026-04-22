@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/riadshalaby/agentinit/internal/overlay"
 	updater "github.com/riadshalaby/agentinit/internal/update"
@@ -19,6 +20,7 @@ import (
 
 var (
 	cycleLookPath   = exec.LookPath
+	cycleNow        = func() string { return time.Now().UTC().Format("2006-01-02T15:04:05Z") }
 	cycleReadFile   = os.ReadFile
 	cycleWriteFile  = os.WriteFile
 	cycleMkdirAll   = os.MkdirAll
@@ -149,6 +151,10 @@ func runCycleEnd(ctx context.Context, version string) error {
 		return fmt.Errorf("cannot close cycle; tasks not done: %s", strings.Join(incompleteTasks, ", "))
 	}
 
+	if err := appendCycleCloseHandoff(repoRoot, version); err != nil {
+		return err
+	}
+
 	if err := cycleRunCommand(ctx, "git", "add", ".ai/"); err != nil {
 		return fmt.Errorf("failed to stage .ai artifacts")
 	}
@@ -183,6 +189,25 @@ func runCycleEnd(ctx context.Context, version string) error {
 		BaseBranch: "main",
 		SkipPush:   true,
 	})
+}
+
+func appendCycleCloseHandoff(repoRoot, version string) error {
+	handoffPath := filepath.Join(repoRoot, ".ai", "HANDOFF.md")
+	existing, err := cycleReadFile(handoffPath)
+	if err != nil {
+		return fmt.Errorf("read HANDOFF.md: %w", err)
+	}
+	versionLabel := version
+	if versionLabel == "" {
+		versionLabel = "unversioned"
+	}
+	entry := fmt.Sprintf("\n### Cycle closed — %s — %s\n\n| Field | Value |\n|-------|-------|\n| Summary | All tasks done; cycle closed |\n| Version | %s |\n\n---\n",
+		versionLabel, cycleNow(), versionLabel)
+	updated := append(existing, []byte(entry)...)
+	if err := cycleWriteFile(handoffPath, updated, 0o644); err != nil {
+		return fmt.Errorf("write HANDOFF.md: %w", err)
+	}
+	return nil
 }
 
 func requireCycleCommand(name string) error {

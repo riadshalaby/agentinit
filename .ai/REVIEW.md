@@ -270,6 +270,47 @@ None.
 
 ---
 
+## Task: T-002 (cycle 0.8.3)
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. Read `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — plan change verified:
+   - Line 19: "Compare working-tree changes against `.ai/PLAN.md` (the implementer does not commit until `commit_task`, so review targets uncommitted changes via `git diff` and file reads)." ✅
+2. Read `.ai/prompts/reviewer.md` — byte-for-byte identical to template ✅
+3. Read `internal/template/templates/base/ai/HANDOFF.template.md.tmpl` — plan change verified:
+   - Line 19: `| Commit | \`<conventional commit message>\` on \`next_task\`; \`<hash> <message>\` on \`commit_task\` (implement only) |` ✅
+4. Read `.ai/HANDOFF.template.md` — byte-for-byte identical to template ✅
+5. `engine_test.go` line 282 — `"working-tree changes"` positive assertion present for reviewer prompt ✅; HANDOFF template `Commit` field not separately tested (plan condition "if HANDOFF template is tested" is not applicable) ✅
+6. `scaffold_test.go` line 230 — `"working-tree changes"` assertion present in reviewer rules slice ✅
+7. `go fmt ./...` — clean.
+8. `go vet ./...` — clean.
+9. `go test ./...` — all packages pass.
+10. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS; confirms reviewer.md and HANDOFF.template.md are in sync with their templates.
+
+##### Findings
+- Both plan-specified changes correctly implemented across all four target files.
+- Test coverage added in both `engine_test.go` and `scaffold_test.go` for the `"working-tree changes"` reviewer prompt change.
+- HANDOFF template Commit field updated; no test assertion required (not currently tested).
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
+
+---
+
 ## Task: T-001 (cycle 0.8.3 third pass — eliminate WIP commits)
 
 ### Review Round 1
