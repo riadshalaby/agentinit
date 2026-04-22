@@ -182,3 +182,42 @@ Reviewed: 2026-04-22
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-004
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commits `9543151 fix(update): make self-update dry runs idempotent` and `e333d1c chore(ai): hand off T-004 for review`.
+2. `git show 9543151 --stat` — 4 files changed: `update.go`, `update_test.go`, `.ai/TASKS.md`, `.claude/settings.local.json`.
+3. `git show 9543151 -- internal/update/update_test.go` — `TestSelfUpdateIsIdempotent` added matching plan spec exactly (same code, `findRepoRoot` helper). `TestRunIgnoresManifestGeneratedAtDrift` also added to cover the `update.go` behaviour change.
+4. `git show 9543151 -- internal/update/update.go` — `manifestsEqualIgnoringGeneratedAt()` added; compares `Version` and `Files` via `reflect.DeepEqual`, ignores `GeneratedAt`. Called before `bytes.Equal` in `manifestNeedsWrite`. Correct approach: prevents `generated_at`-only manifest drift from being reported as a change.
+5. `grep` on `internal/template/engine_test.go` for all stale phrases required by the plan — zero matches (all removals were handled by T-001/T-002/T-003 reworks; no remaining stale assertions).
+6. `go test -v -run TestSelfUpdateIsIdempotent ./internal/update/...` — PASS (0.00s).
+7. `go fmt ./...` — clean.
+8. `go vet ./...` — clean.
+9. `go test ./...` — all packages pass.
+
+##### Findings
+- `TestSelfUpdateIsIdempotent` correctly finds repo root, runs dry-run, and fails the test with a human-readable diff if any managed files would change.
+- `manifestsEqualIgnoringGeneratedAt` is a sound fix: it avoids false positives from timestamp-only manifest regeneration without masking real file content drift.
+- `engine_test.go` stale assertion cleanup (T-004 plan scope) was already addressed across T-001/T-002/T-003 rework commits — no remaining stale assertions found.
+- `.claude/settings.local.json` restored to template state as a side effect of `TestSelfUpdateIsIdempotent` catching the local divergence.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
