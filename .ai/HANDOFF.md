@@ -95,3 +95,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — implement — 2026-04-21T21:15:34Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Removed reviewer commit rules, made E2E and manual verification mandatory, and aligned the reviewer prompt tests with the new policy. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.ai/prompts/reviewer.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `f211917 fix(prompts): require reviewer verification on every task` |
+| Next Role | review |
+
+---
+
+### T-002 — review — 2026-04-22T07:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review passed — all 3 plan changes verified, template and live file identical, `go test ./...` clean including scaffold integration tests. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-22T04:29:04Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-002 by squashing the reviewer prompt implementation and handoff commits into one release-note-ready task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/prompts/reviewer.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(prompts): make reviewer verification mandatory` |
+| Next Role | none |
+
+---

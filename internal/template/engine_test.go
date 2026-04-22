@@ -256,21 +256,26 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	if strings.Contains(reviewerPrompt, "search-strategy.md") {
 		t.Error("reviewer prompt should not reference search-strategy.md")
 	}
+	if strings.Contains(reviewerPrompt, "Use Conventional Commit subjects") {
+		t.Error("reviewer prompt should not contain commit convention rules")
+	}
 	if !strings.Contains(reviewerPrompt, "`ready_to_commit`") {
 		t.Error("reviewer prompt should mention ready_to_commit")
 	}
 	if !strings.Contains(reviewerPrompt, "Perform verification as part of review") {
 		t.Error("reviewer prompt should describe verification responsibilities")
 	}
+	if !strings.Contains(reviewerPrompt, "always required, not optional") {
+		t.Error("reviewer prompt should make E2E and manual verification mandatory")
+	}
 	if !strings.Contains(reviewerPrompt, "appending or updating only the active task section, preserving prior task history") {
 		t.Error("reviewer prompt should preserve prior task history in REVIEW.md")
 	}
 	assertPromptCriticalRules(t, "reviewer prompt", reviewerPrompt, []string{
-		"Use Conventional Commit subjects in the form `<type>(<scope>): <user-facing change>`.",
-		"Never include `Co-Authored-By` trailers in commit messages.",
+		"Re-read `.ai/TASKS.md` before every command.",
 		"Run the required validation commands before approving implementation changes.",
 		"Never modify code.",
-		"Files are the source of truth. Re-read `.ai/TASKS.md` before executing any command. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
+		"Files are the source of truth. Re-read `.ai/PLAN.md` before `next_task` and `.ai/REVIEW.md` before updating or finalizing review output.",
 	})
 
 	reviewTemplate := files[".ai/REVIEW.template.md"]

@@ -91,3 +91,46 @@ None.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-22
+
+#### Findings
+
+None.
+
+#### Verification
+
+##### Steps
+1. `git log --oneline -6` — confirmed WIP commits `f211917 fix(prompts): require reviewer verification on every task` and `a44e721 chore(ai): hand off T-002 for review`.
+2. `git show f211917 -- internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — verified all 3 plan changes:
+   - Removed `Use Conventional Commit subjects...` and `Never include \`Co-Authored-By\`...` lines.
+   - Added `Re-read \`.ai/TASKS.md\` before every command.` as standalone bullet.
+   - Updated verification mandate to `...E2E verification, and a manual test where possible; these are always required, not optional.`
+   - Cleaned the old combined Files sentence (TASKS.md re-read moved to standalone bullet).
+3. Read `internal/template/templates/base/ai/prompts/reviewer.md.tmpl` — no commit convention rules present; standalone TASKS.md re-read bullet present; mandatory verification phrasing present.
+4. Read `.ai/prompts/reviewer.md` — content identical to template.
+5. `git diff --no-index -- internal/template/templates/base/ai/prompts/reviewer.md.tmpl .ai/prompts/reviewer.md` — exit 0; files identical.
+6. `git show f211917 -- internal/template/engine_test.go` — negative assertion for `"Use Conventional Commit subjects"` added; `assertPromptCriticalRules` updated to remove old commit bullets and add `"Re-read \`.ai/TASKS.md\` before every command."` and updated Files sentence; `"always required, not optional"` positive assertion added.
+7. `git show f211917 -- internal/scaffold/scaffold_test.go` — same alignment: old commit bullets removed, new standalone re-read and mandatory E2E strings added, negative assertion for commit rules added.
+8. `go fmt ./...` — clean.
+9. `go vet ./...` — clean.
+10. `go test ./...` — all packages pass (including `internal/scaffold` which runs the scaffold integration tests).
+
+##### Findings
+- All 3 plan changes correctly implemented in both template and live file.
+- Test coverage in both `engine_test.go` and `scaffold_test.go` is appropriately updated and adds a regression guard (negative assertion) against commit rules reappearing.
+- No stale references to old commit convention lines found anywhere in the changed files.
+
+##### Risks
+- None.
+
+#### Verdict
+`PASS`
