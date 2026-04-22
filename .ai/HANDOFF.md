@@ -171,3 +171,41 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-004 — implement — 2026-04-22T05:24:19Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added a repo-root self-update idempotency guard, ignored manifest timestamp-only drift during dry-run comparisons, and restored the managed Claude local settings file to template state. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/TASKS.md`, `.claude/settings.local.json`, `internal/update/update.go`, `internal/update/update_test.go` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `9543151 fix(update): make self-update dry runs idempotent` |
+| Next Role | review |
+
+---
+
+### T-004 — review — 2026-04-22T07:45:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 1 review passed — TestSelfUpdateIsIdempotent verified passing, generated_at drift fix correct, all stale engine_test.go assertions already removed by T-001/T-002/T-003. |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-004 — implement — 2026-04-22T05:29:29Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Finalized T-004 by folding the idempotency implementation, review artifacts, and handoff updates into one release-note-ready task commit and marking the task done. |
+| Files Changed | `.ai/HANDOFF.md`, `.ai/REVIEW.md`, `.ai/TASKS.md`, `.claude/settings.local.json`, `internal/update/update.go`, `internal/update/update_test.go` |
+| Validation | `go fmt ./...` (pass), `go vet ./...` (pass), `go test ./...` (pass) |
+| Commit | `pending fix(update): make self-update checks catch managed drift` |
+| Next Role | none |
+
+---
