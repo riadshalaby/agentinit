@@ -112,7 +112,7 @@ To refresh an existing project scaffold in place, use:
 aide update
 ```
 
-`aide update` refreshes managed workflow files, removes retired managed files tracked in the manifest, and applies supported migrations to excluded workflow files such as `.ai/config.json` and `.ai/TASKS.template.md` while preserving user-managed content outside the generated surface. After the refresh step, it runs the same tool-detection and install-offer flow used by the interactive wizard.
+`aide update` refreshes managed workflow files, removes retired managed files tracked in the manifest, and applies supported migrations to excluded workflow files such as `.ai/config.json` and `.ai/TASKS.template.md` while preserving user-managed content outside the generated surface. When run in an interactive terminal, it then runs the same tool-detection and install-offer flow used by the interactive wizard.
 
 When you need a preview first, use:
 

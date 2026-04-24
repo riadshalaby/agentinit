@@ -65,9 +65,22 @@ func TestMCPSessionLifecycle(t *testing.T) {
 			t.Fatalf("RunSession: %v", err)
 		}
 
-		output := pollOutput(t, mgr, "implementer", 2*time.Minute)
+		info, result := waitForResult(t, mgr, "implementer", 2*time.Minute)
+		if info.Status != mcp.StatusIdle {
+			t.Fatalf("status after WaitSession = %q, want %q", info.Status, mcp.StatusIdle)
+		}
+		if result == nil || result.Status != mcp.StatusIdle {
+			t.Fatalf("WaitSession result = %+v, want idle result", result)
+		}
+		if result.ExitSummary == "" {
+			t.Error("expected non-empty exit summary from codex implementer session")
+		}
+		output, _, _, err := mgr.GetOutput("implementer", 0, 20000)
+		if err != nil {
+			t.Fatalf("GetOutput(implementer): %v", err)
+		}
 		if output == "" {
-			t.Error("expected non-empty output from codex implementer session")
+			t.Log("raw output was empty after WaitSession; relying on structured result")
 		}
 	})
 
@@ -86,30 +99,35 @@ func TestMCPSessionLifecycle(t *testing.T) {
 			t.Fatalf("RunSession: %v", err)
 		}
 
-		output := pollOutput(t, mgr, "reviewer", 2*time.Minute)
+		info, result := waitForResult(t, mgr, "reviewer", 2*time.Minute)
+		if info.Status != mcp.StatusIdle {
+			t.Fatalf("status after WaitSession = %q, want %q", info.Status, mcp.StatusIdle)
+		}
+		if result == nil || result.Status != mcp.StatusIdle {
+			t.Fatalf("WaitSession result = %+v, want idle result", result)
+		}
+		if result.ExitSummary == "" {
+			t.Error("expected non-empty exit summary from claude reviewer session")
+		}
+		output, _, _, err := mgr.GetOutput("reviewer", 0, 20000)
+		if err != nil {
+			t.Fatalf("GetOutput(reviewer): %v", err)
+		}
 		if output == "" {
-			t.Error("expected non-empty output from claude reviewer session")
+			t.Log("raw output was empty after WaitSession; relying on structured result")
 		}
 	})
 }
 
-// pollOutput polls GetOutput until the session stops running or the deadline is
-// exceeded. It returns the full output collected.
-func pollOutput(t *testing.T, mgr *mcp.SessionManager, name string, timeout time.Duration) string {
+func waitForResult(t *testing.T, mgr *mcp.SessionManager, name string, timeout time.Duration) (mcp.SessionInfo, *mcp.RunResult) {
 	t.Helper()
 
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		chunk, total, running, err := mgr.GetOutput(name, 0)
-		if err != nil {
-			t.Fatalf("GetOutput(%q): %v", name, err)
-		}
-		if !running {
-			_ = total
-			return chunk
-		}
-		time.Sleep(2 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	info, result, err := mgr.WaitSession(ctx, name)
+	if err != nil {
+		t.Fatalf("WaitSession(%q): %v", name, err)
 	}
-	t.Fatalf("timed out after %v waiting for session %q to finish", timeout, name)
-	return ""
+	return info, result
 }

@@ -82,3 +82,47 @@ No blockers, majors, minors, or nits. The implementation is clean and complete.
 
 #### Verdict
 `PASS`
+
+---
+
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS_WITH_NOTES**
+
+Reviewed: 2026-04-24
+
+#### Findings
+
+| # | Severity | Location | Description | Required Fix |
+|---|----------|----------|-------------|--------------|
+| 1 | nit | `internal/mcp/server_test.go:600` | `extractTotalBytes` is dead code — it was previously used by `pollToolOutput` but never called after that function was replaced by the non-polling `readToolOutput`. Go does not fail on unused functions so tests pass, but it's stale. | No |
+| 2 | nit | `internal/mcp/server_test.go:329` | `TestServerSessionWaitToolTimeout` uses `timeout_seconds: 1`, adding ~1 real second to the test run. Intentional for coverage but slightly slow for an in-process test; could use a smaller value (e.g. 100ms via a fractional approach or a smaller integer). Not worth changing now. | No |
+
+No blockers or majors. T-003 acceptance criteria are fully met.
+
+#### Verification
+
+##### Steps
+- `go fmt ./...` — clean.
+- `go vet ./...` — clean.
+- `go test ./internal/mcp/... ./cmd/... -count=1` — all tests pass including four new `session_wait` tool-level tests.
+- `go test ./... -count=1` — full suite green (all 9 packages pass).
+- `git diff HEAD` reviewed line-by-line for all T-003 files.
+- Confirmed `extractTotalBytes` is defined but never referenced in the current test file (grep).
+- E2E test (`e2e/mcp_e2e_test.go`) not run directly (requires real `claude`/`codex` CLIs in PATH); skips cleanly when absent — design verified by code review.
+
+##### Findings
+- **`server_test.go` — 4 new MCP tool-level `session_wait` tests**: `TestServerSessionWaitToolFailedRun`, `TestServerSessionWaitToolStoppedRun`, `TestServerSessionWaitToolTimeout`, `TestServerSessionWaitToolMissingSession`. Cover all required scenarios (fail, stop, timeout, missing session) at the protocol level. ✅
+- **`TestServerSessionToolsLifecycle` refactored**: `pollToolOutput` (polling loop) replaced by `session_wait` as the primary completion path; `readToolOutput` (single non-polling read) used afterward for debugging verification. Correctly demonstrates the new contract. ✅
+- **Helper extraction**: `newTestToolClient`, `startSessionForTest`, `runSessionForTest` reduce boilerplate across the four new tests. Clean. ✅
+- **`e2e/mcp_e2e_test.go`**: Switched from raw-output polling to `WaitSession(ctx, name)` as the primary completion mechanism. `GetOutput` demoted to a post-wait informational read. E2E now validates both `SessionInfo.Status` and `RunResult.Status` independently. ✅
+- **`cmd/update.go`** + **`cmd/update_test.go`**: `updateCanRunToolCheck()` guard added so interactive tool-check is skipped in non-TTY contexts (CI, E2E test runs). `TestUpdateCommandSkipsToolCheckWithoutTTY` verifies this. `README.md` updated to document the TTY condition. This unplanned change was necessary to keep E2E passes clean. ✅
+
+##### Risks
+- Low: `extractTotalBytes` dead code is benign — it compiles and has no runtime effect. Can be removed in a future cleanup.
+- Low: E2E test cannot be validated without real CLIs present in PATH. The skip logic and the structural correctness of `waitForResult` and `WaitSession` usage are verified by code review.
+
+#### Verdict
+`PASS_WITH_NOTES`
