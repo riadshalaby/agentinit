@@ -22,3 +22,14 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | plan \| implement \| review \| none |
 
 ---
+
+### T-001/T-002/T-003 — plan — 2026-04-24T19:33:17Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Planned v0.9.0 auto-mode work around async `session_run`, blocking `session_wait`, and debug-only raw output access. |
+| Files Changed | `.ai/PLAN.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Next Role | implement |
+
+---
