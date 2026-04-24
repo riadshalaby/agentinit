@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/riadshalaby/agentinit/internal/prereq"
@@ -15,6 +16,7 @@ var (
 	updateDryRun       bool
 	runUpdate          = updater.Run
 	runUpdateToolCheck = wizard.RunToolCheck
+	updateOutputStat   = func() (fs.FileInfo, error) { return os.Stdout.Stat() }
 )
 
 var updateCmd = &cobra.Command{
@@ -44,7 +46,10 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return runUpdateToolCheck(prereq.NewExecCommander())
+			if updateCanRunToolCheck() {
+				return runUpdateToolCheck(prereq.NewExecCommander())
+			}
+			return nil
 		}
 
 		for _, change := range result.Changes {
@@ -52,7 +57,10 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		}
-		return runUpdateToolCheck(prereq.NewExecCommander())
+		if updateCanRunToolCheck() {
+			return runUpdateToolCheck(prereq.NewExecCommander())
+		}
+		return nil
 	},
 }
 
@@ -80,4 +88,15 @@ func changeVerb(action string, dryRun bool) string {
 		}
 		return "Updated"
 	}
+}
+
+func updateCanRunToolCheck() bool {
+	if !isTerminal() {
+		return false
+	}
+	info, err := updateOutputStat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&fs.ModeCharDevice != 0
 }

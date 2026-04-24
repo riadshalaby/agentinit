@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -145,7 +146,23 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	}
 	assertStructuredToolResult(t, runResult, "run started", `"message":"run started"`, `"status":"running"`)
 
-	output := pollToolOutput(t, ctx, mcpClient, "implementer", 20000)
+	waitResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name": "implementer",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait) error = %v", err)
+	}
+	if waitResult.IsError {
+		t.Fatalf("CallTool(session_wait) result = %+v", waitResult)
+	}
+	assertStructuredToolResult(t, waitResult, "implementer", `"status":"idle"`, `"exit_summary":"response: next_task T-001"`)
+
+	output := readToolOutput(t, ctx, mcpClient, "implementer", 20000)
 	if !strings.Contains(output, "response: next_task T-001") {
 		t.Fatalf("session_get_output accumulated output = %q", output)
 	}
@@ -240,6 +257,124 @@ func TestServerSessionToolsLifecycle(t *testing.T) {
 	}
 }
 
+func TestServerSessionWaitToolFailedRun(t *testing.T) {
+	ctx, mcpClient := newTestToolClient(t, &testAdapter{
+		runOutput: "response: next_task T-003",
+		runErr:    errors.New("boom"),
+		runDelay:  10 * time.Millisecond,
+	})
+
+	startSessionForTest(t, ctx, mcpClient, "implementer", "implement", "codex")
+	runSessionForTest(t, ctx, mcpClient, "implementer", "next_task T-003")
+
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name": "implementer",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait) error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("CallTool(session_wait) result = %+v", result)
+	}
+	assertStructuredToolResult(t, result, "implementer", `"status":"errored"`, `"error":"boom"`, `"exit_summary":"response: next_task T-003"`)
+}
+
+func TestServerSessionWaitToolStoppedRun(t *testing.T) {
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	ctx, mcpClient := newTestToolClient(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
+
+	startSessionForTest(t, ctx, mcpClient, "implementer", "implement", "codex")
+	runSessionForTest(t, ctx, mcpClient, "implementer", "next_task T-003")
+
+	<-startedCh
+	stopResult, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_stop",
+			Arguments: map[string]any{
+				"name": "implementer",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_stop) error = %v", err)
+	}
+	if stopResult.IsError {
+		t.Fatalf("CallTool(session_stop) result = %+v", stopResult)
+	}
+	close(blockCh)
+
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name": "implementer",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait) error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("CallTool(session_wait) result = %+v", result)
+	}
+	assertStructuredToolResult(t, result, "implementer", `"status":"stopped"`)
+}
+
+func TestServerSessionWaitToolTimeout(t *testing.T) {
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	ctx, mcpClient := newTestToolClient(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
+
+	startSessionForTest(t, ctx, mcpClient, "implementer", "implement", "codex")
+	runSessionForTest(t, ctx, mcpClient, "implementer", "next_task T-003")
+
+	<-startedCh
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name":            "implementer",
+				"timeout_seconds": 1,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait timeout) error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("CallTool(session_wait timeout) result = %+v", result)
+	}
+	assertStructuredToolResult(t, result, "timed out", `"status":"running"`, `"error":"session \"implementer\" wait timed out"`)
+
+	close(blockCh)
+	waitForToolSessionStatus(t, ctx, mcpClient, "implementer", StatusIdle)
+}
+
+func TestServerSessionWaitToolMissingSession(t *testing.T) {
+	ctx, mcpClient := newTestToolClient(t, testToolAdapter{})
+
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name": "missing",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait missing) error = %v", err)
+	}
+	if !result.IsError {
+		t.Fatalf("missing session_wait should return tool error: %+v", result)
+	}
+}
+
 func TestServerSessionGetResultTool(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewSessionManager(
@@ -324,7 +459,17 @@ func TestServerSessionGetResultTool(t *testing.T) {
 		t.Fatalf("CallTool(session_run) error = %v", err)
 	}
 
-	waitForToolSessionStatus(t, ctx, mcpClient, "implementer", StatusIdle)
+	_, err = mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_wait",
+			Arguments: map[string]any{
+				"name": "implementer",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_wait) error = %v", err)
+	}
 
 	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
 		Params: mcpproto.CallToolParams{
@@ -424,45 +569,32 @@ func assertStructuredToolResult(t *testing.T, result *mcpproto.CallToolResult, t
 	}
 }
 
-func pollToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client, name string, limit int) string {
+func readToolOutput(t *testing.T, ctx context.Context, mcpClient *client.Client, name string, limit int) string {
 	t.Helper()
-	var output strings.Builder
-	offset := 0
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
-			Params: mcpproto.CallToolParams{
-				Name: "session_get_output",
-				Arguments: map[string]any{
-					"name":   name,
-					"offset": offset,
-					"limit":  limit,
-				},
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_get_output",
+			Arguments: map[string]any{
+				"name":   name,
+				"offset": 0,
+				"limit":  limit,
 			},
-		})
-		if err != nil {
-			t.Fatalf("CallTool(session_get_output) error = %v", err)
-		}
-		if result.IsError {
-			t.Fatalf("CallTool(session_get_output) result = %+v", result)
-		}
-		if result.StructuredContent == nil {
-			t.Fatal("session_get_output missing structured content")
-		}
-		text := mcpproto.GetTextFromContent(result.Content[0])
-		output.WriteString(text)
-		jsonFallback := mcpproto.GetTextFromContent(result.Content[1])
-		if !strings.Contains(jsonFallback, `"total_bytes":`) || !strings.Contains(jsonFallback, `"running":`) {
-			t.Fatalf("session_get_output JSON fallback = %q", jsonFallback)
-		}
-		offset = extractTotalBytes(t, jsonFallback)
-		if strings.Contains(jsonFallback, `"running":false`) {
-			return output.String()
-		}
-		time.Sleep(10 * time.Millisecond)
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_get_output) error = %v", err)
 	}
-	t.Fatal("timed out polling session_get_output")
-	return ""
+	if result.IsError {
+		t.Fatalf("CallTool(session_get_output) result = %+v", result)
+	}
+	if result.StructuredContent == nil {
+		t.Fatal("session_get_output missing structured content")
+	}
+	jsonFallback := mcpproto.GetTextFromContent(result.Content[1])
+	if !strings.Contains(jsonFallback, `"total_bytes":`) || !strings.Contains(jsonFallback, `"running":`) {
+		t.Fatalf("session_get_output JSON fallback = %q", jsonFallback)
+	}
+	return mcpproto.GetTextFromContent(result.Content[0])
 }
 
 func extractTotalBytes(t *testing.T, jsonFallback string) int {
@@ -509,4 +641,90 @@ func waitForToolSessionStatus(t *testing.T, ctx context.Context, mcpClient *clie
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for session_status %q", want)
+}
+
+func newTestToolClient(t *testing.T, adapter Adapter) (context.Context, *client.Client) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	manager := NewSessionManager(
+		context.Background(),
+		NewStore(filepath.Join(tempDir, "sessions.json")),
+		map[string]Adapter{
+			"codex":  adapter,
+			"claude": adapter,
+		},
+		Config{},
+		filepath.Clean(filepath.Join("..", "..")),
+		testLogger(),
+	)
+	srv := newServer(context.Background(), "1.2.3-test", manager, Config{}, testLogger())
+
+	mcpClient, err := client.NewInProcessClient(srv.server)
+	if err != nil {
+		t.Fatalf("NewInProcessClient() error = %v", err)
+	}
+	t.Cleanup(func() {
+		if closeErr := mcpClient.Close(); closeErr != nil {
+			t.Fatalf("Close() error = %v", closeErr)
+		}
+	})
+
+	ctx := context.Background()
+	if err := mcpClient.Start(ctx); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if _, err := mcpClient.Initialize(ctx, mcpproto.InitializeRequest{
+		Params: mcpproto.InitializeParams{
+			ProtocolVersion: mcpproto.LATEST_PROTOCOL_VERSION,
+			ClientInfo: mcpproto.Implementation{
+				Name:    "agentinit-test-client",
+				Version: "0.0.1",
+			},
+		},
+	}); err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+	return ctx, mcpClient
+}
+
+func startSessionForTest(t *testing.T, ctx context.Context, mcpClient *client.Client, name, role, provider string) {
+	t.Helper()
+
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_start",
+			Arguments: map[string]any{
+				"name":     name,
+				"role":     role,
+				"provider": provider,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_start) error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("CallTool(session_start) result = %+v", result)
+	}
+}
+
+func runSessionForTest(t *testing.T, ctx context.Context, mcpClient *client.Client, name, command string) {
+	t.Helper()
+
+	result, err := mcpClient.CallTool(ctx, mcpproto.CallToolRequest{
+		Params: mcpproto.CallToolParams{
+			Name: "session_run",
+			Arguments: map[string]any{
+				"name":    name,
+				"command": command,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(session_run) error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("CallTool(session_run) result = %+v", result)
+	}
 }
