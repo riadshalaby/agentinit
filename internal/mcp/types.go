@@ -22,6 +22,14 @@ type RunResult struct {
 	DurationSecs float64       `json:"duration_secs"`
 }
 
+// WaitResult returns the latest structured run outcome together with the
+// current session metadata for callers that block on completion.
+type WaitResult struct {
+	Session SessionInfo `json:"session"`
+	Result  *RunResult  `json:"result,omitempty"`
+	Error   string      `json:"error,omitempty"`
+}
+
 type Session struct {
 	Name          string        `json:"name"`
 	Role          string        `json:"role"`

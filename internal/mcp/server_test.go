@@ -61,8 +61,8 @@ func TestNewServerRegistersSessionTools(t *testing.T) {
 
 	srv := NewServer(context.Background(), "1.2.3-test")
 
-	if got := len(srv.server.ListTools()); got != 9 {
-		t.Fatalf("registered tools = %d, want 9", got)
+	if got := len(srv.server.ListTools()); got != 10 {
+		t.Fatalf("registered tools = %d, want 10", got)
 	}
 	if _, err := os.Stat(filepath.Join(tempDir, defaultMCPLogPath)); err != nil {
 		t.Fatalf("expected log file %q to exist: %v", defaultMCPLogPath, err)

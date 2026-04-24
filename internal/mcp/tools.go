@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	mcpproto "github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
@@ -18,6 +19,11 @@ type sessionStartArgs struct {
 type sessionRunArgs struct {
 	Name    string `json:"name"`
 	Command string `json:"command"`
+}
+
+type sessionWaitArgs struct {
+	Name           string `json:"name"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
 }
 
 type sessionGetOutputArgs struct {
@@ -69,7 +75,7 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 	server.AddTool(
 		mcpproto.NewTool(
 			"session_run",
-			mcpproto.WithDescription("Send a command to a named session. Returns immediately; use session_status to poll for completion and session_get_result for the structured outcome."),
+			mcpproto.WithDescription("Send a command to a named session. Returns immediately; use session_wait for the structured completion result."),
 			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
 			mcpproto.WithString("command", mcpproto.Required(), mcpproto.Description("Command to execute.")),
 		),
@@ -85,6 +91,38 @@ func registerTools(server *mcpserver.MCPServer, manager *SessionManager, cfg Con
 				Session SessionInfo `json:"session"`
 				Message string      `json:"message"`
 			}{Session: info, Message: "run started"}, "run started")
+		}),
+	)
+
+	server.AddTool(
+		mcpproto.NewTool(
+			"session_wait",
+			mcpproto.WithDescription("Wait for a named session run to finish and return the structured outcome."),
+			mcpproto.WithString("name", mcpproto.Required(), mcpproto.Description("Session name.")),
+			mcpproto.WithNumber("timeout_seconds", mcpproto.Description("Optional wait timeout in seconds.")),
+		),
+		mcpproto.NewTypedToolHandler(func(ctx context.Context, _ mcpproto.CallToolRequest, args sessionWaitArgs) (*mcpproto.CallToolResult, error) {
+			logger.Info("tool call started", "tool", "session_wait", "args", args)
+			waitCtx := ctx
+			cancel := func() {}
+			if args.TimeoutSeconds > 0 {
+				waitCtx, cancel = context.WithTimeout(ctx, time.Duration(args.TimeoutSeconds)*time.Second)
+			}
+			defer cancel()
+
+			info, result, err := manager.WaitSession(waitCtx, args.Name)
+			response := WaitResult{Session: info, Result: result}
+			if err != nil {
+				if info.Name == "" {
+					logger.Error("tool call failed", "tool", "session_wait", "args", args, "error", err)
+					return mcpproto.NewToolResultErrorf("session_wait failed: %v", err), nil
+				}
+				response.Error = err.Error()
+				logger.Warn("tool call completed with wait error", "tool", "session_wait", "name", info.Name, "status", info.Status, "error", err)
+				return jsonResult(response, err.Error())
+			}
+			logger.Info("tool call completed", "tool", "session_wait", "name", info.Name, "status", info.Status)
+			return jsonResult(response, fmt.Sprintf("%+v", response))
 		}),
 	)
 
