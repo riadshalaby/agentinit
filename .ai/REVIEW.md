@@ -44,3 +44,41 @@ No blockers or majors. All nits are acceptable given the scope of T-001 and the 
 
 #### Verdict
 `PASS_WITH_NOTES`
+
+---
+
+## Task: T-002
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-04-24
+
+#### Findings
+
+No blockers, majors, minors, or nits. The implementation is clean and complete.
+
+#### Verification
+
+##### Steps
+- `go fmt ./...` — clean.
+- `go vet ./...` — clean.
+- `go test ./internal/template ./internal/scaffold -v -count=1` — all tests pass.
+- `go test ./...` — full suite green.
+- `git diff HEAD` reviewed for all T-002 files.
+- Searched for stale polling patterns (`poll.*session_status`, `while.*running`, `synchronous.*session_run`, `primary.*session_get_output`) across markdown and templates — zero matches.
+
+##### Findings
+- Live PO prompt (`.ai/prompts/po.md`): old "poll with `session_status`" loop replaced with `session_run` + `session_wait` workflow; `session_get_output` and `session_get_result` correctly demoted to debugging/inspection tools.
+- `internal/template/templates/base/ai/prompts/po.md.tmpl`: identical to the live prompt — template and live file are in sync.
+- `README.md`: "seven tools" corrected to "ten tools"; `session_run` description changed from "synchronous" to "returns immediately"; `session_wait` row added; migration note updated from stale claim to accurate wait-based description; new sentence documents `session_run` + `session_wait` as the normal completion path with `session_get_output` as debugging only.
+- `AGENTS.md` (live and `.tmpl`): `session_wait` and `session_get_result` added to the PO MCP tool list; no stale polling prose left.
+- `engine_test.go`: new positive assertions for `session_wait` presence and wait-based interaction pattern; new negative assertions for all four stale polling phrases.
+- `scaffold_test.go`: same positive/negative assertions applied at the scaffold level (file-based output verification).
+
+##### Risks
+- None. Changes are purely documentation and prompt text; no code logic changed.
+
+#### Verdict
+`PASS`

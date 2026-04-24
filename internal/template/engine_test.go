@@ -312,6 +312,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`work_all`",
 		"`session_start`",
 		"`session_run`",
+		"`session_wait`",
 		"`session_get_output`",
 		"`session_get_result`",
 		"`session_status`",
@@ -320,14 +321,28 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		"`session_reset`",
 		"`session_delete`",
 		"`session_run(name, command)`",
-		"`session_get_result(name)`",
-		"`session_status(name)`",
+		"`session_wait(name)`",
 		"`session_start(name=\"implementer\", role=\"implement\")`",
 		"`ready_to_commit` -> implementer `commit_task`",
 		"Reviewer owns both review and verification",
+		"Use `session_run` to send the next role command and `session_wait` for the structured completion result.",
+		"Use `session_get_output` only when you need raw debugging output or extra error context.",
+		"Call `session_run(name, command)`; it returns immediately.",
+		"Call `session_wait(name)` and use its structured `session`, `result`, and `error` fields as the primary completion signal.",
+		"Re-read `.ai/TASKS.md` to confirm the status transition before sending the next command.",
 	} {
 		if !strings.Contains(poPrompt, snippet) {
 			t.Errorf("PO prompt should contain %q", snippet)
+		}
+	}
+	for _, snippet := range []string{
+		"poll with `session_status`",
+		"`session_status(name)` until the session is no longer `running`",
+		"`session_get_result(name)` and use its structured",
+		"If polling returns no new output while `running == true`",
+	} {
+		if strings.Contains(poPrompt, snippet) {
+			t.Errorf("PO prompt should not contain %q", snippet)
 		}
 	}
 	if strings.Contains(poPrompt, "## Run Modes") {

@@ -297,12 +297,15 @@ If no GitHub remote is configured, `aide pr` prints `no remote configured — sk
 }
 ```
 
-The server currently exposes seven tools for the PO session:
+The server currently exposes ten tools for the PO session:
 
 | Tool | Purpose |
 |------|---------|
 | `session_start` | Create and initialize a named role session through `aide plan|implement|review` |
-| `session_run` | Resume a named session, send one command, and return the full output synchronously |
+| `session_run` | Resume a named session, send one command, and return immediately with a compact "run started" result |
+| `session_wait` | Block on a named session until it finishes and return the structured completion result |
+| `session_get_output` | Read bounded raw output for debugging and error investigation |
+| `session_get_result` | Read the most recent structured result for a completed session run |
 | `session_status` | Show the current status and metadata for one named session |
 | `session_list` | List all tracked named sessions and their status |
 | `session_stop` | Stop an in-flight run, escalating from `SIGTERM` to `SIGKILL` after a grace period |
@@ -310,7 +313,7 @@ The server currently exposes seven tools for the PO session:
 | `session_delete` | Remove a tracked session entirely |
 
 Tool responses include both a readable text summary and structured JSON in `structuredContent`, so MCP clients can consume either form.
-`session_run` is synchronous, so the PO prompt no longer needs a `send_command` plus `get_output` polling loop.
+The normal PO orchestration path is `session_run` followed by `session_wait`, then a re-read of `.ai/TASKS.md`. `session_get_output` remains a debugging tool rather than the primary completion path.
 
 Current MCP role coverage:
 
@@ -337,7 +340,7 @@ This means the PO can manage the planning, implementation, and review sessions d
 | `ROADMAP.md` | Goals for the current cycle (edit before planning) | yes |
 | `CLAUDE.md` | Agent rules and validation commands | yes |
 
-> **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `aide update` to get the updated PO prompt. `session_run` replaces the old `send_command` + `get_output` polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
+> **0.7.0 Migration:** The MCP tool surface has been renamed and consolidated. Run `aide update` to get the updated PO prompt. The normal PO flow is now `session_run` plus `session_wait` instead of the old `send_command` plus raw-output polling loop. Sessions are now named and persist across restarts in `.ai/sessions.json`.
 
 ### Supported Project Types
 

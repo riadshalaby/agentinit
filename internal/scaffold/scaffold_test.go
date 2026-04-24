@@ -259,9 +259,28 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		t.Fatalf("read .ai/prompts/po.md: %v", err)
 	}
 	poPrompt := string(poPromptBytes)
-	for _, snippet := range []string{"## Commands", "`work_task [TASK_ID]`", "`work_all`"} {
+	for _, snippet := range []string{
+		"## Commands",
+		"`work_task [TASK_ID]`",
+		"`work_all`",
+		"`session_wait`",
+		"Use `session_run` to send the next role command and `session_wait` for the structured completion result.",
+		"Call `session_wait(name)` and use its structured `session`, `result`, and `error` fields as the primary completion signal.",
+		"Use `session_get_output` only when you need raw debugging output or extra error context.",
+		"Re-read `.ai/TASKS.md` to confirm the status transition before sending the next command.",
+	} {
 		if !strings.Contains(poPrompt, snippet) {
 			t.Errorf("generated .ai/prompts/po.md should contain %q", snippet)
+		}
+	}
+	for _, snippet := range []string{
+		"poll with `session_status`",
+		"`session_status(name)` until the session is no longer `running`",
+		"`session_get_result(name)` and use its structured",
+		"If polling returns no new output while `running == true`",
+	} {
+		if strings.Contains(poPrompt, snippet) {
+			t.Errorf("generated .ai/prompts/po.md should not contain %q", snippet)
 		}
 	}
 	if strings.Contains(poPrompt, "## Run Modes") {
