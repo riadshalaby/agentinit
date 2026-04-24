@@ -70,6 +70,7 @@ aide po
 The PO session drives the post-planning task board flow through the `aide` MCP server.
 By default, `aide po` launches Claude with `--model haiku`, and `aide po codex` launches Codex with `-m gpt-5.4-mini`. `.ai/config.json` can override those defaults, and an explicit CLI `--model` or `-m` flag takes precedence.
 If no tasks are in `ready_for_implement` or later, run the planner first.
+The normal MCP completion path is `session_run` followed by `session_wait`, then a re-read of `.ai/TASKS.md`; `session_get_output` is for debugging only.
 The MCP server appends structured debug logs to `.ai/mcp-server.log`, and the scaffold gitignore excludes that file.
 
 ### Drive work inside the existing sessions

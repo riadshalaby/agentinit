@@ -72,3 +72,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | none |
 
 ---
+
+### T-002 — review — 2026-04-24T20:10:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002 documentation changes; all stale polling language removed, wait-based orchestration documented consistently across live and template files, full suite green. |
+| Files Changed | `.ai/REVIEW.md`, `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-04-24T19:53:31Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Updated the PO prompt, live docs, and generated workflow templates to use `session_run` plus `session_wait` as the normal auto-mode completion path. |
+| Files Changed | `.ai/TASKS.md`, `.ai/prompts/po.md`, `AGENTS.md`, `README.md`, `internal/scaffold/scaffold_test.go`, `internal/template/engine_test.go`, `internal/template/templates/base/AGENTS.md.tmpl`, `internal/template/templates/base/README.md.tmpl`, `internal/template/templates/base/ai/prompts/po.md.tmpl`, `.ai/HANDOFF.md` |
+| Validation | `go test ./internal/template ./internal/scaffold` (pass); `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `docs(auto): document wait-based PO orchestration` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-04-24T20:01:17Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Marked T-002 done and created the task commit using the approved implementer handoff message. |
+| Files Changed | `.ai/TASKS.md`, `.ai/HANDOFF.md` |
+| Validation | not rerun during `commit_task`; using previously recorded passing validation from `next_task` and review approval |
+| Commit | `docs(auto): document wait-based PO orchestration` |
+| Next Role | none |
+
+---
