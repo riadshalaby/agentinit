@@ -14,6 +14,7 @@ import (
 )
 
 const runResultExitSummaryLimit = 500
+const sessionWaitPollInterval = 25 * time.Millisecond
 
 // SessionManager owns the named session registry.
 // It is the single entry point for all session lifecycle operations.
@@ -250,6 +251,35 @@ func (m *SessionManager) GetResult(name string) (*RunResult, error) {
 	return session.Result, nil
 }
 
+// WaitSession blocks until the named session run has fully settled or the
+// caller context is canceled. It returns the latest session info and any
+// structured run result without exposing raw output.
+func (m *SessionManager) WaitSession(ctx context.Context, name string) (SessionInfo, *RunResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	for {
+		session, err := m.store.Get(name)
+		if err != nil {
+			return SessionInfo{}, nil, err
+		}
+		info := session.info()
+		if session.Status != StatusRunning && !m.isSessionRunActive(name) {
+			return info, session.Result, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return info, session.Result, fmt.Errorf("session %q wait timed out", name)
+			}
+			return info, session.Result, ctx.Err()
+		case <-time.After(sessionWaitPollInterval):
+		}
+	}
+}
+
 // StopSession cancels any in-flight RunSession for the named session.
 func (m *SessionManager) StopSession(name string) (SessionInfo, error) {
 	session, err := m.store.Get(name)
@@ -343,6 +373,13 @@ func (m *SessionManager) ListSessions() ([]SessionInfo, error) {
 		}
 	})
 	return infos, nil
+}
+
+func (m *SessionManager) isSessionRunActive(name string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, ok := m.running[name]
+	return ok
 }
 
 func validateProvider(provider string) error {

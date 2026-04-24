@@ -327,6 +327,137 @@ func TestGetResultAfterFailedRun(t *testing.T) {
 	}
 }
 
+func TestManagerWaitSessionAfterSuccessfulRun(t *testing.T) {
+	t.Parallel()
+
+	manager := newTestManager(t, &testAdapter{runOutput: "response: next_task T-005", runDelay: 10 * time.Millisecond})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	info, result, err := manager.WaitSession(context.Background(), "implementer")
+	if err != nil {
+		t.Fatalf("WaitSession() error = %v", err)
+	}
+	if info.Status != StatusIdle {
+		t.Fatalf("WaitSession() status = %q, want %q", info.Status, StatusIdle)
+	}
+	if result == nil {
+		t.Fatal("WaitSession() result = nil, want result")
+	}
+	if result.Status != StatusIdle {
+		t.Fatalf("WaitSession() result status = %q, want %q", result.Status, StatusIdle)
+	}
+	if result.ExitSummary != "response: next_task T-005" {
+		t.Fatalf("WaitSession() exit summary = %q", result.ExitSummary)
+	}
+}
+
+func TestManagerWaitSessionAfterFailedRun(t *testing.T) {
+	t.Parallel()
+
+	manager := newTestManager(t, &testAdapter{
+		runOutput: "response: next_task T-005",
+		runErr:    errors.New("boom"),
+		runDelay:  10 * time.Millisecond,
+	})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	info, result, err := manager.WaitSession(context.Background(), "implementer")
+	if err != nil {
+		t.Fatalf("WaitSession() error = %v", err)
+	}
+	if info.Status != StatusErrored {
+		t.Fatalf("WaitSession() status = %q, want %q", info.Status, StatusErrored)
+	}
+	if result == nil {
+		t.Fatal("WaitSession() result = nil, want result")
+	}
+	if result.Status != StatusErrored {
+		t.Fatalf("WaitSession() result status = %q, want %q", result.Status, StatusErrored)
+	}
+	if result.Error != "boom" {
+		t.Fatalf("WaitSession() error = %q, want %q", result.Error, "boom")
+	}
+}
+
+func TestManagerWaitSessionAfterStop(t *testing.T) {
+	t.Parallel()
+
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	manager := newTestManager(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	<-startedCh
+	if _, err := manager.StopSession("implementer"); err != nil {
+		t.Fatalf("StopSession() error = %v", err)
+	}
+	close(blockCh)
+
+	info, result, err := manager.WaitSession(context.Background(), "implementer")
+	if err != nil {
+		t.Fatalf("WaitSession() error = %v", err)
+	}
+	if info.Status != StatusStopped {
+		t.Fatalf("WaitSession() status = %q, want %q", info.Status, StatusStopped)
+	}
+	if result == nil {
+		t.Fatal("WaitSession() result = nil, want result")
+	}
+	if result.Status != StatusStopped {
+		t.Fatalf("WaitSession() result status = %q, want %q", result.Status, StatusStopped)
+	}
+}
+
+func TestManagerWaitSessionTimeout(t *testing.T) {
+	t.Parallel()
+
+	blockCh := make(chan struct{})
+	startedCh := make(chan struct{}, 1)
+	manager := newTestManager(t, &testAdapter{runBlock: blockCh, runStarted: startedCh})
+	if _, _, err := manager.StartSession(context.Background(), "implementer", "implement", "codex"); err != nil {
+		t.Fatalf("StartSession() error = %v", err)
+	}
+	if _, err := manager.RunSession(context.Background(), "implementer", "next_task T-005"); err != nil {
+		t.Fatalf("RunSession() error = %v", err)
+	}
+
+	<-startedCh
+	waitCtx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	info, result, err := manager.WaitSession(waitCtx, "implementer")
+	if err == nil {
+		t.Fatal("WaitSession() error = nil, want timeout")
+	}
+	if !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("WaitSession() error = %q, want timeout message", err)
+	}
+	if info.Status != StatusRunning {
+		t.Fatalf("WaitSession() status = %q, want %q", info.Status, StatusRunning)
+	}
+	if result != nil {
+		t.Fatalf("WaitSession() result = %+v, want nil while still running", result)
+	}
+
+	close(blockCh)
+	waitForStatus(t, manager, "implementer", StatusIdle)
+}
+
 func TestManagerGetOutputLimit(t *testing.T) {
 	t.Parallel()
 
