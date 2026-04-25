@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/riadshalaby/agentinit/compare/v0.8.3...v0.9.0) (2026-04-25)
+
+
+### chore
+
+* **ai:** close cycle ([5ee6058](https://github.com/riadshalaby/agentinit/commit/5ee6058355aa0efc6ebced825c135562e7a88661))
+
+
+### Features
+
+* **mcp:** add structured session wait results ([f872b18](https://github.com/riadshalaby/agentinit/commit/f872b18561b5bb2f671336ef10bc06def8ec1e8e))
+
+
+### Documentation
+
+* **auto:** document wait-based PO orchestration ([8b75264](https://github.com/riadshalaby/agentinit/commit/8b75264b35a24fcfaf547b01123b85c7b631d7bc))
+
 ## [0.8.3](https://github.com/riadshalaby/agentinit/compare/v0.8.2...v0.8.3) (2026-04-22)
 
 
