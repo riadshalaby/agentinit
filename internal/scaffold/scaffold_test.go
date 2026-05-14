@@ -164,6 +164,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	config := string(configBytes)
 	for _, snippet := range []string{
+		"\"profile\": \"full\"",
 		"\"plan\": {",
 		"\"agent\": \"claude\"",
 		"\"model\": \"sonnet\"",

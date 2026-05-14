@@ -8,6 +8,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-001 — review — 2026-05-14T18:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-001 config foundation: all four acceptance paths tested, validation logic correct, template change present, and full test suite green with no issues. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-001 — implement — 2026-05-14T17:25:46Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added `profile` support to `.ai/config.json` loading with a default `full` mode, validation, scaffold/template coverage, and the minimal prompt/AGENTS sync needed to restore repo-wide green validation. |
+| Files Changed | .ai/TASKS.md, .ai/prompts/implementer.md, AGENTS.md, internal/mcp/config.go, internal/mcp/config_test.go, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl |
+| Validation | `go fmt ./...` (pass); `go test ./internal/mcp ./internal/template ./internal/scaffold` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(config): add workflow profile defaults to .ai/config.json` |
+| Next Role | review |
+
+---
+
 ### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
 
 | Field | Value |
