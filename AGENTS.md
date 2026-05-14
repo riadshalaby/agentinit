@@ -97,6 +97,7 @@
 ## Persistent Session Workflow
 - In manual mode, no role autostarts another role.
 - In auto mode, the PO session may start or reconnect to the role sessions it coordinates.
+- Start a new development cycle with `aide cycle start <branch-name>`.
 - Start the planner, implementer, and reviewer once, then keep those sessions open for the rest of the cycle.
 - When using auto mode, let the PO session manage those role sessions instead of driving them directly yourself.
 - Every role waits in `WAIT_FOR_USER_START` state until you explicitly tell it to begin.

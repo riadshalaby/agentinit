@@ -13,6 +13,11 @@ var validProviders = map[string]struct{}{
 	"codex":  {},
 }
 
+var validProfiles = map[string]struct{}{
+	"full": {},
+	"lite": {},
+}
+
 var validRoles = map[string]struct{}{
 	"implement": {},
 	"po":        {},
@@ -20,6 +25,7 @@ var validRoles = map[string]struct{}{
 }
 
 type Config struct {
+	Profile  string                `json:"profile,omitempty"`
 	Roles    map[string]RoleConfig `json:"roles"`
 	Defaults ProviderDefaults      `json:"defaults,omitempty"`
 }
@@ -66,6 +72,14 @@ func LoadConfig(cwd string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// ActiveProfile returns the configured workflow profile, defaulting to "full".
+func (c Config) ActiveProfile() string {
+	if c.Profile == "" {
+		return "full"
+	}
+	return c.Profile
 }
 
 // ProviderForRole returns the configured provider for a role, defaulting to "claude".
@@ -129,6 +143,9 @@ func (c Config) DefaultEffortForRole(role, provider string) string {
 }
 
 func (c Config) validate() error {
+	if _, ok := validProfiles[c.ActiveProfile()]; !ok {
+		return fmt.Errorf("invalid profile %q: must be one of [\"full\", \"lite\"]", c.Profile)
+	}
 	for role, rc := range c.Roles {
 		if rc.Provider == "" {
 			continue

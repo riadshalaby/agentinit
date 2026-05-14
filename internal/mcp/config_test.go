@@ -16,6 +16,9 @@ func TestConfigLoadMissingFileReturnsZeroValue(t *testing.T) {
 	if len(cfg.Roles) != 0 {
 		t.Fatalf("LoadConfig() roles = %d, want 0", len(cfg.Roles))
 	}
+	if got := cfg.ActiveProfile(); got != "full" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "full")
+	}
 }
 
 func TestConfigLoadProjectTemplate(t *testing.T) {
@@ -51,6 +54,9 @@ func TestConfigLoadProjectTemplate(t *testing.T) {
 	}
 	if got := cfg.EffortForRoleAndProvider("review", "claude"); got != "medium" {
 		t.Fatalf("EffortForRoleAndProvider(review, claude) = %q, want %q", got, "medium")
+	}
+	if got := cfg.ActiveProfile(); got != "full" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "full")
 	}
 }
 
@@ -94,6 +100,36 @@ func TestConfigLoadMalformedJSON(t *testing.T) {
 	}
 }
 
+func TestConfigLoadDefaultsMissingProfileToFull(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	writeConfigFile(t, tempDir, `{"roles":{"implement":{"agent":"codex"}}}`)
+
+	cfg, err := LoadConfig(tempDir)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if got := cfg.ActiveProfile(); got != "full" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "full")
+	}
+}
+
+func TestConfigLoadAcceptsLiteProfile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	writeConfigFile(t, tempDir, `{"profile":"lite","roles":{"implement":{"agent":"codex"}}}`)
+
+	cfg, err := LoadConfig(tempDir)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if got := cfg.ActiveProfile(); got != "lite" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "lite")
+	}
+}
+
 func TestConfigLoadRejectsUnknownProvider(t *testing.T) {
 	t.Parallel()
 
@@ -110,6 +146,21 @@ func TestConfigLoadRejectsUnknownProvider(t *testing.T) {
 
 	if _, err := LoadConfig(tempDir); err == nil {
 		t.Fatal("LoadConfig() expected error for unknown provider")
+	}
+}
+
+func TestConfigLoadRejectsUnknownProfile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	writeConfigFile(t, tempDir, `{"profile":"turbo","roles":{"implement":{"agent":"codex"}}}`)
+
+	_, err := LoadConfig(tempDir)
+	if err == nil {
+		t.Fatal("LoadConfig() expected error for unknown profile")
+	}
+	if got, want := err.Error(), `invalid profile "turbo": must be one of ["full", "lite"]`; got != want {
+		t.Fatalf("LoadConfig() error = %q, want %q", got, want)
 	}
 }
 
@@ -273,5 +324,17 @@ func TestConfigDefaultsBlockAccessible(t *testing.T) {
 	}
 	if got := cfg.Defaults.Claude.PermissionMode; got != "acceptEdits" {
 		t.Fatalf("Defaults.Claude.PermissionMode = %q, want %q", got, "acceptEdits")
+	}
+}
+
+func writeConfigFile(t *testing.T, tempDir, content string) {
+	t.Helper()
+
+	configDir := filepath.Join(tempDir, ".ai")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "config.json"), []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile(config.json) error = %v", err)
 	}
 }

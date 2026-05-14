@@ -351,6 +351,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 
 	config := files[".ai/config.json"]
 	for _, snippet := range []string{
+		"\"profile\": \"full\"",
 		"\"plan\": {",
 		"\"agent\": \"claude\"",
 		"\"model\": \"sonnet\"",
