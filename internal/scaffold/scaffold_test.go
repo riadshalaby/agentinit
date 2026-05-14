@@ -85,7 +85,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		"| `aide po` | Launch the PO orchestration session | yes |",
 		"in_planning → ready_for_implement → in_implementation → ready_for_review → in_review → ready_to_commit → done",
 		"| `commit_task [TASK_ID]` | Turn a `ready_to_commit` task into one clean final commit, including task-specific `.ai/` artifacts |",
-		"| `aide cycle end [VERSION]` | Close the cycle after all tasks reach `done`, committing remaining `.ai/` artifacts with a `Release-As:` footer |",
 		"| `next_task [TASK_ID]` | Pick up the next `ready_for_review` task and run review plus verification |",
 	} {
 		if !strings.Contains(readme, snippet) {
@@ -208,7 +207,6 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 				"Run the required validation commands before handing off to review.",
 				"Do not `git commit` during `next_task` or `rework_task`. The only commit happens in `commit_task`.",
 				"Re-read `.ai/TASKS.md` before every command.",
-				"`aide cycle end [VERSION]`",
 				"`commit_task [TASK_ID]`",
 				"`ready_to_commit`",
 				"Release-As: VERSION",
