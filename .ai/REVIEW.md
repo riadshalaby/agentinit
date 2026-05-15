@@ -48,6 +48,45 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-004
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-05-15
+
+#### Findings
+
+No issues.
+
+#### Verification
+
+##### Steps
+1. Read diff for `cmd/implement.go`, `cmd/review.go`, `cmd/po.go` — each gains a profile pre-check before the existing `runRoleLaunch` / `runPOLaunch` call; full-mode path unchanged.
+2. Read `cmd/implement_test.go` (new) — `TestImplementCommandRefusesInLiteProfile` checks "Lite profile:", "`aide dev`", "`aide profile full`"; `TestImplementCommandRunsInFullProfile` verifies exact `RoleLaunchOpts` with `reflect.DeepEqual`.
+3. Read `cmd/review_test.go` (new) — same pattern; refusal checks "Lite profile:", "`next_task`", "`aide profile full`"; full test verifies exact opts.
+4. Read `cmd/po_test.go` diff — `TestPOCommandRefusesInLiteProfile` added; existing launch tests (zero-profile → normalizes to "full") cover full-mode path.
+5. Verified all three refusal messages match plan spec verbatim.
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test -count=1 ./...` — all 9 packages pass.
+9. Ran `go test -count=1 -v ./cmd/... -run "TestImplementCommand|TestReviewCommand|TestPOCommandRefuses"` — 8 tests all PASS.
+
+##### Findings
+- All acceptance criteria met: all three commands refuse in lite (with correct per-command messages), full-mode behavior unchanged.
+- `cfg.ActiveProfile() == "lite"` comparison is correct — `ActiveProfile()` normalizes empty string to `"full"`, so existing tests without an explicit `Profile` field still exercise full-mode behavior.
+- Pre-check position is correct: it runs after `loadLaunchConfig` but before any launch side effects.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-003
 
 ### Review Round 1

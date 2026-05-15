@@ -37,6 +37,9 @@ func runPOLaunch(args []string) error {
 	if err != nil {
 		return err
 	}
+	if cfg.ActiveProfile() == "lite" {
+		return fmt.Errorf("Lite profile: PO orchestration is not supported in lite mode — drive `aide dev` directly with `next_task` or `all_task`. Switch profiles with `aide profile full`.")
+	}
 
 	agent := "claude"
 	if len(args) > 0 && (args[0] == "claude" || args[0] == "codex") {

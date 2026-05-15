@@ -139,6 +139,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-004 — review — 2026-05-15T10:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-004 profile-aware refusals: all three commands refuse in lite with verbatim plan messages, full-mode behavior unchanged, both branches tested per command, full suite green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
 ### T-003 — review — 2026-05-15T10:00:00Z
 
 | Field | Value |
@@ -226,6 +239,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | .ai/.manifest.json, .ai/HANDOFF.md, .ai/TASKS.md, .ai/prompts/dev.md, cmd/dev.go, cmd/dev_test.go, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/prompts/dev.md.tmpl |
 | Validation | `go fmt ./...` (pass); `go test ./cmd ./internal/template ./internal/scaffold` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
 | Commit | `feat(cli): add lite-mode aide dev launcher` |
+| Next Role | review |
+
+---
+
+### T-003 — implement — 2026-05-15T07:42:36Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-003` dev launcher and prompt changes and marked the task done. |
+| Files Changed | .ai/.manifest.json, .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, .ai/prompts/dev.md, cmd/dev.go, cmd/dev_test.go, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/prompts/dev.md.tmpl |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `bc15422 feat(cli): add lite-mode aide dev launcher` |
+| Next Role | none |
+
+---
+
+### T-004 — implement — 2026-05-15T08:30:36Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added lite-profile refusals for `aide implement`, `aide review`, and `aide po`, with full-mode behavior preserved and command coverage for both branches. |
+| Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, cmd/implement.go, cmd/implement_test.go, cmd/po.go, cmd/po_test.go, cmd/review.go, cmd/review_test.go |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(cli): add lite-profile command refusals` |
 | Next Role | review |
 
 ---
