@@ -11,10 +11,12 @@ import (
 )
 
 type fakeUI struct {
-	notes         []noteCall
-	confirmCalls  []confirmCall
-	confirmValues []bool
-	settings      projectSettings
+	notes          []noteCall
+	confirmCalls   []confirmCall
+	confirmValues  []bool
+	settings       projectSettings
+	lastDefaultDir string
+	lastProfile    string
 }
 
 type noteCall struct {
@@ -47,7 +49,9 @@ func (f *fakeUI) Confirm(title, description string, affirmative bool) (bool, err
 	return value, nil
 }
 
-func (f *fakeUI) CollectProjectSettings(_ string) (projectSettings, error) {
+func (f *fakeUI) CollectProjectSettings(defaultDir, profile string) (projectSettings, error) {
+	f.lastDefaultDir = defaultDir
+	f.lastProfile = profile
 	return f.settings, nil
 }
 
@@ -75,12 +79,13 @@ func TestRunSkipsInstallAndScaffoldsProject(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
-		if name != "demo" || projectType != "" || targetDir != dir || !initGit {
-			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
+		if name != "demo" || projectType != "" || targetDir != dir || !initGit || profile != "full" {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v, %q", name, projectType, targetDir, initGit, profile)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -137,9 +142,10 @@ func TestRunShowsManualURLsWhenPackageManagerInstallIsDeclined(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -223,10 +229,11 @@ func TestRunPromptsMacOSInstallableToolsViaHomebrew(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:        name,
 			ProjectType:        projectType,
+			Profile:            profile,
 			TargetDir:          targetDir + "/demo",
 			GitInitDone:        initGit,
 			DocumentationPath:  targetDir + "/demo/README.md",
@@ -337,9 +344,10 @@ func TestRunWindowsDecliningChocolateyStillOffersClaudeInstaller(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -401,9 +409,10 @@ func TestRunWindowsUsesNpmForCodexWhenAvailable(t *testing.T) {
 		installs = append(installs, name+" "+strings.Join(args, " "))
 	}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -446,9 +455,10 @@ func TestRunLinuxShowsLinksOnlyWhenInstallRequested(t *testing.T) {
 
 	cmdr := &prereqTestCommander{}
 
-	err := run(cmdr, ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run(cmdr, ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -492,7 +502,7 @@ func TestRunFailsWhenRequiredGitRemainsMissing(t *testing.T) {
 	}
 
 	scaffoldCalled := false
-	err := run((&prereqTestCommander{}), ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
+	err := run((&prereqTestCommander{}), ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
 		scaffoldCalled = true
 		return scaffold.Result{}, nil
 	})
@@ -591,12 +601,13 @@ func TestRunUsesCollectedProjectSettings(t *testing.T) {
 		},
 	}
 
-	err := run((&prereqTestCommander{}), ui, dir, func(name, projectType, targetDir string, initGit bool) (scaffold.Result, error) {
-		if name != "demo" || projectType != "go" || targetDir != dir || initGit {
-			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v", name, projectType, targetDir, initGit)
+	err := run((&prereqTestCommander{}), ui, dir, "", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
+		if name != "demo" || projectType != "go" || targetDir != dir || initGit || profile != "full" {
+			t.Fatalf("unexpected scaffold args: %q, %q, %q, %v, %q", name, projectType, targetDir, initGit, profile)
 		}
 		return scaffold.Result{
 			ProjectName:       name,
+			Profile:           profile,
 			TargetDir:         targetDir + "/demo",
 			GitInitDone:       initGit,
 			DocumentationPath: targetDir + "/demo/README.md",
@@ -617,6 +628,36 @@ func TestValidateProjectSettingsRejectsInvalidProjectName(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("validateProjectSettings() error = nil, want error")
+	}
+}
+
+func TestRunUsesProfileOverrideWhenProvided(t *testing.T) {
+	dir := t.TempDir()
+	ui := &fakeUI{
+		settings: projectSettings{
+			Name:      "demo",
+			TargetDir: dir,
+			InitGit:   false,
+		},
+	}
+
+	err := run((&prereqTestCommander{}), ui, dir, "lite", func(name, projectType, targetDir string, initGit bool, profile string) (scaffold.Result, error) {
+		if profile != "lite" {
+			t.Fatalf("profile = %q, want %q", profile, "lite")
+		}
+		return scaffold.Result{
+			ProjectName:       name,
+			Profile:           profile,
+			TargetDir:         targetDir + "/demo",
+			GitInitDone:       initGit,
+			DocumentationPath: targetDir + "/demo/README.md",
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("run() error = %v", err)
+	}
+	if ui.lastProfile != "lite" {
+		t.Fatalf("wizard profile override = %q, want %q", ui.lastProfile, "lite")
 	}
 }
 

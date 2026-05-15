@@ -48,6 +48,78 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-005
+
+### Review Round 1
+
+Status: **FAIL**
+
+Reviewed: 2026-05-15
+
+#### Findings
+
+- severity: `blocker`
+  - file: `internal/template/templates/base/ai/config.json.tmpl` + `internal/mcp/config_test.go:28–45`
+  - description: `config.json.tmpl` was changed from the hardcoded `"profile": "full"` to `"profile": "{{ .Profile }}"`. `TestConfigLoadProjectTemplate` reads the raw template file and passes it directly to `LoadConfig`. `json.Unmarshal` parses `{{ .Profile }}` as a literal string, then `validate()` rejects it with `invalid profile "{{ .Profile }}": must be one of ["full", "lite"]`. `go test ./...` fails — an explicit acceptance criterion. The fix is to update `TestConfigLoadProjectTemplate` to render the template (or substitute the placeholder) before passing it to `LoadConfig`, so it behaves like a real rendered config with a known valid profile value.
+  - required fix: Yes
+
+#### Verification
+
+##### Steps
+1. Read and analyzed all changed files: `cmd/init.go`, `cmd/init_test.go`, `internal/scaffold/scaffold.go`, `internal/scaffold/result.go`, `internal/scaffold/summary.go`, `internal/template/data.go`, `internal/template/engine.go`, `internal/template/templates/base/ai/config.json.tmpl`, `internal/wizard/wizard.go`, and all test diffs.
+2. Ran `go fmt ./...` — clean.
+3. Ran `go vet ./...` — clean.
+4. Ran `go test -count=1 ./...` — **FAIL**: `internal/mcp` package: `TestConfigLoadProjectTemplate` fails with `invalid profile "{{ .Profile }}": must be one of ["full", "lite"]`.
+
+##### Findings
+- Implementation is otherwise well-structured: `Options` struct replaces positional args in `scaffold.Run`, `Profile` threads through `ProjectData` → template engine → rendered config, wizard profile question is conditionally shown only when `--profile` is not passed, `--profile` flag overrides wizard, summary correctly switches between lite and full next-steps.
+- All other tests pass; only `internal/mcp` fails.
+- The blocker is a direct consequence of changing `config.json.tmpl` to a dynamic template expression without updating the test that reads the raw template as a config fixture.
+
+##### Risks
+- Until fixed, the `go test ./...` acceptance criterion is not met and the full suite cannot be declared green.
+
+#### Required Fixes
+1. Update `TestConfigLoadProjectTemplate` in `internal/mcp/config_test.go` so it no longer reads the raw `.tmpl` file as-is. Preferred approach: replace the raw-file read with a hardcoded JSON fixture that represents a rendered config with `"profile": "full"` (the default). The test's purpose is to verify backward compatibility of a real config file, not to verify the template itself — a hardcoded fixture is the right level of abstraction.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`FAIL`
+
+### Review Round 2
+
+Status: **PASS**
+
+Reviewed: 2026-05-15
+
+#### Findings
+
+No issues. Required fix from Round 1 addressed correctly.
+
+#### Verification
+
+##### Steps
+1. Read rework diff for `internal/mcp/config_test.go` — `TestConfigLoadProjectTemplate` no longer reads the raw template file; it now uses `writeConfigFile` with a hardcoded JSON fixture containing `"profile": "full"` and the same role structure as before.
+2. Ran `go fmt ./...` — clean.
+3. Ran `go vet ./...` — clean.
+4. Ran `go test -count=1 ./...` — all 9 packages pass.
+5. Ran targeted tests: `TestConfigLoadProjectTemplate`, `TestRunWritesLiteProfileIntoConfig`, `TestBuildSummaryUsesLiteProfileNextSteps`, `TestRunUsesProfileOverrideWhenProvided`, `TestInitCommandPassesProfileOverrideToWizard`, `TestInitCommandRegistersProfileFlag` — all PASS.
+
+##### Findings
+- Blocker from Round 1 resolved: `TestConfigLoadProjectTemplate` now uses a proper hardcoded rendered fixture; `LoadConfig` successfully parses it and `ActiveProfile()` returns `"full"`.
+- All acceptance criteria now met.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-004
 
 ### Review Round 1

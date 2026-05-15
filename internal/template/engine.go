@@ -20,6 +20,9 @@ var filenameMapping = map[string]string{
 // then renders base templates and returns a map of relative output path -> content.
 func RenderAll(data *ProjectData) (map[string]string, error) {
 	result := make(map[string]string)
+	if data.Profile == "" {
+		data.Profile = "full"
+	}
 
 	// Step 1: Render overlay gitignore fragment if it exists.
 	if data.ProjectType != "" {

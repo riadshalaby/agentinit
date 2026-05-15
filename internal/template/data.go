@@ -4,6 +4,7 @@ package template
 type ProjectData struct {
 	ProjectName        string
 	ProjectType        string
+	Profile            string
 	ToolPermissions    []string
 	ValidationCommands []ValidationCommand
 	GitignoreExtra     string

@@ -9,6 +9,7 @@ import (
 type Result struct {
 	ProjectName        string
 	ProjectType        string
+	Profile            string
 	TargetDir          string
 	GitInitDone        bool
 	DocumentationPath  string
@@ -21,10 +22,11 @@ type KeyPath struct {
 	Description string
 }
 
-func buildResult(name, projectType, targetDir string, initGit bool, validationCommands []template.ValidationCommand) Result {
+func buildResult(name, projectType, profile, targetDir string, initGit bool, validationCommands []template.ValidationCommand) Result {
 	return Result{
 		ProjectName:        name,
 		ProjectType:        projectType,
+		Profile:            profile,
 		TargetDir:          targetDir,
 		GitInitDone:        initGit,
 		DocumentationPath:  filepath.Join(targetDir, "README.md"),

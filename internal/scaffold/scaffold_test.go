@@ -11,7 +11,7 @@ import (
 func TestRunCreatesProjectStructure(t *testing.T) {
 	dir := t.TempDir()
 
-	result, err := Run("testproj", "go", dir, false)
+	result, err := Run(Options{Name: "testproj", ProjectType: "go", Dir: dir, InitGit: false, Profile: "full"})
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -52,6 +52,9 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 	}
 	if result.DocumentationPath != filepath.Join(projectDir, "README.md") {
 		t.Fatalf("DocumentationPath = %q", result.DocumentationPath)
+	}
+	if result.Profile != "full" {
+		t.Fatalf("Profile = %q, want %q", result.Profile, "full")
 	}
 	if len(result.KeyPaths) != 6 {
 		t.Fatalf("KeyPaths len = %d, want 6", len(result.KeyPaths))
@@ -429,7 +432,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 func TestRunDoesNotCreateScriptsDirectory(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := Run("testproj", "", dir, false)
+	_, err := Run(Options{Name: "testproj", Dir: dir, InitGit: false})
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -444,7 +447,7 @@ func TestRunFailsIfDirExists(t *testing.T) {
 	dir := t.TempDir()
 	os.MkdirAll(filepath.Join(dir, "existing"), 0o755)
 
-	_, err := Run("existing", "", dir, false)
+	_, err := Run(Options{Name: "existing", Dir: dir, InitGit: false})
 	if err == nil {
 		t.Error("Run() should fail when target directory exists")
 	}
@@ -458,7 +461,7 @@ func TestRunWithGitInit(t *testing.T) {
 
 	dir := t.TempDir()
 
-	result, err := Run("gitproj", "node", dir, true)
+	result, err := Run(Options{Name: "gitproj", ProjectType: "node", Dir: dir, InitGit: true, Profile: "full"})
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -505,8 +508,28 @@ func TestGitInitDefaultBranch(t *testing.T) {
 func TestRunUnknownType(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := Run("testproj", "python", dir, false)
+	_, err := Run(Options{Name: "testproj", ProjectType: "python", Dir: dir, InitGit: false})
 	if err == nil {
 		t.Error("Run() should fail for unknown project type")
+	}
+}
+
+func TestRunWritesLiteProfileIntoConfig(t *testing.T) {
+	dir := t.TempDir()
+
+	result, err := Run(Options{Name: "liteproj", Dir: dir, InitGit: false, Profile: "lite"})
+	if err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+	if result.Profile != "lite" {
+		t.Fatalf("Profile = %q, want %q", result.Profile, "lite")
+	}
+
+	configBytes, err := os.ReadFile(filepath.Join(dir, "liteproj", ".ai/config.json"))
+	if err != nil {
+		t.Fatalf("read .ai/config.json: %v", err)
+	}
+	if !strings.Contains(string(configBytes), "\"profile\": \"lite\"") {
+		t.Fatalf("generated .ai/config.json = %q, want lite profile", string(configBytes))
 	}
 }
