@@ -42,6 +42,11 @@ func BuildSummary(result Result) SummaryModel {
 		"Start a development cycle: aide cycle start feature/<scope>",
 		"Run the planner: aide plan",
 	}
+	if result.Profile == "lite" {
+		nextSteps = append(nextSteps, "Start the dev session: aide dev\nSee aide profile lite --help for the lite workflow details.")
+	} else {
+		nextSteps = append(nextSteps, "Start the implementer, reviewer, and PO sessions: aide implement, aide review, and aide po")
+	}
 	if len(result.ValidationCommands) > 0 {
 		lines := []string{"Validate the project:"}
 		for _, cmd := range result.ValidationCommands {

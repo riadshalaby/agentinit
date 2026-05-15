@@ -10,9 +10,25 @@ import (
 	"github.com/riadshalaby/agentinit/internal/template"
 )
 
+type Options struct {
+	Name        string
+	ProjectType string
+	Dir         string
+	InitGit     bool
+	Profile     string
+}
+
 // Run orchestrates the full scaffold process.
-func Run(name, projectType, dir string, initGit bool) (Result, error) {
-	targetDir := filepath.Join(dir, name)
+func Run(opts Options) (Result, error) {
+	profile := opts.Profile
+	if profile == "" {
+		profile = "full"
+	}
+	if profile != "full" && profile != "lite" {
+		return Result{}, fmt.Errorf("invalid profile %q: must be one of [\"full\", \"lite\"]", profile)
+	}
+
+	targetDir := filepath.Join(opts.Dir, opts.Name)
 
 	// Check target does not exist.
 	if _, err := os.Stat(targetDir); err == nil {
@@ -20,15 +36,16 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	}
 
 	// Resolve overlay.
-	ov, err := overlay.Get(projectType)
+	ov, err := overlay.Get(opts.ProjectType)
 	if err != nil {
 		return Result{}, err
 	}
 
 	// Build project data.
 	data := &template.ProjectData{
-		ProjectName:        name,
-		ProjectType:        projectType,
+		ProjectName:        opts.Name,
+		ProjectType:        opts.ProjectType,
+		Profile:            profile,
 		ToolPermissions:    ov.ToolPermissions,
 		ValidationCommands: ov.ValidationCommands,
 		PRTestPlanItems:    ov.PRTestPlanItems,
@@ -50,13 +67,13 @@ func Run(name, projectType, dir string, initGit bool) (Result, error) {
 	}
 
 	// Git init.
-	if initGit {
+	if opts.InitGit {
 		if err := gitInit(targetDir); err != nil {
 			return Result{}, fmt.Errorf("git init: %w", err)
 		}
 	}
 
-	return buildResult(name, projectType, targetDir, initGit, ov.ValidationCommands), nil
+	return buildResult(opts.Name, opts.ProjectType, profile, targetDir, opts.InitGit, ov.ValidationCommands), nil
 }
 
 func gitInit(dir string) error {

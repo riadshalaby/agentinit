@@ -33,7 +33,7 @@ func TestSelfUpdateIsIdempotent(t *testing.T) {
 
 func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -127,7 +127,7 @@ func TestRunUpdatesManagedFilesAndWritesManifest(t *testing.T) {
 
 func TestRunIsIdempotentForGoScaffold(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -143,7 +143,7 @@ func TestRunIsIdempotentForGoScaffold(t *testing.T) {
 
 func TestRunIgnoresManifestGeneratedAtDrift(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -168,7 +168,7 @@ func TestRunIgnoresManifestGeneratedAtDrift(t *testing.T) {
 
 func TestRunDryRunDoesNotModifyFiles(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -244,7 +244,7 @@ func TestRunFallsBackWithoutManifestAndPrependsManagedBlock(t *testing.T) {
 
 func TestRunDeletesRemovedManagedFiles(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -290,7 +290,7 @@ func TestRunDeletesRemovedManagedFiles(t *testing.T) {
 
 func TestRunMigratesLegacyScriptsAndRemovesEmptyScriptsDir(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -344,7 +344,7 @@ func TestRunMigratesLegacyScriptsAndRemovesEmptyScriptsDir(t *testing.T) {
 
 func TestRunMigratesObsoleteTaskStates(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -405,7 +405,7 @@ func TestRunMigratesObsoleteTaskStates(t *testing.T) {
 
 func TestRunMigratesConfigTestRole(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -447,7 +447,7 @@ func TestRunMigratesConfigTestRole(t *testing.T) {
 
 func TestRunDeletesOrphanedTestReportTemplate(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")
@@ -474,7 +474,7 @@ func TestRunReconcilesManagedFileNotInManifest(t *testing.T) {
 	// exist on disk but are absent from the manifest; managedPaths must still
 	// include them so they are reconciled.
 	dir := t.TempDir()
-	if _, err := scaffold.Run("demo", "go", dir, false); err != nil {
+	if _, err := scaffold.Run(scaffold.Options{Name: "demo", ProjectType: "go", Dir: dir, InitGit: false}); err != nil {
 		t.Fatalf("scaffold.Run() error = %v", err)
 	}
 	projectDir := filepath.Join(dir, "demo")

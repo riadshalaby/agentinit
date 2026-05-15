@@ -25,19 +25,36 @@ func TestConfigLoadMissingFileReturnsZeroValue(t *testing.T) {
 func TestConfigLoadProjectTemplate(t *testing.T) {
 	t.Parallel()
 
-	srcBytes, err := os.ReadFile(filepath.Join("..", "template", "templates", "base", "ai", "config.json.tmpl"))
-	if err != nil {
-		t.Fatalf("ReadFile(config template) error = %v", err)
-	}
-
 	tempDir := t.TempDir()
-	configDir := filepath.Join(tempDir, ".ai")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		t.Fatalf("MkdirAll() error = %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(configDir, "config.json"), srcBytes, 0o644); err != nil {
-		t.Fatalf("WriteFile(config.json) error = %v", err)
-	}
+	writeConfigFile(t, tempDir, `{
+  "profile": "full",
+  "roles": {
+    "plan": {
+      "agent": "claude",
+      "model": "sonnet",
+      "effort": "medium"
+    },
+    "implement": {
+      "agent": "codex",
+      "model": "gpt-5.4",
+      "effort": "high"
+    },
+    "review": {
+      "agent": "claude",
+      "model": "sonnet",
+      "effort": "medium"
+    }
+  },
+  "defaults": {
+    "claude": {
+      "permission_mode": "acceptEdits"
+    },
+    "codex": {
+      "sandbox": "workspace-write",
+      "network_access": true
+    }
+  }
+}`)
 
 	cfg, err := LoadConfig(tempDir)
 	if err != nil {

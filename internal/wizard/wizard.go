@@ -19,12 +19,13 @@ type projectSettings struct {
 	ProjectType string
 	TargetDir   string
 	InitGit     bool
+	Profile     string
 }
 
 type ui interface {
 	Note(title, body string) error
 	Confirm(title, description string, affirmative bool) (bool, error)
-	CollectProjectSettings(defaultDir string) (projectSettings, error)
+	CollectProjectSettings(defaultDir, profile string) (projectSettings, error)
 }
 
 type huhUI struct{}
@@ -35,13 +36,21 @@ var (
 	installTool           = prereq.InstallTool
 )
 
-func Run(cmdr prereq.Commander) error {
+func Run(cmdr prereq.Commander, profile string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("cannot determine current directory: %w", err)
 	}
 
-	return run(cmdr, huhUI{}, cwd, scaffold.Run)
+	return run(cmdr, huhUI{}, cwd, profile, func(name, projectType, dir string, initGit bool, profile string) (scaffold.Result, error) {
+		return scaffold.Run(scaffold.Options{
+			Name:        name,
+			ProjectType: projectType,
+			Dir:         dir,
+			InitGit:     initGit,
+			Profile:     profile,
+		})
+	})
 }
 
 // RunToolCheck scans for required and optional tools and interactively offers
@@ -50,12 +59,12 @@ func RunToolCheck(cmdr prereq.Commander) error {
 	return runToolCheck(cmdr, huhUI{})
 }
 
-func run(cmdr prereq.Commander, ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
+func run(cmdr prereq.Commander, ui ui, cwd, profile string, scaffoldFn func(name, projectType, dir string, initGit bool, profile string) (scaffold.Result, error)) error {
 	if err := runToolCheck(cmdr, ui); err != nil {
 		return err
 	}
 
-	return runScaffoldStep(ui, cwd, scaffoldFn)
+	return runScaffoldStep(ui, cwd, profile, scaffoldFn)
 }
 
 func runToolCheck(cmdr prereq.Commander, ui ui) error {
@@ -133,16 +142,22 @@ func runToolCheck(cmdr prereq.Commander, ui ui) error {
 	return nil
 }
 
-func runScaffoldStep(ui ui, cwd string, scaffoldFn func(name, projectType, dir string, initGit bool) (scaffold.Result, error)) error {
-	settings, err := ui.CollectProjectSettings(cwd)
+func runScaffoldStep(ui ui, cwd, profile string, scaffoldFn func(name, projectType, dir string, initGit bool, profile string) (scaffold.Result, error)) error {
+	settings, err := ui.CollectProjectSettings(cwd, profile)
 	if err != nil {
 		return err
+	}
+	if settings.Profile == "" {
+		settings.Profile = "full"
+	}
+	if profile != "" {
+		settings.Profile = profile
 	}
 	if err := validateProjectSettings(settings); err != nil {
 		return err
 	}
 
-	result, err := scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.InitGit)
+	result, err := scaffoldFn(settings.Name, settings.ProjectType, settings.TargetDir, settings.InitGit, settings.Profile)
 	if err != nil {
 		return err
 	}
@@ -174,38 +189,53 @@ func (huhUI) Confirm(title, description string, affirmative bool) (bool, error) 
 	return value, err
 }
 
-func (huhUI) CollectProjectSettings(defaultDir string) (projectSettings, error) {
+func (huhUI) CollectProjectSettings(defaultDir, profile string) (projectSettings, error) {
 	settings := projectSettings{
 		TargetDir: defaultDir,
 		InitGit:   true,
+		Profile:   profile,
 	}
 
-	err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Project name").
-				Value(&settings.Name).
-				Validate(validateProjectName),
+	fields := []huh.Field{
+		huh.NewInput().
+			Title("Project name").
+			Value(&settings.Name).
+			Validate(validateProjectName),
+		huh.NewSelect[string]().
+			Title("Project type").
+			Value(&settings.ProjectType).
+			Options(
+				huh.NewOption("none", ""),
+				huh.NewOption("go", "go"),
+				huh.NewOption("java", "java"),
+				huh.NewOption("node", "node"),
+			),
+	}
+	if profile == "" {
+		settings.Profile = "full"
+		fields = append(fields,
 			huh.NewSelect[string]().
-				Title("Project type").
-				Value(&settings.ProjectType).
+				Title("Workflow profile").
+				Value(&settings.Profile).
 				Options(
-					huh.NewOption("none", ""),
-					huh.NewOption("go", "go"),
-					huh.NewOption("java", "java"),
-					huh.NewOption("node", "node"),
+					huh.NewOption("full - planner, implementer, reviewer, and PO sessions", "full"),
+					huh.NewOption("lite - planner plus one dev session", "lite"),
 				),
-			huh.NewInput().
-				Title("Target directory").
-				Value(&settings.TargetDir).
-				Validate(validateDirectory),
-			huh.NewConfirm().
-				Title("Initialize git?").
-				Value(&settings.InitGit).
-				Affirmative("Yes").
-				Negative("No"),
-		),
-	).Run()
+		)
+	}
+	fields = append(fields,
+		huh.NewInput().
+			Title("Target directory").
+			Value(&settings.TargetDir).
+			Validate(validateDirectory),
+		huh.NewConfirm().
+			Title("Initialize git?").
+			Value(&settings.InitGit).
+			Affirmative("Yes").
+			Negative("No"),
+	)
+
+	err := huh.NewForm(huh.NewGroup(fields...)).Run()
 	if err != nil {
 		return projectSettings{}, err
 	}
@@ -369,6 +399,9 @@ func installedLabel(installed bool) string {
 func validateProjectSettings(settings projectSettings) error {
 	if err := validateProjectName(settings.Name); err != nil {
 		return err
+	}
+	if settings.Profile != "" && settings.Profile != "full" && settings.Profile != "lite" {
+		return fmt.Errorf("invalid profile %q: must be one of [\"full\", \"lite\"]", settings.Profile)
 	}
 	return validateDirectory(settings.TargetDir)
 }

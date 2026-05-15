@@ -17,15 +17,24 @@ var (
 	projectType string
 	targetDir   string
 	noGit       bool
+	initProfile string
 )
 
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
 
 var (
-	runWizard             = wizard.Run
-	runScaffold           = scaffold.Run
-	stdinStat             = func() (fs.FileInfo, error) { return os.Stdin.Stat() }
-	cliOutput   io.Writer = os.Stdout
+	runWizard   = wizard.Run
+	runScaffold = func(name, projectType, dir string, initGit bool, profile string) (scaffold.Result, error) {
+		return scaffold.Run(scaffold.Options{
+			Name:        name,
+			ProjectType: projectType,
+			Dir:         dir,
+			InitGit:     initGit,
+			Profile:     profile,
+		})
+	}
+	stdinStat           = func() (fs.FileInfo, error) { return os.Stdin.Stat() }
+	cliOutput io.Writer = os.Stdout
 )
 
 var initCmd = &cobra.Command{
@@ -34,7 +43,7 @@ var initCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 && isTerminal() {
-			return runWizard(prereq.NewExecCommander())
+			return runWizard(prereq.NewExecCommander(), initProfile)
 		}
 		if len(args) == 0 {
 			return fmt.Errorf("project name argument is required when stdin is not a terminal")
@@ -55,7 +64,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		result, err := runScaffold(name, projectType, dir, !noGit)
+		result, err := runScaffold(name, projectType, dir, !noGit, initProfile)
 		if err != nil {
 			return err
 		}
@@ -69,6 +78,7 @@ func init() {
 	initCmd.Flags().StringVar(&projectType, "type", "", "Project type overlay (go, java, node)")
 	initCmd.Flags().StringVar(&targetDir, "dir", "", "Target directory (default: current directory)")
 	initCmd.Flags().BoolVar(&noGit, "no-git", false, "Skip git init and initial commit")
+	initCmd.Flags().StringVar(&initProfile, "profile", "", "Workflow profile (full, lite)")
 	rootCmd.AddCommand(initCmd)
 }
 
