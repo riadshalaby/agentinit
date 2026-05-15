@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -324,6 +325,89 @@ func TestConfigDefaultsBlockAccessible(t *testing.T) {
 	}
 	if got := cfg.Defaults.Claude.PermissionMode; got != "acceptEdits" {
 		t.Fatalf("Defaults.Claude.PermissionMode = %q, want %q", got, "acceptEdits")
+	}
+}
+
+func TestWriteProfileCreatesMissingConfig(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	if err := WriteProfile(tempDir, "lite"); err != nil {
+		t.Fatalf("WriteProfile() error = %v", err)
+	}
+
+	cfg, err := LoadConfig(tempDir)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if got := cfg.ActiveProfile(); got != "lite" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "lite")
+	}
+}
+
+func TestWriteProfilePreservesUnknownFields(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	writeConfigFile(t, tempDir, `{
+  "profile": "full",
+  "metadata": {
+    "custom": true
+  },
+  "roles": {
+    "implement": {
+      "agent": "codex",
+      "model": "gpt-5.4"
+    }
+  }
+}`)
+
+	if err := WriteProfile(tempDir, "lite"); err != nil {
+		t.Fatalf("WriteProfile() error = %v", err)
+	}
+
+	cfg, err := LoadConfig(tempDir)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if got := cfg.ActiveProfile(); got != "lite" {
+		t.Fatalf("ActiveProfile() = %q, want %q", got, "lite")
+	}
+	if got := cfg.ModelForRoleAndProvider("implement", "codex"); got != "gpt-5.4" {
+		t.Fatalf("ModelForRoleAndProvider(implement, codex) = %q, want %q", got, "gpt-5.4")
+	}
+
+	data, err := os.ReadFile(filepath.Join(tempDir, ".ai", "config.json"))
+	if err != nil {
+		t.Fatalf("ReadFile(config.json) error = %v", err)
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if raw["profile"] != "lite" {
+		t.Fatalf("profile = %#v, want %q", raw["profile"], "lite")
+	}
+	metadata, ok := raw["metadata"].(map[string]any)
+	if !ok {
+		t.Fatal("metadata should be preserved as an object")
+	}
+	if metadata["custom"] != true {
+		t.Fatalf("metadata.custom = %#v, want true", metadata["custom"])
+	}
+}
+
+func TestWriteProfileRejectsUnknownProfile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	err := WriteProfile(tempDir, "turbo")
+	if err == nil {
+		t.Fatal("WriteProfile() expected error for unknown profile")
+	}
+	if got, want := err.Error(), `invalid profile "turbo": must be one of ["full", "lite"]`; got != want {
+		t.Fatalf("WriteProfile() error = %q, want %q", got, want)
 	}
 }
 

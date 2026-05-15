@@ -74,6 +74,64 @@ func LoadConfig(cwd string) (Config, error) {
 	return cfg, nil
 }
 
+// WriteProfile persists the active workflow profile into .ai/config.json while
+// preserving unrelated config fields.
+func WriteProfile(cwd, profile string) error {
+	if _, ok := validProfiles[profile]; !ok {
+		return fmt.Errorf("invalid profile %q: must be one of [\"full\", \"lite\"]", profile)
+	}
+
+	path := filepath.Join(cwd, ".ai", "config.json")
+	dir := filepath.Dir(path)
+
+	doc := map[string]any{}
+	data, err := os.ReadFile(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create config dir: %w", err)
+		}
+	case err != nil:
+		return fmt.Errorf("read config: %w", err)
+	default:
+		if err := json.Unmarshal(data, &doc); err != nil {
+			return fmt.Errorf("parse config: %w", err)
+		}
+	}
+
+	doc["profile"] = profile
+	rendered, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	rendered = append(rendered, '\n')
+
+	tempFile, err := os.CreateTemp(dir, "config.json.*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temp config: %w", err)
+	}
+	tempPath := tempFile.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tempPath)
+		}
+	}()
+
+	if _, err := tempFile.Write(rendered); err != nil {
+		_ = tempFile.Close()
+		return fmt.Errorf("write temp config: %w", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("close temp config: %w", err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return fmt.Errorf("replace config: %w", err)
+	}
+	cleanup = false
+	return nil
+}
+
 // ActiveProfile returns the configured workflow profile, defaulting to "full".
 func (c Config) ActiveProfile() string {
 	if c.Profile == "" {
