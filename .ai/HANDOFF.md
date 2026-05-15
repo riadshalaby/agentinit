@@ -34,6 +34,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-001 — implement — 2026-05-14T18:46:25Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the reviewed `T-001` profile-config change set and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, .ai/prompts/implementer.md, AGENTS.md, internal/mcp/config.go, internal/mcp/config_test.go, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/config.json.tmpl, internal/template/templates/base/ai/prompts/implementer.md.tmpl |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `84367d7 feat(config): add workflow profile defaults to .ai/config.json` |
+| Next Role | none |
+
+---
+
 ### <TASK_ID> — <ROLE> — <YYYY-MM-DDTHH:MM:SSZ>
 
 | Field | Value |
@@ -123,5 +136,57 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | Planned documentation pass: `README.md` "Modes" section + comparison table, project-root `AGENTS.md` updates including the verbatim test-weakening guardrail, and mirrored template updates so scaffolded projects ship the same content. |
 | Files Changed | ROADMAP.md, .ai/PLAN.md, .ai/TASKS.md |
 | Next Role | implement |
+
+---
+
+### T-002 — review — 2026-05-15T09:30:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Round 2 review of T-002 rework: `parseMarkdownTableRow` correctly handles `\|` in Scope cells; regression test added; all 7 profile tests and full suite green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
+### T-002 — review — 2026-05-15T09:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-002 `aide profile` command: all acceptance criteria met except `hasInFlightTasks` misreads status when Scope cells contain `\|`, causing a spurious advisory for the rest of the cycle. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | FAIL |
+| Blocking Findings | 1. `hasInFlightTasks` naive pipe-split misidentifies Status column when Scope contains `\|` — fix by detecting column index from the header row. |
+| Next Role | implement |
+
+---
+
+### T-002 — implement — 2026-05-15T05:06:55Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the `aide profile` command surface, map-preserving profile persistence in `.ai/config.json`, mode-specific help text, and in-flight task advisories. |
+| Files Changed | .ai/TASKS.md, cmd/profile.go, cmd/profile_test.go, cmd/root.go, internal/mcp/config.go, internal/mcp/config_test.go |
+| Validation | `go fmt ./...` (pass); `go test ./cmd ./internal/mcp` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(cli): add aide profile commands for workflow switching` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-05-15T05:37:41Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Fixed the `TASKS.md` status parsing bug for escaped pipes in Scope cells and added regression coverage for both in-flight and all-done boards. |
+| Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, cmd/profile.go, cmd/profile_test.go |
+| Validation | `go fmt ./cmd` (pass); `go test -count=1 ./cmd/... -run TestProfile` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(cli): add aide profile commands for workflow switching` |
+| Next Role | review |
 
 ---
