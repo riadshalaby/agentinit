@@ -48,6 +48,51 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-003
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-05-15
+
+#### Findings
+
+No issues. All required content present and all tests pass.
+
+#### Verification
+
+##### Steps
+1. Read `cmd/dev.go` — Cobra command with `Long`/`Example`, profile check (refuses in full, launches in lite), `runRoleLaunch("dev", "dev.md", "codex", args)`.
+2. Read `cmd/dev_test.go` — 3 tests: registered, refuses in full (checks error snippets), launches in lite (verifies exact `RoleLaunchOpts`).
+3. Read `internal/template/templates/base/ai/prompts/dev.md.tmpl` — verified all plan-required content present:
+   - Hat-switching loop (implement → review → halt) ✓
+   - Validation list: `go fmt`, `go vet`, `go test`, e2e ✓
+   - 3-attempt mechanical-fix cap + mechanical vs semantic definitions ✓
+   - All five command semantics: `next_task`, `all_task`, `rework_task`, `commit_task`, `status_cycle` ✓
+   - Verbatim test-weakening guardrail (exact character match against ROADMAP.md line 26) ✓
+   - `all_task` real-commit policy: "Each completed task in `all_task` ends with a real `git add -A && git commit -m \"<message>\"`" + "No batching, no squashing — one commit per task" ✓
+   - Exact `READY_FOR_REVIEW` halt block with both valid verbs (`commit_task`, `rework_task`) ✓
+4. Read diffs for `internal/template/engine_test.go` and `internal/scaffold/scaffold_test.go` — both assert `dev.md` is present and check 10 key strings including the guardrail sentences, `all_task` commit policy, `READY_FOR_REVIEW`, and `rework_task`.
+5. Ran `go fmt ./...` — clean.
+6. Ran `go vet ./...` — clean.
+7. Ran `go test -count=1 ./...` — all 9 packages pass.
+8. Ran `go test -count=1 -v ./cmd/... -run TestDev` — 3 tests all PASS.
+
+##### Findings
+- All T-003 acceptance criteria satisfied.
+- Refusal message correctly names `` `aide implement` `` and `` `aide review` `` (verified by test assertions on those exact snippets).
+- `runRoleLaunch("dev", "dev.md", "codex", args)` wiring confirmed by `TestDevCommandLaunchesInLiteProfile` which checks `RoleLaunchOpts` field by field with `reflect.DeepEqual`.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-002
 
 ### Review Round 1

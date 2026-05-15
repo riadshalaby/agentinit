@@ -25,6 +25,7 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
+		".ai/prompts/dev.md",
 		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
@@ -185,6 +186,22 @@ func TestRunCreatesProjectStructure(t *testing.T) {
 		path  string
 		rules []string
 	}{
+		{
+			path: ".ai/prompts/dev.md",
+			rules: []string{
+				"# Dev Prompt",
+				"`all_task`",
+				"`commit_task [TASK_ID]`",
+				"`status_cycle [TASK_ID]`",
+				"During the review hat, if a test fails you may either change implementation code to make it pass, or add new assertions. You must not weaken or delete existing assertions to make a test pass.",
+				"If you believe a test is genuinely wrong for the new behavior, halt to `changes_requested`, do not retry, and write your proposed test change to `REVIEW.md` for human approval — even if you have retries remaining.",
+				"Each completed task in `all_task` ends with a real `git add -A && git commit -m \"<message>\"`",
+				"No batching, no squashing — one commit per task",
+				"READY_FOR_REVIEW",
+				"Valid next commands:",
+				"`rework_task [TASK_ID] [feedback]`",
+			},
+		},
 		{
 			path: ".ai/prompts/planner.md",
 			rules: []string{

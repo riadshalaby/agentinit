@@ -58,6 +58,7 @@ func TestRenderAllBaseOnly(t *testing.T) {
 		".ai/TASKS.template.md",
 		".ai/REVIEW.template.md",
 		".ai/HANDOFF.template.md",
+		".ai/prompts/dev.md",
 		".ai/prompts/po.md",
 		".ai/prompts/planner.md",
 		".ai/prompts/implementer.md",
@@ -243,6 +244,26 @@ func TestRenderAllBaseOnly(t *testing.T) {
 	}
 	if !strings.Contains(implementerPrompt, "read the commit message from the task's `next_task` HANDOFF entry `Commit` field") {
 		t.Error("implementer prompt should read the commit message from the HANDOFF entry")
+	}
+
+	devPrompt := files[".ai/prompts/dev.md"]
+	for _, snippet := range []string{
+		"# Dev Prompt",
+		"`all_task`",
+		"`commit_task [TASK_ID]`",
+		"`status_cycle [TASK_ID]`",
+		"During the review hat, if a test fails you may either change implementation code to make it pass, or add new assertions. You must not weaken or delete existing assertions to make a test pass.",
+		"If you believe a test is genuinely wrong for the new behavior, halt to `changes_requested`, do not retry, and write your proposed test change to `REVIEW.md` for human approval — even if you have retries remaining.",
+		"Each completed task in `all_task` ends with a real `git add -A && git commit -m \"<message>\"`",
+		"No batching, no squashing — one commit per task",
+		"READY_FOR_REVIEW",
+		"Valid next commands:",
+		"`commit_task [TASK_ID]`",
+		"`rework_task [TASK_ID] [feedback]`",
+	} {
+		if !strings.Contains(devPrompt, snippet) {
+			t.Errorf("dev prompt should contain %q", snippet)
+		}
 	}
 
 	plannerPrompt := files[".ai/prompts/planner.md"]

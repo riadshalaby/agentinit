@@ -3,6 +3,10 @@
   "generated_at": "2026-04-22T09:25:35Z",
   "files": [
     {
+      "path": ".ai/prompts/dev.md",
+      "management": "full"
+    },
+    {
       "path": ".ai/prompts/implementer.md",
       "management": "full"
     },
