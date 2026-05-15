@@ -139,6 +139,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-003 — review — 2026-05-15T10:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-003 `aide dev` launcher and `dev.md.tmpl`: verbatim guardrail matches ROADMAP.md exactly, all five command verbs present, halt block correct, tests cover both profile paths, full suite green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
 ### T-002 — review — 2026-05-15T09:30:00Z
 
 | Field | Value |
@@ -187,6 +200,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, cmd/profile.go, cmd/profile_test.go |
 | Validation | `go fmt ./cmd` (pass); `go test -count=1 ./cmd/... -run TestProfile` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
 | Commit | `feat(cli): add aide profile commands for workflow switching` |
+| Next Role | review |
+
+---
+
+### T-002 — implement — 2026-05-15T05:42:52Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-002` profile command changes and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, cmd/profile.go, cmd/profile_test.go, cmd/root.go, internal/mcp/config.go, internal/mcp/config_test.go |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `1eeee0b feat(cli): add aide profile commands for workflow switching` |
+| Next Role | none |
+
+---
+
+### T-003 — implement — 2026-05-15T06:55:22Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added the lite-mode `aide dev` launcher, shipped the new dev-session prompt template and live repo prompt, and synced scaffold expectations plus the live manifest for the new managed file. |
+| Files Changed | .ai/.manifest.json, .ai/HANDOFF.md, .ai/TASKS.md, .ai/prompts/dev.md, cmd/dev.go, cmd/dev_test.go, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/ai/prompts/dev.md.tmpl |
+| Validation | `go fmt ./...` (pass); `go test ./cmd ./internal/template ./internal/scaffold` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(cli): add lite-mode aide dev launcher` |
 | Next Role | review |
 
 ---
