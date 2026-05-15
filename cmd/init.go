@@ -40,7 +40,14 @@ var (
 var initCmd = &cobra.Command{
 	Use:   "init [project-name]",
 	Short: "Scaffold a new project with AI workflow support",
-	Args:  cobra.MaximumNArgs(1),
+	Long: `Create a new project scaffold with the managed AI workflow files, prompts,
+and local configuration that aide expects.
+
+Use the positional project name for non-interactive setup, or run ` + "`aide init`" + `
+with no arguments in a terminal to step through the wizard. The ` + "`--profile`" + `
+flag lets you start directly in the full or lite workflow mode.`,
+	Example: "aide init my-project\naide init my-project --type go --profile lite\naide init",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 && isTerminal() {
 			return runWizard(prereq.NewExecCommander(), initProfile)

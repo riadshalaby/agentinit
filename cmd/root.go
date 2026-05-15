@@ -22,7 +22,9 @@ tracked markdown artifacts in the repository.
 Workflows can run in full mode with separate implementer/reviewer sessions or in
 lite mode with a planner plus a single dev session. Start with ` + "`aide init`" + `
 for a new project, and use ` + "`aide profile --help`" + ` when you need to inspect
-or change the active workflow profile.`,
+or change the active workflow profile. Use ` + "`aide cycle start --help`" + ` when
+you are ready to bootstrap a new branch-based development cycle.`,
+	Example: "aide init my-project\naide profile lite\naide cycle start feature/help-overhaul",
 }
 
 func version() string {

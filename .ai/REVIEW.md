@@ -48,6 +48,47 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-006
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-05-15
+
+#### Findings
+
+No issues. One note on test style (not a required fix).
+
+- severity: `nit`
+  - file: `cmd/root_test.go`, `TestAllCommandsHaveLongAndExample`
+  - description: The plan specified a "table-driven test" but the implementation uses a recursive walk. The walk is actually superior — it auto-covers any future command additions without manual table updates. Intent fully met; just noting the deviation.
+  - required fix: No
+
+#### Verification
+
+##### Steps
+1. Read diff for `cmd/root_test.go` — `TestAllCommandsHaveLongAndExample` recursively walks `rootCmd`, skips hidden commands and the Cobra-generated `help` subcommand, and fails fast on any empty `Long` or `Example`.
+2. Spot-checked `Long`/`Example` additions across: `cmd/cycle.go`, `cmd/plan.go`, `cmd/pr.go`, `cmd/update.go`, `cmd/mcp.go`, `cmd/implement.go`, `cmd/review.go`, `cmd/init.go`, `cmd/po.go`.
+3. Verified `cmd/root.go` `Long` mentions both modes (full and lite), `aide init`, `aide profile --help`, and `aide cycle start --help`; `Example` added.
+4. Ran `go fmt ./...` — clean.
+5. Ran `go vet ./...` — clean.
+6. Ran `go test -count=1 ./...` — all 9 packages pass.
+7. Ran `go test -count=1 -v ./cmd/... -run TestAllCommandsHaveLongAndExample` — PASS.
+8. E2E: `aide --help` prints overview covering both workflow modes, `aide init`, `aide profile --help`, `aide cycle start --help`. ✓
+
+##### Findings
+- All acceptance criteria met: every non-hidden registered command has a non-empty `Long` and `Example`; the enforcement test is in `cmd/root_test.go`; root `Long` covers both modes and the recommended entry path; full suite green.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-005
 
 ### Review Round 1

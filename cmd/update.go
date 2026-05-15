@@ -22,6 +22,12 @@ var (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Refresh managed workflow files in an existing project",
+	Long: `Reconcile the managed aide files in an existing project with the current
+scaffold templates.
+
+Use this after upgrading aide to refresh prompts, templates, and managed agent
+files while preserving user-owned content and existing project code.`,
+	Example: "aide update\naide update --dry-run\naide update --dir ../existing-project",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir := updateTargetDir
 		if dir == "" {

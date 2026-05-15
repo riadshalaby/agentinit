@@ -17,7 +17,13 @@ var removeFile = os.Remove
 var poCmd = &cobra.Command{
 	Use:   "po [claude|codex] [agent-options...]",
 	Short: "Launch the PO orchestration session",
-	Args:  cobra.ArbitraryArgs,
+	Long: `Start the product-owner orchestration session for the full workflow profile.
+
+This session coordinates existing planner, implementer, and reviewer sessions
+through the aide MCP server and task board. In the lite profile this command
+refuses because the dev session is driven directly instead.`,
+	Example: "aide po\naide po claude --model haiku",
+	Args:    cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPOLaunch(args)
 	},

@@ -45,12 +45,24 @@ var (
 var cycleCmd = &cobra.Command{
 	Use:   "cycle",
 	Short: "Manage development cycle bootstrap and close-out",
+	Long: `Manage the lifecycle of a branch-based aide development cycle.
+
+Use ` + "`aide cycle start`" + ` to bootstrap tracked planning artifacts on a fresh
+branch, and ` + "`aide cycle end`" + ` to close the cycle once all tasks are done
+and the release metadata is ready.`,
+	Example: "aide cycle start feature/help-overhaul\naide cycle end 0.10.0",
 }
 
 var cycleStartCmd = &cobra.Command{
 	Use:   "start <branch>",
 	Short: "Start a new development cycle",
-	Args:  cobra.ExactArgs(1),
+	Long: `Bootstrap a new development cycle on the given branch.
+
+This command checks that the working tree is in a valid state, creates or
+switches to the target branch, copies the tracked planning templates into their
+live .ai files, and creates the bootstrap commit.`,
+	Example: "aide cycle start feature/help-overhaul",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCycleStart(cmd.Context(), args[0])
 	},
@@ -59,7 +71,13 @@ var cycleStartCmd = &cobra.Command{
 var cycleEndCmd = &cobra.Command{
 	Use:   "end [version]",
 	Short: "Close the current development cycle",
-	Args:  cobra.MaximumNArgs(1),
+	Long: `Close the current development cycle after every task is complete.
+
+This command verifies that the board has no unfinished tasks, appends the cycle
+close handoff entry, creates the closing commit, and refreshes the branch pull
+request when a GitHub remote is available.`,
+	Example: "aide cycle end\naide cycle end 0.10.0",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		version := ""
 		if len(args) > 0 {

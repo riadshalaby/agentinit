@@ -11,7 +11,13 @@ var (
 var prCmd = &cobra.Command{
 	Use:   "pr",
 	Short: "Create or update the current branch pull request",
-	Args:  cobra.NoArgs,
+	Long: `Create or refresh the pull request for the current branch using the
+repository's managed cycle metadata.
+
+The generated PR body includes the summary, breaking changes, included commits,
+and a test plan derived from the project type overlay.`,
+	Example: "aide pr\naide pr --dry-run\naide pr --base main --title \"feat: ship help overhaul\"",
+	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repoRoot, err := getWorkingDir()
 		if err != nil {

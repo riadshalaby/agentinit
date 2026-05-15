@@ -139,6 +139,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-006 — review — 2026-05-15T12:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-006 CLI help overhaul: all commands have non-empty Long and Example, recursive enforcement test passes, root Long covers both modes, full suite green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
 ### T-005 — review — 2026-05-15T11:30:00Z
 
 | Field | Value |
@@ -330,6 +343,32 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, internal/mcp/config_test.go |
 | Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
 | Commit | `feat(cli): add init profile selection for lite scaffolds` |
+| Next Role | review |
+
+---
+
+### T-005 — implement — 2026-05-15T13:27:21Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-005` init profile selection changes and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, cmd/init.go, cmd/init_test.go, internal/mcp/config_test.go, internal/scaffold/result.go, internal/scaffold/scaffold.go, internal/scaffold/scaffold_test.go, internal/scaffold/summary.go, internal/scaffold/summary_test.go, internal/template/data.go, internal/template/engine.go, internal/template/templates/base/ai/config.json.tmpl, internal/update/update_test.go, internal/wizard/wizard.go, internal/wizard/wizard_test.go |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `335b3f3 feat(cli): add init profile selection for lite scaffolds` |
+| Next Role | none |
+
+---
+
+### T-006 — implement — 2026-05-15T13:35:18Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added complete long-form help text and examples across the `aide` command tree, with a recursive test that enforces coverage for every registered command. |
+| Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, cmd/cycle.go, cmd/implement.go, cmd/init.go, cmd/mcp.go, cmd/plan.go, cmd/po.go, cmd/pr.go, cmd/review.go, cmd/root.go, cmd/root_test.go, cmd/update.go |
+| Validation | `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(cli): add complete help text for aide commands` |
 | Next Role | review |
 
 ---
