@@ -20,6 +20,36 @@ func TestPOCommandIsRegistered(t *testing.T) {
 	t.Fatal("expected po command to be registered on root command")
 }
 
+func TestPOCommandRefusesInLiteProfile(t *testing.T) {
+	originalGetWorkingDir := getWorkingDir
+	originalLoadLaunchConfig := loadLaunchConfig
+	originalLaunchRole := launchRole
+	t.Cleanup(func() {
+		getWorkingDir = originalGetWorkingDir
+		loadLaunchConfig = originalLoadLaunchConfig
+		launchRole = originalLaunchRole
+	})
+
+	getWorkingDir = func() (string, error) { return "/repo", nil }
+	loadLaunchConfig = func(dir string) (agentmcp.Config, error) {
+		return agentmcp.Config{Profile: "lite"}, nil
+	}
+	launchRole = func(opts agentlauncher.RoleLaunchOpts) error {
+		t.Fatalf("Launch() should not be called, got %#v", opts)
+		return nil
+	}
+
+	err := poCmd.RunE(poCmd, nil)
+	if err == nil {
+		t.Fatal("RunE() expected refusal in lite profile")
+	}
+	for _, snippet := range []string{"Lite profile:", "`aide dev`", "`all_task`", "`aide profile full`"} {
+		if !strings.Contains(err.Error(), snippet) {
+			t.Fatalf("error = %q, want %q", err.Error(), snippet)
+		}
+	}
+}
+
 func TestPOCommandLaunchesClaudeWithTempFiles(t *testing.T) {
 	originalGetWorkingDir := getWorkingDir
 	originalLoadLaunchConfig := loadLaunchConfig
