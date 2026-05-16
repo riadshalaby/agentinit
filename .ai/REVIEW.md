@@ -48,6 +48,52 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-008
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-05-16
+
+#### Findings
+
+No issues.
+
+#### Verification
+
+##### Steps
+1. Read `cmd/tasks_board.go` (new file) — `tasksBoardRow` named struct with 6 fields (TaskID, Scope, Status, AcceptanceCriteria, Evidence, NextRole); `parseTasksBoardRow` validates prefix, calls `splitMarkdownTableRow`, requires exactly 6 columns, filters header and separator rows, returns a typed struct; `splitMarkdownTableRow` is the escape-aware rune-walk loop extracted from `parseMarkdownTableRow`; `isTasksBoardHeader` matches the exact header column names; `isTasksBoardSeparator` checks every column contains only `-`/`:`/` ` characters.
+2. Confirmed `splitMarkdownTableRow` is functionally identical to the old `parseMarkdownTableRow` in `cmd/profile.go` (same backslash-escape loop, same sentinel-stripping logic); the only differences are naming and accepting `line` rather than `trimmed` (the caller `parseTasksBoardRow` passes in the already-trimmed string).
+3. Read `cmd/profile.go` diff — `hasInFlightTasks` now routes through `parseTasksBoardRow`; local `parseMarkdownTableRow` function deleted in its entirety. `rg` search for `parseMarkdownTableRow` returns zero hits in non-test production code.
+4. Read `cmd/cycle.go` diff — `cycleIncompleteTasks` now routes through `parseTasksBoardRow` and indexes via `parsedRow.Status` / `parsedRow.TaskID`; local `parseMarkdownRow` deleted in its entirety. `rg` search for `parseMarkdownRow` returns zero hits.
+5. Confirmed exactly one parser implementation exists: `splitMarkdownTableRow` in `cmd/tasks_board.go`. No residual implementations anywhere in the codebase.
+6. Read `cmd/tasks_board_test.go` (new file) — covers: T-005 shape (`\|full`), T-002 shape (`full\|lite`), separator filter, header filter, empty cells. All five cases match the plan's test requirements.
+7. Read `cmd/cycle_test.go` diff — `TestCycleIncompleteTasksHandlesEscapedPipesInScope` creates a board with T-002 and T-005 scope shapes, both marked `done`, and asserts `cycleIncompleteTasks` returns an empty slice. This is the regression test the plan required.
+8. Confirmed `cmd/profile_test.go` passes without change — the `hasInFlightTasks` advisory tests (including the pipe-in-scope tests from T-002 Round 2) still pass against the shared parser.
+9. Ran `go fmt ./...` — clean.
+10. Ran `go vet ./...` — clean.
+11. Ran `go test -count=1 ./...` — all 9 packages pass.
+12. Ran `go test -count=1 -v ./cmd/... -run TestParseTasksBoard` — 5 new unit tests all PASS.
+13. Ran `go test -count=1 -v ./cmd/... -run TestCycleIncompleteTasksHandlesEscapedPipes` — PASS.
+14. Ran `go test -count=1 -v ./cmd/... -run TestProfile` — 7 existing profile tests all PASS against shared parser.
+
+##### Findings
+- Exactly one TASKS.md row parser: `splitMarkdownTableRow` in `cmd/tasks_board.go`. Both `cmd/cycle.go` and `cmd/profile.go` route through `parseTasksBoardRow`. Requirement met.
+- Named struct rather than positional slice: consumers index by field name (`parsedRow.Status`, `parsedRow.TaskID`) — cleaner and less fragile than `cols[2]`.
+- The `isTasksBoardSeparator` logic is correct: checks every column, returns `false` on any empty cell (preventing false-positive on data rows with empty cells), and returns `false` on any column containing non-`-`/`:`/` ` characters.
+- Regression test proves the pre-fix bug: `cycleIncompleteTasks` with T-005 scope `--profile lite\|full` was previously read as status `\|full` (not `done`), which would block `aide cycle end`. Test now passes with the shared parser.
+- All acceptance criteria met.
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-007
 
 ### Review Round 1

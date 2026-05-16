@@ -128,55 +128,16 @@ func hasInFlightTasks(cwd string) (bool, error) {
 
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
-		if !strings.HasPrefix(line, "|") {
+		row, ok := parseTasksBoardRow(line)
+		if !ok {
 			continue
 		}
-		columns := parseMarkdownTableRow(line)
-		if len(columns) < 3 {
-			continue
-		}
-		status := strings.TrimSpace(columns[2])
-		if status == "" || status == "Status" || status == "---" {
-			continue
-		}
-		if status != "done" {
+		if row.Status != "done" {
 			return true, nil
 		}
 	}
 
 	return false, nil
-}
-
-func parseMarkdownTableRow(line string) []string {
-	trimmed := strings.TrimSpace(line)
-	if trimmed == "" {
-		return nil
-	}
-
-	var columns []string
-	var current strings.Builder
-	escaped := false
-	for _, r := range trimmed {
-		switch {
-		case escaped:
-			current.WriteRune(r)
-			escaped = false
-		case r == '\\':
-			escaped = true
-			current.WriteRune(r)
-		case r == '|':
-			columns = append(columns, strings.TrimSpace(current.String()))
-			current.Reset()
-		default:
-			current.WriteRune(r)
-		}
-	}
-	columns = append(columns, strings.TrimSpace(current.String()))
-
-	if len(columns) >= 2 && columns[0] == "" && columns[len(columns)-1] == "" {
-		return columns[1 : len(columns)-1]
-	}
-	return columns
 }
 
 func profileConfigPath(cwd string) string {
