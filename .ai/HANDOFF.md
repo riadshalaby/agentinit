@@ -372,3 +372,42 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | review |
 
 ---
+
+### T-006 — implement — 2026-05-15T13:39:13Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-006` CLI help overhaul and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, cmd/cycle.go, cmd/implement.go, cmd/init.go, cmd/mcp.go, cmd/plan.go, cmd/po.go, cmd/pr.go, cmd/review.go, cmd/root.go, cmd/root_test.go, cmd/update.go |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `49870c5 feat(cli): add complete help text for aide commands` |
+| Next Role | none |
+
+---
+
+### T-007 — implement — 2026-05-15T18:37:37Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Added full-versus-lite workflow guidance to the repo and scaffold docs, including profile switching, lite-session rules, and mirrored template assertions. |
+| Files Changed | .ai/HANDOFF.md, .ai/TASKS.md, AGENTS.md, README.md, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl |
+| Validation | `go test ./internal/template ./internal/scaffold` (pass); `go fmt ./...` (pass); `go vet ./...` (pass); `go test ./...` (pass) |
+| Commit | `feat(docs): add full and lite workflow guidance` |
+| Next Role | review |
+
+---
+
+### T-007 — review — 2026-05-16T00:00:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-007 documentation pass: README.md Modes section with comparison table and How to switch subsection verified; AGENTS.md Modes section with verbatim three-sentence test-weakening guardrail, refusal policy, all_task commit policy, dev session verbs confirmed; AGENTS.md.tmpl and README.md.tmpl verified to mirror project-root docs exactly; engine_test.go and scaffold_test.go assertions confirmed correct; all validation commands green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
