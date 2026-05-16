@@ -48,6 +48,46 @@ No blockers or majors. One nit noted below.
 #### Verdict
 `PASS`
 
+## Task: T-007
+
+### Review Round 1
+
+Status: **PASS**
+
+Reviewed: 2026-05-16
+
+#### Findings
+
+No issues.
+
+#### Verification
+
+##### Steps
+1. Read `README.md` diff — confirmed `## Modes` section with comparison table, `### How to switch` subsection with `aide profile full/lite` commands and refusal behaviour summary.
+2. Read `AGENTS.md` diff — confirmed `## Modes` section documenting `profile` field, full/lite shape, lite-mode status ownership, full three-sentence test guardrail (verbatim match to ROADMAP.md line 26), refusal policy, and `all_task` commit policy.
+3. Read `internal/template/templates/base/AGENTS.md.tmpl` — confirmed it mirrors the project-root AGENTS.md updates exactly (same guardrail sentences, same Modes section structure).
+4. Read `internal/template/templates/base/README.md.tmpl` — confirmed it mirrors the project-root README.md Modes section.
+5. Read `internal/template/engine_test.go` and `internal/scaffold/scaffold_test.go` diffs — both assert the key README strings (Modes section, comparison table rows, How to switch, profile quick starts) and key AGENTS strings (guardrail sentences, refusal policy, all_task commit policy, dev session verbs).
+6. Ran `go fmt ./...` — clean.
+7. Ran `go vet ./...` — clean.
+8. Ran `go test -count=1 ./...` — all 9 packages pass.
+
+##### Findings
+- All acceptance criteria met.
+- Guardrail in AGENTS.md and AGENTS.md.tmpl: all three sentences present, exact match to ROADMAP.md.
+- README.md comparison table covers all six columns (sessions, who drives, commit cadence, PO support, fit).
+- Template files are in sync with project-root docs — new scaffolds will ship the same content.
+- Test assertions cover both README and AGENTS content for both templates (engine_test.go) and real scaffold output (scaffold_test.go).
+
+##### Risks
+- None.
+
+#### Open Questions
+- None.
+
+#### Verdict
+`PASS`
+
 ## Task: T-006
 
 ### Review Round 1

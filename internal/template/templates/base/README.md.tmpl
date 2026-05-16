@@ -13,6 +13,29 @@ TODO: Add setup instructions.
 This project includes the persistent planner/implementer/reviewer workflow with file-based coordination, plus the PO orchestration layer.
 Manual and auto are two runtime modes for the same scaffold: they use the same generated files, task board, and review gate. Fewer role sessions means less coordination overhead and lower token cost.
 
+## Modes
+
+This scaffold supports two workflow profiles that share the same generated files, task board, plan, review log, and handoff log.
+
+- `full` keeps the planner, implementer, reviewer, and optional PO split.
+- `lite` keeps the planner but replaces separate implementer/reviewer sessions with one `aide dev` session.
+
+| Profile | Sessions and launchers | Who drives work | Commit cadence | PO support | Recommended fit |
+|---------|------------------------|-----------------|----------------|------------|-----------------|
+| `full` | `aide plan`, `aide implement`, `aide review`, optional `aide po` | Separate role sessions with explicit implement/review handoffs | One final task commit after reviewer approval | yes | Larger, riskier, or more review-heavy changes |
+| `lite` | `aide plan`, `aide dev` | Planner plus one dev session that implements and reviews, then halts for human approval at `ready_for_review` | One real commit per task, including `all_task` | no | Smaller changes or lower-coordination work |
+
+### How to switch
+
+```bash
+aide profile full
+aide profile lite
+```
+
+Use `aide profile full` to return to the split workflow, or `aide profile lite` to switch to the dev-session flow.
+
+`full` is the default for new scaffolds. When you switch to `lite`, `aide implement`, `aide review`, and `aide po` refuse and point you at `aide dev`. When you switch back to `full`, `aide dev` refuses and points you at `aide implement` and `aide review`.
+
 ### Runtime modes
 
 - Manual mode: start the planner, implementer, and reviewer in separate terminals, then drive each session yourself with the documented text commands.
@@ -46,7 +69,7 @@ in_planning → ready_for_implement → in_implementation → ready_for_review �
 aide cycle start feature/<scope>
 ```
 
-### Start persistent role sessions (manual mode)
+### Full profile quick start
 
 ```bash
 aide plan          # terminal 1
@@ -61,13 +84,23 @@ To override, pass the agent first, then any CLI flags.
 Example: `aide review claude --model sonnet`
 Claude starts interactively by default, and the Codex launcher uses interactive `codex` mode so the session stays open for role commands.
 
+### Lite profile quick start
+
+```bash
+aide profile lite
+aide plan          # terminal 1
+aide dev           # terminal 2
+```
+
+The dev session handles implementation and review, then halts for human approval at `ready_for_review`. In lite mode, `aide implement`, `aide review`, and `aide po` refuse and point you at `aide dev`.
+
 ### Start the PO orchestrator (auto mode)
 
 ```bash
 aide po
 ```
 
-The PO session drives the post-planning task board flow through the `aide` MCP server.
+The PO session drives the post-planning task board flow through the `aide` MCP server. PO orchestration is available only in the `full` profile.
 By default, `aide po` launches Claude with `--model haiku`, and `aide po codex` launches Codex with `-m gpt-5.4-mini`. `.ai/config.json` can override those defaults, and an explicit CLI `--model` or `-m` flag takes precedence.
 If no tasks are in `ready_for_implement` or later, run the planner first.
 The normal MCP completion path is `session_run` followed by `session_wait`, then a re-read of `.ai/TASKS.md`; `session_get_output` is for debugging only.
@@ -80,6 +113,8 @@ planner> start_plan
 implementer> next_task T-001
 reviewer> next_task T-001
 implementer> commit_task T-001
+dev> next_task T-001
+dev> commit_task T-001
 implementer> rework_task T-001
 aide cycle end 0.7.0
 ```

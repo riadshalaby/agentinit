@@ -68,10 +68,26 @@ $EDITOR ROADMAP.md
 # Start your first cycle
 aide cycle start feature/first-feature
 
-# Launch the persistent role sessions (one terminal each)
+# Full profile quick start
 aide plan          # terminal 1
 aide implement     # terminal 2
 aide review        # terminal 3
+
+# Or use the auto-mode PO orchestrator in the full profile
+aide po
+
+# Lite profile quick start
+aide profile lite
+aide plan          # terminal 1
+aide dev           # terminal 2
+
+# Drive the cycle with text commands inside those sessions
+planner>      start_plan
+implementer>  next_task
+reviewer>     next_task
+implementer>  commit_task
+dev>          next_task
+dev>          commit_task
 
 # Role launchers read default agent/model/effort settings from .ai/config.json.
 # To override, pass the agent first, then any CLI flags.
@@ -81,17 +97,9 @@ aide review        # terminal 3
 # For Codex roles, `effort` maps to `-c model_reasoning_effort=...`.
 # The implementer defaults to `high` unless `.ai/config.json` sets `effort` explicitly.
 
-# Or start the PO orchestrator for auto mode
-aide po
 # Default PO models: `haiku` for Claude, `gpt-5.4-mini` for Codex.
 # Override with `.ai/config.json` or an explicit CLI flag such as:
 # aide po claude --model sonnet
-
-# Drive the cycle with text commands inside those sessions
-planner>      start_plan
-implementer>  next_task
-reviewer>     next_task
-implementer>  commit_task
 
 # Or use the cross-platform cycle-close and PR helpers
 aide cycle end 1.0.0
@@ -99,6 +107,31 @@ aide pr --dry-run
 aide cycle end 0.7.0
 aide pr
 ```
+
+## Modes
+
+`aide` supports two workflow profiles that share the same scaffold files, task board, plan, review log, and handoff log. The difference is how many persistent sessions you keep open and which command set drives the implementation loop.
+
+- `full` keeps the planner, implementer, reviewer, and optional PO split.
+- `lite` keeps the planner but replaces separate implementer/reviewer sessions with one `aide dev` session.
+
+| Profile | Sessions and launchers | Who drives work | Commit cadence | PO support | Recommended fit |
+|---------|------------------------|-----------------|----------------|------------|-----------------|
+| `full` | `aide plan`, `aide implement`, `aide review`, optional `aide po` | Separate role sessions with explicit implement/review handoffs | One final task commit after reviewer approval | yes | Larger, riskier, or more review-heavy changes |
+| `lite` | `aide plan`, `aide dev` | Planner plus one dev session that implements and reviews, then halts for human approval at `ready_for_review` | One real commit per task, including `all_task` | no | Smaller changes or lower-coordination work |
+
+### How to switch
+
+Switch profiles in place by editing `.ai/config.json` through the CLI:
+
+```bash
+aide profile full
+aide profile lite
+```
+
+Use `aide profile full` to return to the split workflow, or `aide profile lite` to switch to the dev-session flow.
+
+`full` is the default for new scaffolds. When you switch to `lite`, `aide implement`, `aide review`, and `aide po` refuse and point you at `aide dev`. When you switch back to `full`, `aide dev` refuses and points you at `aide implement` and `aide review`.
 
 ## Re-running on an Existing Project
 
