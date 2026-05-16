@@ -411,3 +411,27 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Next Role | implement |
 
 ---
+
+### T-007 — implement — 2026-05-16T08:48:17Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-007` documentation and template workflow guidance updates and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, AGENTS.md, README.md, internal/scaffold/scaffold_test.go, internal/template/engine_test.go, internal/template/templates/base/AGENTS.md.tmpl, internal/template/templates/base/README.md.tmpl |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `adcb827 feat(docs): add full and lite workflow guidance` |
+| Next Role | none |
+
+---
+
+### T-008 — plan — 2026-05-16T11:15:45Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | rework_plan: added T-008 to fix `aide cycle end` parser. `cmd/cycle.go` keeps its own naive `parseMarkdownRow` that splits on `|` without handling `\|` escapes, so the T-005 Scope cell (`--profile lite\|full`) shifts the Status column and the cycle-close check misreports the task as not done. T-002 fixed the same class of bug locally in `cmd/profile.go` but the fix was never promoted to a shared parser. T-008 unifies on one canonical parser in `cmd/tasks_board.go`, deletes both local copies, and adds regression tests for both observed Scope shapes plus an end-to-end `cycleIncompleteTasks` test that fails on pre-fix code. Hard blocker for closing cycle 0.10.0. |
+| Files Changed | .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Next Role | implement |
+
+---
