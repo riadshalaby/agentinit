@@ -113,6 +113,31 @@ Files to change:
 - `internal/template/templates/base/README.md.tmpl` — mirror the project-root README.md "Modes" section.
 - `internal/template/engine_test.go`, `internal/scaffold/scaffold_test.go` — update the asserted strings to match the new template content (Modes section, dev session verbs, refusal messages). This is significant string churn — keep test diffs focused.
 
+### Phase 8 — Unify TASKS.md row parser (T-008)
+
+Added during `rework_plan` after T-007 closed: `aide cycle end 0.10.0` failed because `cmd/cycle.go` carries its own naive `parseMarkdownRow` that splits on `|` without handling the `\|` escape used in T-005's Scope cell (`--profile lite\|full`). T-002 round-2 review already fixed the same bug class in `cmd/profile.go` (`parseMarkdownTableRow`), but the fix was never promoted to a shared parser, so `cmd/cycle.go` regressed silently. This phase unifies on one parser and adds regression coverage for both observed Scope shapes.
+
+Files to change:
+- `cmd/tasks_board.go` (new) — single canonical TASKS.md row parser exported from package `cmd`. Handles `\|` escapes inside cells, filters separator and header rows, returns a fixed-shape slice (or named struct) so consumers can index by column intent rather than raw position.
+- `cmd/profile.go` — delete the local `parseMarkdownTableRow`; route `hasInFlightTasks` through the shared parser.
+- `cmd/cycle.go` — delete the local `parseMarkdownRow` (lines 456–477); route `cycleIncompleteTasks` through the shared parser.
+- `cmd/tasks_board_test.go` (new) — unit tests for the shared parser:
+  - Scope cell containing `\|` (T-005 shape: `--profile lite\|full`).
+  - Scope cell containing other pipe-adjacent text (T-002 shape).
+  - Separator row (`| --- | --- |`) filtered out.
+  - Header row filtered out.
+  - Empty cells handled.
+- `cmd/cycle_test.go` — add an end-to-end regression test for `cycleIncompleteTasks` against a board whose Scope cells contain `\|` and whose statuses are all `done`. This test fails on the pre-fix code (proves the bug) and passes after the fix.
+- `cmd/profile_test.go` — keep the existing T-002 regression test; verify it still passes against the shared parser. No new assertions required if coverage is already adequate; otherwise add a test against the shared function signature.
+
+Acceptance behavior:
+- After the change, `aide cycle end 0.10.0` on the current 0.10.0 board (with `\|` in T-005's Scope) completes successfully when all tasks are `done`.
+- A search for "TASKS.md" row parsing in the codebase finds exactly one implementation.
+
+Out of scope for this phase:
+- No new internal package; the parser stays in `package cmd` because both callers are in `cmd/`. If a third consumer appears later (e.g., the MCP server), extract to `internal/board/` at that point — not preemptively.
+- No documentation changes (the parser is internal; no user-facing surface changes).
+
 ## Validation
 
 - `go fmt ./...`
@@ -130,4 +155,5 @@ Recommended order (one task at a time):
 4. **T-004** (refusals) — depends on T-001 for profile detection; touches three existing commands.
 5. **T-005** (init wizard + scaffold summary) — depends on T-001 (config field) and T-003 (dev.md template must exist before scaffolds reference it).
 6. **T-006** (CLI help overhaul) — depends on T-002 and T-003 existing so their `Long` text can be written.
-7. **T-007** (README + AGENTS.md docs) — last, because it describes behavior that must already be in place.
+7. **T-007** (README + AGENTS.md docs) — describes behavior that must already be in place.
+8. **T-008** (unify TASKS.md row parser) — added after T-007 closed when `aide cycle end 0.10.0` failed on the T-005 Scope cell. Hard blocker for `aide cycle end`: this must land before the cycle can close.
