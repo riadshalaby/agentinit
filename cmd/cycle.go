@@ -441,39 +441,16 @@ func cycleIncompleteTasks(repoRoot string) ([]string, error) {
 
 	var blocking []string
 	for _, row := range strings.Split(string(content), "\n") {
-		cols := parseMarkdownRow(row)
-		if len(cols) < 6 || cols[0] == "Task ID" {
+		parsedRow, ok := parseTasksBoardRow(row)
+		if !ok {
 			continue
 		}
-		if cols[2] == "done" {
+		if parsedRow.Status == "done" {
 			continue
 		}
-		blocking = append(blocking, fmt.Sprintf("%s (%s)", cols[0], cols[2]))
+		blocking = append(blocking, fmt.Sprintf("%s (%s)", parsedRow.TaskID, parsedRow.Status))
 	}
 	return blocking, nil
-}
-
-func parseMarkdownRow(row string) []string {
-	if !strings.HasPrefix(row, "|") || !strings.HasSuffix(row, "|") {
-		return nil
-	}
-	parts := strings.Split(row, "|")
-	if len(parts) < 3 {
-		return nil
-	}
-	cols := make([]string, 0, len(parts)-2)
-	for _, part := range parts[1 : len(parts)-1] {
-		value := strings.TrimSpace(part)
-		if value != "" {
-			cols = append(cols, value)
-			continue
-		}
-		cols = append(cols, "")
-	}
-	if len(cols) > 0 && strings.Trim(cols[0], "-") == "" {
-		return nil
-	}
-	return cols
 }
 
 func cycleCurrentBranch(ctx context.Context) (string, error) {

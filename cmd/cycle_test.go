@@ -233,6 +233,19 @@ func TestCycleEndRejectsUndoneTasks(t *testing.T) {
 	}
 }
 
+func TestCycleIncompleteTasksHandlesEscapedPipesInScope(t *testing.T) {
+	repo := t.TempDir()
+	writeCycleTemplate(t, repo, ".ai/TASKS.md", "# TASKS\n\n| Task ID | Scope | Status | Acceptance Criteria | Evidence | Next Role |\n| --- | --- | --- | --- | --- | --- |\n| T-002 | mid-cycle switch for `full\\|lite` | done | ok | pass | none |\n| T-005 | `--profile lite\\|full` flag | done | ok | pass | none |\n")
+
+	incomplete, err := cycleIncompleteTasks(repo)
+	if err != nil {
+		t.Fatalf("cycleIncompleteTasks() error = %v", err)
+	}
+	if len(incomplete) != 0 {
+		t.Fatalf("cycleIncompleteTasks() = %#v, want none", incomplete)
+	}
+}
+
 func TestCycleEndCommitsReleaseFooterAndSkipsPRWithoutGitHubRemote(t *testing.T) {
 	repo := t.TempDir()
 	writeDoneTaskBoard(t, repo)

@@ -399,6 +399,19 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 
 ---
 
+### T-008 — review — 2026-05-16T00:01:00Z
+
+| Field | Value |
+|-------|-------|
+| Agent | claude |
+| Summary | Reviewed T-008 parser unification: exactly one TASKS.md row parser (`splitMarkdownTableRow` / `parseTasksBoardRow`) in `cmd/tasks_board.go`; both `cmd/cycle.go` and `cmd/profile.go` route through it; no residual naive parsers; new unit tests in `cmd/tasks_board_test.go` cover all five required shapes; regression test in `cmd/cycle_test.go` proves the bug and confirms the fix; all existing profile advisory tests pass unchanged; `go test ./...` green. |
+| Files Changed | .ai/REVIEW.md, .ai/TASKS.md, .ai/HANDOFF.md |
+| Verdict | PASS |
+| Blocking Findings | none |
+| Next Role | implement |
+
+---
+
 ### T-007 — review — 2026-05-16T00:00:00Z
 
 | Field | Value |
@@ -433,5 +446,31 @@ Each entry uses this exact structure. Omit fields marked as role-specific when t
 | Summary | rework_plan: added T-008 to fix `aide cycle end` parser. `cmd/cycle.go` keeps its own naive `parseMarkdownRow` that splits on `|` without handling `\|` escapes, so the T-005 Scope cell (`--profile lite\|full`) shifts the Status column and the cycle-close check misreports the task as not done. T-002 fixed the same class of bug locally in `cmd/profile.go` but the fix was never promoted to a shared parser. T-008 unifies on one canonical parser in `cmd/tasks_board.go`, deletes both local copies, and adds regression tests for both observed Scope shapes plus an end-to-end `cycleIncompleteTasks` test that fails on pre-fix code. Hard blocker for closing cycle 0.10.0. |
 | Files Changed | .ai/PLAN.md, .ai/TASKS.md, .ai/HANDOFF.md |
 | Next Role | implement |
+
+---
+
+### T-008 — implement — 2026-05-16T11:23:07Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Unified TASKS.md row parsing so both cycle-close and profile advisory logic handle escaped pipes consistently. |
+| Files Changed | .ai/TASKS.md, cmd/cycle.go, cmd/cycle_test.go, cmd/profile.go, cmd/tasks_board.go, cmd/tasks_board_test.go |
+| Validation | PASS — `go fmt ./...`; PASS — `go vet ./...`; PASS — `go test ./...` |
+| Commit | `fix(cli): share escaped-pipe task board parsing` |
+| Next Role | review |
+
+---
+
+### T-008 — implement — 2026-05-16T13:15:09Z
+
+| Field | Value |
+|-------|-------|
+| Agent | codex |
+| Summary | Committed the approved `T-008` shared TASKS.md parser fix and marked the task done. |
+| Files Changed | .ai/HANDOFF.md, .ai/REVIEW.md, .ai/TASKS.md, cmd/cycle.go, cmd/cycle_test.go, cmd/profile.go, cmd/tasks_board.go, cmd/tasks_board_test.go |
+| Validation | Reused reviewer-approved validation recorded on the task: `go fmt ./...`; `go vet ./...`; `go test ./...` |
+| Commit | `a3ceea0 fix(cli): share escaped-pipe task board parsing` |
+| Next Role | none |
 
 ---
