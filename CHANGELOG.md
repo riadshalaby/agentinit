@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.10.0](https://github.com/riadshalaby/agentinit/compare/v0.9.0...v0.10.0) (2026-05-16)
+
+
+### Features
+
+* **cli:** add aide profile commands for workflow switching ([dd62b6c](https://github.com/riadshalaby/agentinit/commit/dd62b6cd6386793083e8c46330cbdd279edb4414))
+* **cli:** add complete help text for aide commands ([d8f80ab](https://github.com/riadshalaby/agentinit/commit/d8f80ab328b7a4584c033b5da4f5682ed72430a9))
+* **cli:** add init profile selection for lite scaffolds ([a7a99ac](https://github.com/riadshalaby/agentinit/commit/a7a99ac2db946bb6e7ac93a3f217dff763462739))
+* **cli:** add lite-mode aide dev launcher ([eb0fca3](https://github.com/riadshalaby/agentinit/commit/eb0fca3054678ffbc8dfe09259bc99d5f9416efb))
+* **cli:** add lite-profile command refusals ([4993dc2](https://github.com/riadshalaby/agentinit/commit/4993dc2bb73102e0f4230b7c9dd03fcaf8f5b07a))
+* **config:** add workflow profile defaults to .ai/config.json ([49d22fb](https://github.com/riadshalaby/agentinit/commit/49d22fbf09f7ed21074bea14d7ee9951972a51ef))
+* **docs:** add full and lite workflow guidance ([475c97c](https://github.com/riadshalaby/agentinit/commit/475c97cf60be06b50c89a5895a4b2ef9811e0497))
+
+
+### Bug Fixes
+
+* **cli:** share escaped-pipe task board parsing ([4cbdf23](https://github.com/riadshalaby/agentinit/commit/4cbdf23cdbbe56b48419bff5db4b549d0e2e25c6))
+* removed not necessary aide cycle end prompt ([c58d95e](https://github.com/riadshalaby/agentinit/commit/c58d95e6218a65d6b2c8f6202a7a9b78f5941ff9))
+
 ## [0.9.0](https://github.com/riadshalaby/agentinit/compare/v0.8.3...v0.9.0) (2026-04-25)
 
 
